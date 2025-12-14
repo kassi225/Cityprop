@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+{% block title %}Fidélisation - {{ detail.commande.nom_client }}{% endblock %}
+
+{% block content %}
+<div class="container mt-3">
+
+    <h4 class="mb-3"><i class="fa-solid fa-star me-1"></i>Fidélisation - {{ detail.commande.nom_client }}</h4>
+
+    <!-- Informations client -->
+    <div class="card mb-3">
+        <div class="card-header">
+            <i class="fa-solid fa-info-circle me-1"></i>Informations client
+        </div>
+        <div class="card-body p-2">
+            <div class="row">
+                <div class="col-sm-6 mb-1"><strong><i class="fa-solid fa-user me-1"></i>Nom :</strong> {{ detail.commande.nom_client }}</div>
+                <div class="col-sm-6 mb-1"><strong><i class="fa-solid fa-phone me-1"></i>Numéro :</strong> {{ detail.commande.numero_client }}</div>
+                <div class="col-sm-6 mb-1"><strong><i class="fa-solid fa-map-marker-alt me-1"></i>Localisation :</strong> {{ detail.commande.localisation_client }}</div>
+                <div class="col-sm-6 mb-1"><strong><i class="fa-solid fa-list-check me-1"></i>Type :</strong> {{ detail.commande.get_type_commande_display }}</div>
+
+                {% if type_detail == "CITYCLIMA" %}
+                    <div class="col-sm-6 mb-1"><strong><i class="fa-solid fa-calendar-days me-1"></i>Date intervention :</strong> {{ detail.date_intervention|default:"-" }}</div>
+                    <div class="col-sm-6 mb-1"><strong><i class="fa-solid fa-smile me-1"></i>Satisfaction :</strong> {{ detail.satisfaction|default:"-" }}</div>
+                {% else %}
+                    <div class="col-sm-6 mb-1"><strong><i class="fa-solid fa-truck me-1"></i>Date livraison :</strong> {{ detail.date_livraison|default:"-" }}</div>
+                    <div class="col-sm-6 mb-1"><strong><i class="fa-solid fa-info me-1"></i>Statut :</strong>
+                        {% if detail.statut == "LIVRE-satisfait" %}
+                            Client satisfait
+                        {% elif detail.statut == "LIVRE-insatisfait" %}
+                            Client insatisfait
+                        {% else %}
+                            {{ detail.get_statut_display }}
+                        {% endif %}
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Formulaire fidélisation -->
+      
+      <form method="POST">
+    {% csrf_token %}
+    <div class="mb-2">
+        <label for="commentaire" class="form-label"><i class="fa-solid fa-comment me-1"></i>Observation / Commentaire</label>
+        <textarea name="commentaire" id="commentaire" rows="3" class="form-control form-control-sm" required></textarea>
+    </div>
+
+    <div class="form-check mb-2">
+        <input type="checkbox" name="fidelise" id="fidelise" class="form-check-input">
+        <label for="fidelise" class="form-check-label"><i class="fa-solid fa-check-circle me-1"></i>Marquer comme client fidélisé</label>
+    </div>
+
+    <div class="d-flex gap-2 flex-wrap">
+        <button type="submit" class="btn btn-success btn-sm"><i class="fa-solid fa-floppy-disk me-1"></i>Enregistrer</button>
+        <a href="{% url 'liste_fiches' %}" class="btn btn-secondary btn-sm"><i class="fa-solid fa-arrow-left me-1"></i>Retour</a>
+    </div>
+</form>
+
+    <hr class="my-2">
+
+    <!-- Historique des commentaires -->
+    <h5 class="mb-1"><i class="fa-solid fa-history me-1"></i>Historique des commentaires</h5>
+    <ul class="list-group list-group-flush small">
+        {% for note in detail.fidelisationnote_set.all %}
+            <li class="list-group-item py-1">
+                <strong><i class="fa-solid fa-calendar me-1"></i>{{ note.date|date:"d/m/Y H:i" }}:</strong> {{ note.commentaire }}
+            </li>
+        {% empty %}
+            <li class="list-group-item text-muted py-1">Aucun commentaire pour l'instant</li>
+        {% endfor %}
+    </ul>
+</div>
+{% endblock %}

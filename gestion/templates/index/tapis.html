@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+
+{% block title %}Alertes TAPIS{% endblock %}
+
+{% block content %}
+<h1>Alertes TAPIS</h1>
+
+{% if tapis_alert %}
+<table style="width:100%; border-collapse: collapse;">
+    <thead>
+        <tr style="background:#1D9A6C; color:white;">
+            <th style="padding:10px; border:1px solid #ccc;">Client</th>
+            <th style="padding:10px; border:1px solid #ccc;">Nombre de tapis</th>
+            <th style="padding:10px; border:1px solid #ccc;">Date Ramassage</th>
+            <th style="padding:10px; border:1px solid #ccc;">Date Livraison</th>
+            <th style="padding:10px; border:1px solid #ccc;">Statut</th>
+            <th style="padding:10px; border:1px solid #ccc;">Commentaire</th>
+            <th style="padding:10px; border:1px solid #ccc;">Action</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for t in tapis_alert %}
+        <tr style="border:1px solid #ccc;">
+            <td style="padding:8px; border:1px solid #ccc;">{{ t.commande.nom_client }}</td>
+            <td style="padding:8px; border:1px solid #ccc;">{{ t.nombre_tapis }}</td>
+            <td style="padding:8px; border:1px solid #ccc;">{{ t.date_ramassage }}</td>
+            <td style="padding:8px; border:1px solid #ccc;">{{ t.date_livraison }}</td>
+            <td style="padding:8px; border:1px solid #ccc;">
+                {% if t.statut == 'NON_RESPECTE' %}
+                    <span style="color:white; background:red; padding:3px 6px; border-radius:4px;">Délai non respecté</span>
+                {% elif t.statut == 'PRET' %}
+                    <span style="color:white; background:green; padding:3px 6px; border-radius:4px;">Tapis prêt</span>
+                {% elif t.statut == 'CLIENT_INDISPO' %}
+                    <span style="color:white; background:orange; padding:3px 6px; border-radius:4px;">Client indisponible</span>
+                {% elif t.statut == 'LIVRE' %}
+                    <span style="color:white; background:blue; padding:3px 6px; border-radius:4px;">Livraison effectuée</span>
+                {% endif %}
+            </td>
+            <td style="padding:8px; border:1px solid #ccc;">{{ t.commentaire }}</td>
+            <td style="padding:8px; border:1px solid #ccc;">
+                <a href="{% url 'detail_fiche' t.commande.id %}" style="color:#1D9A6C;">Voir</a>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% else %}
+<p>Aucune alerte TAPIS en ce moment.</p>
+{% endif %}
+{% endblock %}

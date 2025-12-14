@@ -1,0 +1,126 @@
+{% extends "base.html" %}
+
+{% block title %}Nouvelle commande{% endblock %}
+
+{% block content %}
+
+<div class="container">
+
+    <h2 class="mb-4"><i class="fa-solid fa-plus me-1"></i>Créer une Nouvelle Commande</h2>
+
+    <form method="POST" class="p-3 bg-white shadow rounded">
+        {% csrf_token %}
+
+        <div class="row g-3">
+            <div class="col-md-6">
+                <label class="form-label"><i class="fa-solid fa-user me-1"></i>Nom du client *</label>
+                <input type="text" name="nom_client" class="form-control form-control-sm" required>
+            </div>
+
+            <div class="col-md-6">
+                <label class="form-label"><i class="fa-solid fa-phone me-1"></i>Numéro du client *</label>
+                <input type="text" name="numero_client" class="form-control form-control-sm" required>
+            </div>
+
+            <div class="col-md-6">
+                <label class="form-label"><i class="fa-solid fa-map-marker-alt me-1"></i>Localisation *</label>
+                <input type="text" name="localisation_client" class="form-control form-control-sm" required>
+            </div>
+
+            <div class="col-md-6">
+                <label class="form-label"><i class="fa-solid fa-list-check me-1"></i>Type de commande *</label>
+                <select name="type_commande" id="type_commande" class="form-select form-select-sm" required>
+                    <option value="">-- Choisir --</option>
+                    <option value="CITYPROP">Cityprop</option>
+                    <option value="CLIMATISEUR">Climatiseur</option>
+                    <option value="TAPISPROP">Tapisprop</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- SECTION CITYCLIMA -->
+        <div id="details_cityclima" class="details-section mt-3 p-3 border rounded bg-light">
+            <h5 class="mb-3"><i class="fa-solid fa-building me-1"></i>Détails Cityprop / Climatiseur</h5>
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label class="form-label"><i class="fa-solid fa-calendar-days me-1"></i>Date d'intervention</label>
+                    <input type="date" name="date_intervention" class="form-control form-control-sm">
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label"><i class="fa-solid fa-smile me-1"></i>Satisfaction</label>
+                    <select name="satisfaction" class="form-select form-select-sm">
+                        <option value="">-- Choisir --</option>
+                        <option value="OK">OK</option>
+                        <option value="KO_RET">KO - Retouche</option>
+                        <option value="KO_REFUS">KO - Refus</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <!-- SECTION TAPIS -->
+        <div id="details_tapis" class="details-section mt-3 p-3 border rounded bg-light">
+            <h5 class="mb-3"><i class="fa-solid fa-couch me-1"></i>Détails Tapisprop</h5>
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <label class="form-label"><i class="fa-solid fa-truck me-1"></i>Date ramassage</label>
+                    <input type="date" name="date_ramassage" class="form-control form-control-sm">
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label"><i class="fa-solid fa-boxes-stacked me-1"></i>Nb tapis</label>
+                    <input type="number" name="nombre_tapis" min="1" class="form-control form-control-sm">
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label"><i class="fa-solid fa-dollar-sign me-1"></i>Coût</label>
+                    <input type="number" name="cout" min="0" class="form-control form-control-sm">
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label"><i class="fa-solid fa-calendar-check me-1"></i>Date fin traitement</label>
+                    <input type="date" name="date_traitement" class="form-control form-control-sm">
+                </div>
+
+                <div class="col-md-6">
+                    <label class="form-label"><i class="fa-solid fa-truck-fast me-1"></i>Date livraison</label>
+                    <input type="date" name="date_livraison" class="form-control form-control-sm">
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label"><i class="fa-solid fa-comment me-1"></i>Commentaire</label>
+                    <textarea name="commentaire" class="form-control form-control-sm"></textarea>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label"><i class="fa-solid fa-info-circle me-1"></i>Statut</label>
+                    <select name="statut" class="form-select form-select-sm">
+                        <option value="NON_RESPECTE">Délai non respecté</option>
+                        <option value="PRET">En attente</option>
+                        <option value="CLIENT_INDISPO">Tapis prêt - Client indisponible</option>
+                        <option value="LIVRE-satisfait">Livré - Client satisfait</option>
+                        <option value="LIVRE-insatisfait">Livré - Client insatisfait</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <div class="mt-3">
+            <button type="submit" class="btn btn-success px-4"><i class="fa-solid fa-floppy-disk me-1"></i>Créer la commande</button>
+        </div>
+    </form>
+</div>
+
+<style>
+    .details-section { display: none; }
+</style>
+
+<script>
+    const selectType = document.getElementById("type_commande");
+    const cityclimaSection = document.getElementById("details_cityclima");
+    const tapisSection = document.getElementById("details_tapis");
+
+    selectType.addEventListener("change", function() {
+        cityclimaSection.style.display = "none";
+        tapisSection.style.display = "none";
+
+        if (this.value === "CITYPROP" || this.value === "CLIMATISEUR") cityclimaSection.style.display = "block";
+        else if (this.value === "TAPISPROP") tapisSection.style.display = "block";
+    });
+</script>
+{% endblock %}

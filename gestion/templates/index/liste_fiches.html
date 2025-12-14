@@ -1,0 +1,189 @@
+{% extends "base.html" %}
+{% block title %}Liste des commandes{% endblock %}
+
+{% block content %}
+<div class="container mt-2" style="font-size: 13px;">
+
+    <!-- Titre + Export Excel -->
+    <div class="d-flex justify-content-between align-items-center mb-2">
+        <h5 class="mb-0"><i class="fa-solid fa-list-check me-1"></i>Liste des commandes</h5>
+        <a href="{% url 'export_commandes_excel' %}?{{ request.GET.urlencode }}" class="btn btn-success btn-sm">
+            <i class="fa-solid fa-file-excel me-1"></i>Exporter Excel
+        </a>
+    </div>
+
+    <!-- Recherche rapide -->
+    <input type="text" id="quickSearch" class="form-control form-control-sm mb-2" placeholder="🔍 Recherche rapide">
+
+    <!-- Filtre avancé -->
+    <form method="GET" class="row g-1 mb-2 align-items-end">
+        <div class="col-auto">
+            <label class="form-label small">Nom client</label>
+            <input type="text" name="nom_client" value="{{ nom_filter }}" class="form-control form-control-sm">
+        </div>
+
+        <div class="col-auto">
+            <label class="form-label small">Numéro client</label>
+            <input type="text" name="numero_client" value="{{ numero_filter }}" class="form-control form-control-sm">
+        </div>
+
+        <div class="col-auto">
+            <label class="form-label small">Type</label>
+            <select name="type_commande" class="form-select form-select-sm">
+                <option value="">Tous</option>
+                <option value="CITYPROP" {% if type_filter == "CITYPROP" %}selected{% endif %}>Cityprop</option>
+                <option value="CLIMATISEUR" {% if type_filter == "CLIMATISEUR" %}selected{% endif %}>Climatiseur</option>
+                <option value="TAPISPROP" {% if type_filter == "TAPISPROP" %}selected{% endif %}>Tapisprop</option>
+            </select>
+        </div>
+
+        <div class="col-auto">
+            <label class="form-label small">Statut tapis</label>
+            <select name="statut" class="form-select form-select-sm">
+                <option value="">Tous</option>
+                <option value="NON_RESPECTE" {% if statut_filter == "NON_RESPECTE" %}selected{% endif %}>Non respecté</option>
+                <option value="PRET" {% if statut_filter == "PRET" %}selected{% endif %}>Prêt</option>
+                <option value="CLIENT_INDISPO" {% if statut_filter == "CLIENT_INDISPO" %}selected{% endif %}>Indisponible</option>
+                <option value="LIVRE-satisfait" {% if statut_filter == "LIVRE-satisfait" %}selected{% endif %}>Livré satisfait</option>
+                <option value="LIVRE-insatisfait" {% if statut_filter == "LIVRE-insatisfait" %}selected{% endif %}>Livré insatisfait</option>
+            </select>
+        </div>
+
+        <div class="col-auto">
+            <label class="form-label small">Date début</label>
+            <input type="date" name="date_debut" id="date_debut" value="{{ date_debut }}" class="form-control form-control-sm">
+        </div>
+
+        <div class="col-auto">
+            <label class="form-label small">Date fin</label>
+            <input type="date" name="date_fin" id="date_fin" value="{{ date_fin }}" class="form-control form-control-sm">
+        </div>
+
+        <div class="col-auto">
+            <label class="form-label small">Fidélisé</label>
+            <select name="fidelise" class="form-select form-select-sm">
+                <option value="">Tous</option>
+                <option value="oui" {% if fidelise_filter == "oui" %}selected{% endif %}>Oui</option>
+                <option value="non" {% if fidelise_filter == "non" %}selected{% endif %}>Non</option>
+            </select>
+        </div>
+
+        <div class="col-auto d-flex gap-1">
+            <button class="btn btn-primary btn-sm"><i class="fa-solid fa-filter me-1"></i>Filtrer</button>
+            <a href="{% url 'liste_fiches' %}" class="btn btn-secondary btn-sm"><i class="fa-solid fa-rotate-left me-1"></i>Réinitialiser</a>
+        </div>
+    </form>
+
+    <!-- Tableau responsive -->
+    <div class="table-responsive shadow-sm rounded">
+        <table class="table table-bordered table-hover table-sm align-middle mb-0">
+            <thead class="table-dark text-center small">
+                <tr>
+                    <th>Client</th>
+                    <th>Numéro</th>
+                    <th>Localisation</th>
+                    <th>Type</th>
+                    <th>Date</th>
+                    <th>Détails</th>
+                    <th>Fidélisé</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody class="text-center small">
+                {% for c in commandes %}
+                <tr>
+                    <td>{{ c.nom_client }}</td>
+                    <td>{{ c.numero_client }}</td>
+                    <td class="text-start" style="max-width:200px; white-space:normal;">{{ c.localisation_client }}</td>
+                    <td>
+                        {% if c.type_commande == 'CITYPROP' %}
+                            <span class="badge bg-success">Cityprop</span>
+                        {% elif c.type_commande == 'CLIMATISEUR' %}
+                            <span class="badge bg-info">Climatiseur</span>
+                        {% else %}
+                            <span class="badge bg-warning text-dark">Tapisprop</span>
+                        {% endif %}
+                    </td>
+                    <td>{{ c.date_creation|date:"d/m/Y" }}</td>
+                    <td class="text-start">
+                        {% if c.type_commande in 'CITYPROP,CLIMATISEUR' and c.cityclimadetails %}
+                            <strong>Intervention :</strong> {{ c.cityclimadetails.date_intervention|default:"-" }}<br>
+                            <strong>Satisfaction :</strong> {{ c.cityclimadetails.satisfaction|default:"-" }}
+                        {% elif c.type_commande == 'TAPISPROP' and c.tapisdetails %}
+                            <strong>Ramassage :</strong> {{ c.tapisdetails.date_ramassage|default:"-" }}<br>
+                            <strong>Livraison :</strong> {{ c.tapisdetails.date_livraison|default:"-" }}<br>
+                            <strong>Statut :</strong> {{ c.tapisdetails.get_statut_display }}
+                        {% else %}
+                            <span class="text-muted">—</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if c.cityclimadetails and c.cityclimadetails.fidelise %}
+                            <a href="{% url 'detail_fidelisation' c.cityclimadetails.id %}" class="btn btn-sm btn-success"><i class="fa-solid fa-star me-1"></i>Oui</a>
+                        {% elif c.tapisdetails and c.tapisdetails.fidelise %}
+                            <a href="{% url 'detail_fidelisation' c.tapisdetails.id %}" class="btn btn-sm btn-success"><i class="fa-solid fa-star me-1"></i>Oui</a>
+                        {% else %}
+                            <span class="badge bg-secondary">Non</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <a href="{% url 'detail_fiche' c.id %}" class="btn btn-sm btn-primary"><i class="fa-solid fa-pen-to-square me-1"></i>Modifier</a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="8" class="text-center">Aucune commande trouvée</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Pagination -->
+    <nav class="mt-1">
+        <ul class="pagination justify-content-center pagination-sm mb-0">
+            {% if commandes.has_previous %}
+                <li class="page-item"><a class="page-link" href="?page={{ commandes.previous_page_number }}">Précédent</a></li>
+            {% endif %}
+            {% for num in commandes.paginator.page_range %}
+                {% if commandes.number == num %}
+                    <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+                {% elif num > commandes.number|add:-3 and num < commandes.number|add:3 %}
+                    <li class="page-item"><a class="page-link" href="?page={{ num }}">{{ num }}</a></li>
+                {% endif %}
+            {% endfor %}
+            {% if commandes.has_next %}
+                <li class="page-item"><a class="page-link" href="?page={{ commandes.next_page_number }}">Suivant</a></li>
+            {% endif %}
+        </ul>
+    </nav>
+</div>
+
+<script>
+    // Recherche rapide
+    document.getElementById("quickSearch").addEventListener("keyup", function () {
+        let value = this.value.toLowerCase();
+        document.querySelectorAll("tbody tr").forEach(row => {
+            row.style.display = row.innerText.toLowerCase().includes(value) ? "" : "none";
+        });
+    });
+
+    // Survol des lignes
+    document.querySelectorAll("tbody tr").forEach(row => {
+        row.addEventListener("mouseenter", () => row.style.backgroundColor = "#E6F4EE");
+        row.addEventListener("mouseleave", () => row.style.backgroundColor = "");
+    });
+
+    // Gestion dates: date_fin >= date_debut
+    const dateDebut = document.getElementById("date_debut");
+    const dateFin = document.getElementById("date_fin");
+
+    if(dateDebut.value){ dateFin.min = dateDebut.value; }
+    dateDebut.addEventListener("change", function() {
+        dateFin.min = this.value;
+        if(dateFin.value && dateFin.value < this.value){ dateFin.value = this.value; }
+    });
+
+    dateFin.addEventListener("change", function() {
+        if(dateDebut.value && this.value < dateDebut.value){ this.value = dateDebut.value; }
+    });
+</script>
+{% endblock %}

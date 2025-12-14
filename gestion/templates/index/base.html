@@ -1,0 +1,245 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>{% block title %}{% endblock %}</title>
+
+    <!-- Bootstrap -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+
+    <!-- Police moderne -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        body {
+            margin: 0;
+            font-family: "Inter", sans-serif;
+            background: #F5F7FA;
+            display: flex;
+        }
+
+        a {
+            text-decoration: none;
+            color: inherit;
+        }
+
+        /* SIDEBAR */
+        .sidebar {
+            width: 250px;
+            background: #fff;
+            height: 100vh;
+            padding: 25px 20px;
+            box-shadow: 2px 0 12px rgba(0,0,0,0.06);
+            position: fixed;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .logo {
+            font-size: 20px;
+            font-weight: 800;
+            color: #1D9A6C;
+            margin-bottom: 28px;
+            display: flex;
+            align-items: center;
+        }
+
+        .logo img {
+            width: 32px;
+            height: 32px;
+            margin-right: 8px;
+        }
+
+        .menu { list-style: none; padding: 0; margin: 0; }
+        .menu li { margin: 14px 0; }
+
+        .menu a {
+            padding: 12px 15px;
+            display: flex;
+            align-items: center;
+            border-radius: 12px;
+            font-weight: 500;
+            color: #333;
+            transition: all 0.3s ease;
+            font-size: 15px;
+        }
+
+        .menu a i {
+            width: 22px;
+        }
+
+        .menu a:hover,
+        .menu a.active {
+            background: #E6F4EE;
+            color: #1D9A6C !important;
+        }
+
+        /* CONTENT */
+        .content {
+            margin-left: 250px;
+            width: calc(100% - 250px);
+            padding: 25px 30px;
+            padding-top: 80px;
+        }
+
+        /* TOPBAR */
+        .topbar {
+            background: #157347;
+            height: 65px;
+            position: fixed;
+            left: 250px;
+            top: 0;
+            width: calc(100% - 250px);
+            z-index: 10;
+            padding: 0 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+        }
+
+        .topbar-logo img {
+            width: 40px;
+            height: 40px;
+            margin-right: 8px;
+        }
+
+        .username {
+            color: #fff;
+            font-weight: 600;
+            margin-right: 10px;
+        }
+
+        .logout-btn {
+            font-weight: 600;
+            padding: 6px 16px;
+            border-radius: 6px;
+        }
+
+        /* Badges */
+        .badge {
+            font-size: 13px;
+            font-weight: 600;
+            padding: 3px 7px;
+        }
+
+        @media (max-width: 768px) {
+            .content { padding-top: 100px; }
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- SIDEBAR -->
+    <nav class="sidebar">
+        <div>
+            <div class="logo">
+                <img src="{% static 'images/cityprop_logo.png' %}" alt="Logo Cityprop">
+                CITYPROP
+            </div>
+
+            <ul class="menu">
+                <li>
+                    <a href="{% url 'dashboard' %}" class="{% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">
+                        <i class="fa-solid fa-chart-line me-2"></i>Dashboard
+                    </a>
+                </li>
+                <li>
+                    <a href="{% url 'nouvelle_commande' %}" class="{% if request.resolver_match.url_name == 'nouvelle_commande' %}active{% endif %}">
+                        <i class="fa-solid fa-plus me-2"></i>Créer une commande
+                    </a>
+                </li>
+                <li>
+                    <a href="{% url 'liste_fiches' %}" class="{% if request.resolver_match.url_name == 'liste_fiches' %}active{% endif %}">
+                        <i class="fa-solid fa-list-ul me-2"></i>Listes Commandes
+                    </a>
+                </li>
+                <li>
+                    <a href="{% url 'alertes_fidelisation' %}">
+                        <i class="fa-solid fa-star me-2"></i>Fidélisation
+                        {% if alertes_city|add:alertes_clima > 0 %}
+                            <span class="badge bg-danger ms-2">{{ alertes_city|add:alertes_clima }}</span>
+                        {% endif %}
+                    </a>
+                </li>
+                <li>
+                    <a href="{% url 'alertes_tapis_retard' %}">
+                        <i class="fa-solid fa-triangle-exclamation me-2"></i>Alertes Tapis
+                        {% if alertes_tapis > 0 %}
+                            <span class="badge bg-danger ms-2">{{ alertes_tapis }}</span>
+                        {% endif %}
+                    </a>
+                </li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- TOPBAR -->
+    <nav class="topbar">
+        <div class="topbar-logo">
+            <img src="{% static 'images/cityprop_logo.png' %}" alt="Logo Cityprop">
+            <span style="color:#fff; font-weight:700; font-size: 18px;">CITYPROP</span>
+        </div>
+
+        <div class="d-flex align-items-center">
+            <span class="username"><i class="fa-solid fa-user me-1"></i>{{ request.user.username }}</span>
+            <img src="https://ui-avatars.com/api/?name={{ request.user.username }}&background=ffffff&color=157347&rounded=true"
+                 class="rounded-circle"
+                 width="38" height="38">
+            <a href="{% url 'logout' %}" class="btn btn-danger logout-btn ms-3">
+                <i class="fa-solid fa-right-from-bracket me-1"></i>Déconnexion
+            </a>
+        </div>
+    </nav>
+
+    <!-- MESSAGES -->
+    {% if messages %}
+    <div id="global-message-container"
+         style="position: fixed; top: 80px; left: 50%; transform: translateX(-50%);
+                z-index: 9999; display: flex; flex-direction: column; gap: 10px;
+                width: 80%; max-width: 500px; text-align: center;">
+        {% for message in messages %}
+        <div class="auto-message {{ message.tags }}"
+             style="padding: 14px 20px; border-radius: 8px; color: white; font-weight: 600;
+                    box-shadow: 0 4px 15px rgba(0,0,0,0.15); opacity: 1; transition: opacity 0.5s ease;
+                    font-size: 15px;">
+            {% if message.tags == 'success' %}<i class="fa-solid fa-circle-check me-1"></i>
+            {% elif message.tags == 'error' %}<i class="fa-solid fa-circle-xmark me-1"></i>
+            {% elif message.tags == 'warning' %}<i class="fa-solid fa-triangle-exclamation me-1"></i>
+            {% elif message.tags == 'info' %}<i class="fa-solid fa-info-circle me-1"></i>
+            {% endif %}
+            {{ message }}
+        </div>
+        {% endfor %}
+    </div>
+
+    <script>
+        document.querySelectorAll(".auto-message").forEach(el => {
+            if (el.classList.contains("success")) el.style.background = "#28a745";
+            if (el.classList.contains("error")) el.style.background = "#dc3545";
+            if (el.classList.contains("warning")) { el.style.background = "#ffc107"; el.style.color = "#333"; }
+            if (el.classList.contains("info")) el.style.background = "#17a2b8";
+        });
+
+        setTimeout(() => {
+            document.querySelectorAll(".auto-message").forEach(el => {
+                el.style.opacity = "0";
+                setTimeout(() => el.remove(), 600);
+            });
+        }, 4000);
+    </script>
+    {% endif %}
+
+    <!-- CONTENU -->
+    <main class="content">
+        {% block content %}{% endblock %}
+    </main>
+
+</body>
+</html>

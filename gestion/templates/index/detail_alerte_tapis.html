@@ -1,0 +1,103 @@
+{% extends "base.html" %}
+{% block title %}Détails Alerte Tapis{% endblock %}
+
+{% block content %}
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css" rel="stylesheet">
+
+<div class="container mt-4">
+    <h2 class="mb-4">🚨 Détails - TAPIS : {{ tapis.commande.nom_client }}</h2>
+
+    <!-- Infos client -->
+    <div class="card mb-3 shadow-sm border-0">
+        <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+            <span><i class="fas fa-user"></i> Infos Client</span>
+            <a href="{% url 'detail_fiche' tapis.commande.id %}" class="btn btn-light btn-sm"><i class="fas fa-link"></i> Voir commande</a>
+        </div>
+        <div class="card-body p-2 small">
+            <p class="mb-1"><i class="fas fa-user-circle"></i> <strong>Nom :</strong> {{ tapis.commande.nom_client }}</p>
+            <p class="mb-1"><i class="fas fa-phone"></i> <strong>Numéro :</strong> {{ tapis.commande.numero_client }}</p>
+            <p class="mb-1"><i class="fas fa-map-marker-alt"></i> <strong>Localisation :</strong> {{ tapis.commande.localisation_client }}</p>
+            <p class="mb-1"><i class="fas fa-calendar-alt"></i> <strong>Date Ramassage :</strong> {{ tapis.date_ramassage|date:"d/m/Y" }}</p>
+            <p class="mb-1"><i class="fas fa-th-large"></i> <strong>Nombre de tapis :</strong> {{ tapis.nombre_tapis }}</p>
+            <p class="mb-1"><i class="fas fa-info-circle"></i> <strong>Statut :</strong>
+                <span class="badge
+                    {% if tapis.statut == 'NON_RESPECTE' %}bg-danger
+                    {% elif tapis.statut == 'PRET' %}bg-warning text-dark
+                    {% elif tapis.statut == 'CLIENT_INDISPO' %}bg-info text-dark
+                    {% elif tapis.statut == 'LIVRE-satisfait' %}bg-success
+                    {% elif tapis.statut == 'LIVRE-insatisfait' %}bg-danger
+                    {% else %}bg-secondary{% endif %}">
+                    {{ tapis.get_statut_display }}
+                </span>
+            </p>
+        </div>
+    </div>
+
+    <!-- Formulaire mise à jour -->
+    <div class="card mb-3 shadow-sm border-0">
+        <div class="card-header bg-success text-white"><i class="fas fa-edit"></i> Résoudre l'alerte / Ajouter un commentaire</div>
+        <div class="card-body p-2 small">
+            <form method="POST">
+                {% csrf_token %}
+                <div class="mb-2">
+                    <label for="statut" class="form-label"><i class="fas fa-tasks"></i> Modifier le statut</label>
+                    <select name="statut" id="statut" class="form-select form-select-sm">
+                        <option value="NON_RESPECTE" {% if tapis.statut == 'NON_RESPECTE' %}selected{% endif %}>Délai non respecté</option>
+                        <option value="PRET" {% if tapis.statut == 'PRET' %}selected{% endif %}>En attente</option>
+                        <option value="CLIENT_INDISPO" {% if tapis.statut == 'CLIENT_INDISPO' %}selected{% endif %}>Tapis prêt - Client indisponible</option>
+                        <option value="LIVRE-satisfait" {% if tapis.statut == 'LIVRE-satisfait' %}selected{% endif %}>Livré - Client satisfait</option>
+                        <option value="LIVRE-insatisfait" {% if tapis.statut == 'LIVRE-insatisfait' %}selected{% endif %}>Livré - Client insatisfait</option>
+                    </select>
+                </div>
+
+                <div class="mb-2">
+                    <label for="commentaire" class="form-label"><i class="fas fa-comment"></i> Ajouter un commentaire</label>
+                    <textarea name="commentaire" id="commentaire" class="form-control form-control-sm" rows="3"></textarea>
+                </div>
+
+                <button type="submit" class="btn btn-success btn-sm"><i class="fas fa-save"></i> Enregistrer</button>
+                <a href="{% url 'alertes_tapis_retard' %}" class="btn btn-secondary btn-sm"><i class="fas fa-arrow-left"></i> Retour aux alertes</a>
+            </form>
+        </div>
+    </div>
+
+    <!-- Historique des commentaires -->
+    <div class="card shadow-sm border-0">
+        <div class="card-header bg-info text-white"><i class="fas fa-history"></i> Historique des commentaires</div>
+        <ul class="list-group list-group-flush small">
+            {% for note in commentaires %}
+                <li class="list-group-item d-flex justify-content-between align-items-start" style="transition: 0.2s;">
+                    <div>
+                        <strong>{{ note.date|date:"d/m/Y H:i" }} :</strong> {{ note.texte }}
+                    </div>
+                    <span class="badge bg-secondary">
+                        {% if note.auteur %}
+                            {{ note.auteur.username }}
+                        {% else %}
+                            Système
+                        {% endif %}
+                    </span>
+                </li>
+            {% empty %}
+                <li class="list-group-item text-muted">Aucun commentaire enregistré.</li>
+            {% endfor %}
+        </ul>
+    </div>
+</div>
+
+<!-- Animations JS -->
+<script>
+document.querySelectorAll(".list-group-item").forEach(item => {
+    item.addEventListener("mouseenter", () => {
+        item.style.backgroundColor = "#E6F4EE";
+        item.style.transform = "scale(1.02)";
+        item.style.transition = "0.2s";
+    });
+    item.addEventListener("mouseleave", () => {
+        item.style.backgroundColor = "";
+        item.style.transform = "scale(1)";
+    });
+});
+</script>
+
+{% endblock %}

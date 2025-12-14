@@ -1,0 +1,175 @@
+{% extends "base.html" %}
+{% block title %}Fiche Client - {{ commande.nom_client }}{% endblock %}
+
+{% block content %}
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+
+<style>
+body { font-size: 0.9rem; }
+.card { border-radius: 0.5rem; transition: transform 0.25s, box-shadow 0.25s; }
+.card:hover { transform: translateY(-3px); box-shadow: 0 8px 15px rgba(0,0,0,0.15); }
+.form-label { font-weight: 600; }
+input, select, textarea { font-size: 0.85rem; padding: 0.3rem 0.5rem; }
+textarea { min-height: 60px; resize: vertical; }
+.btn i { margin-right: 5px; }
+</style>
+
+<div class="container mt-3">
+
+    <h4 class="mb-4"><i class="fa-solid fa-user me-1"></i>Commande: {{ commande.nom_client }}</h4>
+
+    <div class="row g-3">
+
+        <!-- Colonne gauche: Infos et détails -->
+        <div class="col-lg-6 col-md-12">
+
+            <!-- Infos générales -->
+            <div class="card mb-3">
+                <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                    <i class="fa-solid fa-info-circle me-1"></i>Infos générales
+                    <button class="btn btn-sm btn-light" data-bs-toggle="collapse" data-bs-target="#infosGen">🔽</button>
+                </div>
+                <div class="card-body collapse show" id="infosGen">
+                    <div class="row g-1">
+                        <div class="col-6"><strong>Nom:</strong> {{ commande.nom_client }}</div>
+                        <div class="col-6"><strong>Numéro:</strong> {{ commande.numero_client }}</div>
+                        <div class="col-12"><strong>Localisation:</strong> {{ commande.localisation_client }}</div>
+                        <div class="col-12"><strong>Type:</strong>
+                            {% if commande.type_commande == 'CITYPROP' %}
+                                <span class="badge bg-success">Cityprop</span>
+                            {% elif commande.type_commande == 'CLIMATISEUR' %}
+                                <span class="badge bg-info">Climatiseur</span>
+                            {% else %}
+                                <span class="badge bg-warning text-dark">Tapisprop</span>
+                            {% endif %}
+                        </div>
+                        <div class="col-12"><strong>Date création:</strong> {{ commande.date_creation|date:"d/m/Y H:i" }}</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Détails -->
+            <div class="card">
+                <div class="card-header bg-secondary text-white d-flex justify-content-between align-items-center">
+                    <i class="fa-solid fa-list-ul me-1"></i>Détails
+                    <button class="btn btn-sm btn-light" data-bs-toggle="collapse" data-bs-target="#detailsCard">🔽</button>
+                </div>
+                <div class="card-body collapse show" id="detailsCard">
+                    {% if commande.type_commande in 'CITYPROP,CLIMATISEUR' %}
+                        <p><strong>Intervention:</strong> {{ cityclima.date_intervention|default:"-" }}
+                           <strong>Satisfaction:</strong>
+                           {% if cityclima %}
+                               {% if cityclima.satisfaction == 'OK' %}<span class="badge bg-success">OK</span>
+                               {% elif cityclima.satisfaction == 'KO_RET' %}<span class="badge bg-warning text-dark">KO - Retouche</span>
+                               {% elif cityclima.satisfaction == 'KO_REFUS' %}<span class="badge bg-danger">KO - Refus</span>
+                               {% else %}<span class="badge bg-secondary">Non défini</span>{% endif %}
+                           {% else %}
+                               <span class="badge bg-secondary">Non défini</span>
+                           {% endif %}
+                        </p>
+                    {% elif commande.type_commande == 'TAPISPROP' %}
+                        <p><strong>Ramassage:</strong> {{ tapis.date_ramassage|default:"-" }} 
+                           <strong>Livraison:</strong> {{ tapis.date_livraison|default:"-" }}</p>
+                        <p><strong>Nb Tapis:</strong> {{ tapis.nombre_tapis|default:"-" }} 
+                           <strong>Coût:</strong> {{ tapis.cout|default:"-" }}</p>
+                        <p><strong>Statut:</strong> 
+                            <span class="badge
+                                {% if tapis.statut == 'NON_RESPECTE' %}bg-danger
+                                {% elif tapis.statut == 'PRET' %}bg-warning text-dark
+                                {% elif tapis.statut == 'CLIENT_INDISPO' %}bg-info text-dark
+                                {% elif tapis.statut == 'LIVRE-satisfait' %}bg-success
+                                {% elif tapis.statut == 'LIVRE-insatisfait' %}bg-danger
+                                {% else %}bg-secondary
+                                {% endif %}">{{ tapis.get_statut_display }}</span>
+                        </p>
+                        <p><strong>Commentaire:</strong> {{ tapis.commentaire|default:"-" }}</p>
+                    {% endif %}
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Colonne droite: Formulaire compact -->
+        <div class="col-lg-6 col-md-12">
+            <div class="card">
+                <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
+                    <i class="fa-solid fa-pen-to-square me-1"></i>Modifier la commande
+                    <button class="btn btn-sm btn-light" data-bs-toggle="collapse" data-bs-target="#formCard">🔽</button>
+                </div>
+                <div class="card-body collapse show" id="formCard">
+                    <form method="POST" class="row g-2">
+                        {% csrf_token %}
+                        <div class="col-md-6"><label class="form-label"><i class="fa-solid fa-user me-1"></i>Nom</label>
+                            <input type="text" name="nom_client" class="form-control" value="{{ commande.nom_client }}">
+                        </div>
+                        <div class="col-md-6"><label class="form-label"><i class="fa-solid fa-phone me-1"></i>Numéro</label>
+                            <input type="text" name="numero_client" class="form-control" value="{{ commande.numero_client }}">
+                        </div>
+                        <div class="col-md-12"><label class="form-label"><i class="fa-solid fa-map-marker-alt me-1"></i>Localisation</label>
+                            <input type="text" name="localisation_client" class="form-control" value="{{ commande.localisation_client }}">
+                        </div>
+                        <div class="col-md-12"><label class="form-label"><i class="fa-solid fa-list-check me-1"></i>Type commande</label>
+                            <select name="type_commande" class="form-select">
+                                <option value="CITYPROP" {% if commande.type_commande == "CITYPROP" %}selected{% endif %}>Cityprop</option>
+                                <option value="CLIMATISEUR" {% if commande.type_commande == "CLIMATISEUR" %}selected{% endif %}>Climatiseur</option>
+                                <option value="TAPISPROP" {% if commande.type_commande == "TAPISPROP" %}selected{% endif %}>Tapisprop</option>
+                            </select>
+                        </div>
+
+                        {% if commande.type_commande in 'CITYPROP,CLIMATISEUR' %}
+                            <div class="col-md-6"><label class="form-label"><i class="fa-solid fa-calendar-days me-1"></i>Date intervention</label>
+                                <input type="date" name="date_intervention" class="form-control" value="{{ cityclima.date_intervention|default_if_none:'' }}">
+                            </div>
+                            <div class="col-md-6"><label class="form-label"><i class="fa-solid fa-smile me-1"></i>Satisfaction</label>
+                                <select name="satisfaction" class="form-select">
+                                    <option value="">-- Choisir --</option>
+                                    <option value="OK" {% if cityclima.satisfaction == 'OK' %}selected{% endif %}>OK</option>
+                                    <option value="KO_RET" {% if cityclima.satisfaction == 'KO_RET' %}selected{% endif %}>KO - Retouche</option>
+                                    <option value="KO_REFUS" {% if cityclima.satisfaction == 'KO_REFUS' %}selected{% endif %}>KO - Refus</option>
+                                </select>
+                            </div>
+                        {% elif commande.type_commande == 'TAPISPROP' %}
+                            <div class="col-md-4"><label class="form-label"><i class="fa-solid fa-truck me-1"></i>Ramassage</label>
+                                <input type="date" name="date_ramassage" class="form-control" value="{{ tapis.date_ramassage|default_if_none:'' }}">
+                            </div>
+                            <div class="col-md-2"><label class="form-label"><i class="fa-solid fa-boxes-stacked me-1"></i>Nb Tapis</label>
+                                <input type="number" name="nombre_tapis" class="form-control" value="{{ tapis.nombre_tapis|default_if_none:'' }}">
+                            </div>
+                            <div class="col-md-2"><label class="form-label"><i class="fa-solid fa-coins me-1"></i>Coût</label>
+                                <input type="number" name="cout" class="form-control" value="{{ tapis.cout|default_if_none:'' }}">
+                            </div>
+                            <div class="col-md-4"><label class="form-label"><i class="fa-solid fa-info me-1"></i>Statut</label>
+                                <select name="statut" class="form-select">
+                                    <option value="NON_RESPECTE" {% if tapis.statut == 'NON_RESPECTE' %}selected{% endif %}>Délai non respecté</option>
+                                    <option value="PRET" {% if tapis.statut == 'PRET' %}selected{% endif %}>En attente</option>
+                                    <option value="CLIENT_INDISPO" {% if tapis.statut == 'CLIENT_INDISPO' %}selected{% endif %}>Client indisponible</option>
+                                    <option value="LIVRE-satisfait" {% if tapis.statut == 'LIVRE-satisfait' %}selected{% endif %}>Livré satisfait</option>
+                                    <option value="LIVRE-insatisfait" {% if tapis.statut == 'LIVRE-insatisfait' %}selected{% endif %}>Livré insatisfait</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4"><label class="form-label"><i class="fa-solid fa-calendar-check me-1"></i>Fin traitement</label>
+                                <input type="date" name="date_traitement" class="form-control" value="{{ tapis.date_traitement|default_if_none:'' }}">
+                            </div>
+                            <div class="col-md-4"><label class="form-label"><i class="fa-solid fa-truck-fast me-1"></i>Livraison</label>
+                                <input type="date" name="date_livraison" class="form-control" value="{{ tapis.date_livraison|default_if_none:'' }}">
+                            </div>
+                            <div class="col-12"><label class="form-label"><i class="fa-solid fa-comment me-1"></i>Commentaire</label>
+                                <textarea name="commentaire" class="form-control">{{ tapis.commentaire|default_if_none:'' }}</textarea>
+                            </div>
+                        {% endif %}
+
+                        <div class="col-12 mt-2 d-flex justify-content-between">
+                            <button type="submit" class="btn btn-success"><i class="fa-solid fa-floppy-disk me-1"></i>Mettre à jour</button>
+                            <a href="{% url 'liste_fiches' %}" class="btn btn-secondary"><i class="fa-solid fa-arrow-left me-1"></i>Retour</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+{% endblock %}

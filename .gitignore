@@ -1,0 +1,13 @@
+# Environnements virtuels
+venv3/
+*.pyc
+__pycache__/
+
+# Fichiers de logs
+*.log
+
+# Fichiers SQLite (si tu utilises SQLite)
+db.sqlite3
+
+# Dossiers système
+.DS_Store

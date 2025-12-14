@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+{% block title %}Alertes fidélisation{% endblock %}
+
+{% block content %}
+<div class="container mt-3">
+    <h4 class="mb-3">Alertes fidélisation</h4>
+
+    <table class="table table-striped table-bordered table-hover table-sm align-middle">
+        <thead class="table-dark text-center small">
+            <tr>
+                <th>Client</th>
+                <th>Numéro</th>
+                <th>Type</th>
+                <th>Date intervention / livraison</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+        <tbody class="text-center small">
+
+            {% for detail in city_alertes %}
+            <tr>
+                <td>{{ detail.commande.nom_client }}</td>
+                <td>{{ detail.commande.numero_client }}</td>
+                <td>Cityprop</td>
+                <td>{{ detail.date_intervention|default:"-" }}</td>
+                <td class="d-flex justify-content-center gap-1">
+                    <a href="{% url 'detail_fidelisation' detail.id %}" class="btn btn-sm btn-primary">
+                        <i class="fa-solid fa-comment me-1"></i>Commentaire
+                    </a>
+                    <a href="{% url 'detail_fiche' detail.commande.id %}" class="btn btn-sm btn-info">
+                        <i class="fa-solid fa-eye me-1"></i>Détails Commande
+                    </a>
+                </td>
+            </tr>
+            {% endfor %}
+
+            {% for detail in clima_alertes %}
+            <tr>
+                <td>{{ detail.commande.nom_client }}</td>
+                <td>{{ detail.commande.numero_client }}</td>
+                <td>Climatiseur</td>
+                <td>{{ detail.date_intervention|default:"-" }}</td>
+                <td class="d-flex justify-content-center gap-1">
+                    <a href="{% url 'detail_fidelisation' detail.id %}" class="btn btn-sm btn-primary">
+                        <i class="fa-solid fa-comment me-1"></i>Commentaire
+                    </a>
+                    <a href="{% url 'detail_fiche' detail.commande.id %}" class="btn btn-sm btn-info">
+                        <i class="fa-solid fa-eye me-1"></i>Détails commande
+                    </a>
+                </td>
+            </tr>
+            {% endfor %}
+
+            {% for detail in tapis_alertes %}
+            <tr>
+                <td>{{ detail.commande.nom_client }}</td>
+                <td>{{ detail.commande.numero_client }}</td>
+                <td>Tapisprop</td>
+                <td>{{ detail.date_livraison|default:"-" }}</td>
+                <td class="d-flex justify-content-center gap-1">
+                    <a href="{% url 'detail_fidelisation' detail.id %}" class="btn btn-sm btn-primary">
+                        <i class="fa-solid fa-comment me-1"></i>Commentaire
+                    </a>
+                    <a href="{% url 'detail_fiche' detail.commande.id %}" class="btn btn-sm btn-info">
+                        <i class="fa-solid fa-eye me-1"></i>Détails 
+                    </a>
+                </td>
+            </tr>
+            {% endfor %}
+
+        </tbody>
+    </table>
+</div>
+{% endblock %}
