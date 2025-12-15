@@ -120,13 +120,21 @@ USE_TZ = True
 # --------------------------------------------------
 # STATIC & MEDIA FILES (PRODUCTION READY)
 # --------------------------------------------------
+# --------------------------------------------------
+# STATIC FILES (Render compatible)
+# --------------------------------------------------
+
 STATIC_URL = '/static/'
+
+# dossier source (en local)
+STATICFILES_DIRS = [
+    os.path.join(BASE_DIR, 'static'),
+]
+
+# dossier destination (collectstatic)
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 
-STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
-
-MEDIA_URL = '/media/'
-MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+STATICFILES_STORAGE = "django.contrib.staticfiles.storage.StaticFilesStorage"
 
 # --------------------------------------------------
 # DEFAULTS
