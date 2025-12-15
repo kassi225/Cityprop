@@ -15,20 +15,14 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # --------------------------------------------------
 # SECURITY
 # --------------------------------------------------
-
-# ⚠️ La vraie clé sera définie sur Render (Environment Variable)
-SECRET_KEY = os.environ.get(
-    "SECRET_KEY",
-    "dev-secret-key-change-me"
-)
-
-# DEBUG : True en local / False sur Render
+# ⚠️ La clé réelle et le debug seront définis via Render Environment Variables
+SECRET_KEY = os.environ.get("SECRET_KEY", "dev-secret-key-change-me")
 DEBUG = os.environ.get("DEBUG", "False") == "True"
 
-# Hosts autorisés (local + Render)
+# Hosts autorisés
 ALLOWED_HOSTS = os.environ.get(
     "ALLOWED_HOSTS",
-    "127.0.0.1,localhost"
+    "127.0.0.1,localhost,cityprop.onrender.com"
 ).split(",")
 
 # --------------------------------------------------
@@ -92,11 +86,9 @@ WSGI_APPLICATION = 'config.wsgi.application'
 # --------------------------------------------------
 # DATABASE
 # --------------------------------------------------
-# ⚠️ SQLite OK en local
-# ➜ Sur Render on passera à PostgreSQL plus tard
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
+        'ENGINE': 'django.db.backends.sqlite3',  # OK en local
         'NAME': BASE_DIR / 'db.sqlite3',
     }
 }
@@ -123,11 +115,7 @@ USE_TZ = True
 # STATIC FILES
 # --------------------------------------------------
 STATIC_URL = '/static/'
-
-STATICFILES_DIRS = [
-    os.path.join(BASE_DIR, 'static'),
-]
-
+STATICFILES_DIRS = [os.path.join(BASE_DIR, 'static')]
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 
 # --------------------------------------------------
