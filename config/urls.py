@@ -3,21 +3,18 @@ from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
 from django.shortcuts import redirect
-from django.contrib.staticfiles.urls import staticfiles_urlpatterns
 
 
-# Redirection automatique vers le login
 def redirect_to_login(request):
     return redirect('login')
 
 urlpatterns = [
-    path('', redirect_to_login),  #racine redirige vers /login/
+    path('', redirect_to_login),
     path('admin/', admin.site.urls),
-    path('', include('gestion.urls')),  # inclut toutes les urls de ton app "gestion"
+    path('', include('gestion.urls')),
 ]
 
-# Gestion des fichiers media (avatars, uploads...)
+# En local uniquement
 if settings.DEBUG:
+    urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
-    
-urlpatterns += staticfiles_urlpatterns()

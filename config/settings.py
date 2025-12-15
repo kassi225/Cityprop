@@ -18,8 +18,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # --------------------------------------------------
 SECRET_KEY = config('SECRET_KEY')
 
-#DEBUG = os.environ.get("DEBUG", "False") == "True"
-DEBUG = True
+DEBUG = os.environ.get("DEBUG", "False") == "True"
 
 ALLOWED_HOSTS = os.environ.get(
     "ALLOWED_HOSTS",
@@ -52,6 +51,8 @@ CRISPY_TEMPLATE_PACK = "bootstrap5"
 # --------------------------------------------------
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
+
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -89,12 +90,14 @@ WSGI_APPLICATION = 'config.wsgi.application'
 # --------------------------------------------------
 DATABASES = {
     'default': dj_database_url.parse(
-        config('DATABASE_URL', default=f"sqlite:///{BASE_DIR / 'db.sqlite3'}"),
+        config(
+            'DATABASE_URL',
+            default=f"sqlite:///{BASE_DIR / 'db.sqlite3'}"
+        ),
         conn_max_age=600,
-        ssl_require=not config('DEBUG', default=False, cast=bool)
+        ssl_require=not DEBUG
     )
 }
-
 
 # --------------------------------------------------
 # PASSWORD VALIDATION
@@ -115,19 +118,15 @@ USE_I18N = True
 USE_TZ = True
 
 # --------------------------------------------------
-# STATIC FILES (Render compatible)
+# STATIC & MEDIA FILES (PRODUCTION READY)
 # --------------------------------------------------
 STATIC_URL = '/static/'
-
-# dossier source unique
-STATICFILES_DIRS = [
-    os.path.join(BASE_DIR, 'static'),
-]
-
-# dossier destination (collectstatic)
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 
-STATICFILES_STORAGE = "django.contrib.staticfiles.storage.StaticFilesStorage"
+STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
+
+MEDIA_URL = '/media/'
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 # --------------------------------------------------
 # DEFAULTS
@@ -139,6 +138,7 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 # --------------------------------------------------
 LOGIN_URL = 'login'
 LOGIN_REDIRECT_URL = 'dashboard'
+
 SESSION_COOKIE_AGE = 86400  # 24h
 SESSION_COOKIE_SECURE = not DEBUG
 CSRF_COOKIE_SECURE = not DEBUG
