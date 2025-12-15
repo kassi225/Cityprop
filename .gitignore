@@ -1,13 +1,27 @@
 # Environnements virtuels
 venv3/
+
+# Python
 *.pyc
 __pycache__/
 
-# Fichiers de logs
+# Logs
 *.log
 
-# Fichiers SQLite (si tu utilises SQLite)
+# Bases de données
 db.sqlite3
+*.sqlite3
 
-# Dossiers système
+# Variables d'environnement
+.env
+
+# Django
+staticfiles/
+media/
+
+# IDE
+.vscode/
+.idea/
+
+# Système
 .DS_Store
