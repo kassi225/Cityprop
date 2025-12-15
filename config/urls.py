@@ -3,6 +3,8 @@ from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
 from django.shortcuts import redirect
+from django.contrib.staticfiles.urls import staticfiles_urlpatterns
+
 
 # Redirection automatique vers le login
 def redirect_to_login(request):
@@ -17,3 +19,5 @@ urlpatterns = [
 # Gestion des fichiers media (avatars, uploads...)
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+    
+urlpatterns += staticfiles_urlpatterns()
