@@ -136,6 +136,9 @@ body {
     font-weight: bold;
     font-size: 9.5pt;
 }
+.logo {
+    width: 80px;
+}
 </style>
 </head>
 
@@ -146,7 +149,7 @@ body {
 <table class="header-table">
 <tr>
 <td>
-    <img src="{{ request.scheme }}://{{ request.get_host }}{% static 'images/cityprop_logo.png' %}" class="logo"><br>
+   <img src="{{ 'images/cityprop_logo.png'|pdf_static }}" class="logo"><br>
     <span class="company-name">CITY PROP</span><br>
     <span class="company-tagline">Nettoyage industriel & assainissement</span>
 </td>
@@ -182,7 +185,7 @@ body {
 <tr>
     <th>Désignation</th>
     <th>Qté</th>
-    <th>PU (FCFA)</th>
+    <th>Prix unitaire (FCFA)</th>
     <th>Total (FCFA)</th>
 </tr>
 </thead>
