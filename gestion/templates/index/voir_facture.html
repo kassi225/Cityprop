@@ -1,0 +1,132 @@
+{% load static %}
+{% load humanize %} 
+
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>{{ facture.type_document }} N°{{ facture.numero_document }}</title>
+    
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" integrity="sha384-JcKb8q3iqJ61gNV9KGb8thSsNjpSL0n8PARn9HuZOnIxN0hoP+VmmDGMN5t9UJ0Z" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" integrity="sha512-1ycn6IcaQQ403npU6L4b8q+WvM5kX/dFf/8a/C5x4z5s6+Wv+D7Fh2s6z8v0a9b8Q00/QoQ8xG9Q" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    
+    <style>
+        /* Conservez vos styles existants */
+        body { font-family: Arial, sans-serif; padding: 20px; background-color: #f8f9fa; }
+        .invoice-box { max-width: 900px; margin: auto; border: 1px solid #eee; background-color: white; box-shadow: 0 0 10px rgba(0, 0, 0, 0.15); font-size: 16px; line-height: 24px; padding: 30px; }
+        .logo-container { display: flex; align-items: center; }
+        .logo-container img { max-width: 50px; margin-right: 10px; }
+        .client-info-box { float: right; border: 1px solid #000; padding: 10px; width: 300px; line-height: 1.5; font-size: 10pt; }
+        .client-info-box p { margin: 0; font-weight: bold; }
+        .clearfix::after { content: ""; clear: both; display: table; }
+        
+        .table-box { border-collapse: collapse; width: 100%; margin-top: 20px; }
+        .table-box th, .table-box td { border: 1px solid #000; padding: 8px; text-align: center; }
+        .table-box th { background-color: #f2f2f2; }
+        .total-row { font-weight: bold; }
+        .seal-box { margin-top: 50px; text-align: right; }
+    </style>
+
+</head>
+<body>
+
+<div class="invoice-box">
+    
+    <div class="text-right mb-4">
+        <a href="{% url 'telecharger_devis_pdf' facture.id %}" class="btn btn-sm btn-outline-primary" title="Télécharger la facture au format PDF">
+            <i class="fas fa-file-pdf"></i> Télécharger le {{ facture.type_document }}
+        </a>
+        <a href="{% url 'detail_fiche' fiche_id=facture.commande.id %}" class="btn btn-sm btn-outline-secondary ml-2">
+            <i class="fas fa-arrow-left"></i> Retour à la fiche client
+        </a>
+    </div>
+
+    <div class="text-center mb-4">
+        <h4 class="mt-0 font-weight-bold">NETTOYAGE INDUSTREL - ASSAINISSEMENT</h4>
+        <h3 class="mt-0 font-weight-bold">{{ facture.type_document|upper }}</h3>
+    </div>
+
+    <div class="clearfix">
+        <div class="logo-container float-left">
+            <img src="{% static 'images/cityprop_logo.png' %}" alt="Logo Cityprop" class="logo">
+            <h4 class="mb-0">CityProp</h4>
+        </div>
+        
+        <div class="invoice-details">
+            <p class="mb-2 text-right">Abidjan, {{ facture.date_emission|date:"d/m/Y" }}</p>
+            
+            <div class="client-info-box">
+                <p class="mb-1">CLIENT : {{ facture.commande.nom_client|default:"Non spécifié" }}</p>
+                <p class="mb-1">LIEU : {{ facture.commande.localisation_client|default:"Non spécifié" }}</p>
+                <p class="mb-0">TEL : {{ facture.commande.numero_client|default:"Non spécifié" }}</p>
+            </div>
+        </div>
+    </div>
+    
+    <div style="clear: both; margin-top: 20px;"></div>
+
+    <p class="mt-4 font-weight-bold">Objet : {{ facture.objet|default:"Prestation de services" }}</p>
+    
+    <table class="table-box">
+        <thead>
+            <tr>
+                <th style="width: 50%;">Désignation</th>
+                <th style="width: 15%;">Quantité</th>
+                <th style="width: 15%;">Prix unitaire</th>
+                <th style="width: 20%;">Prix Total</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for ligne in facture.lignes.all %}
+            <tr>
+                <td style="text-align: left;">
+                    {{ ligne.designation }}
+                    {% if ligne.note_prix_unitaire %}
+                        <small class="d-block text-muted">({{ ligne.note_prix_unitaire }})</small>
+                    {% endif %}
+                </td>
+                <td class="text-center">{{ ligne.quantite }}</td>
+                <td class="text-right">{{ ligne.prix_unitaire|intcomma|default:"-" }}</td> 
+                <td class="text-right">{{ ligne.prix_total|intcomma|default:"-" }}</td>
+            </tr>
+            {% endfor %}
+            
+            <tr>
+                <td colspan="3" class="text-right font-weight-bold">TOTAL HT / TTC PROVISOIRE</td>
+                <td class="text-right font-weight-bold">{{ facture.total|intcomma }}</td>
+            </tr>
+
+            {% if facture.montant_reduction > 0 %}
+            <tr>
+                <td colspan="3" class="text-right" style="color: #d9534f;">
+                    RÉDUCTION ({{ facture.taux_reduction_pourcentage|floatformat:"2" }}%)
+                </td>
+                <td class="text-right font-weight-bold" style="color: #d9534f;">
+                    - {{ facture.montant_reduction|intcomma }} 
+                </td>
+            </tr>
+            {% endif %}
+
+            <tr class="total-row table-success" style="font-size: 1.1em;">
+                <td colspan="3" class="text-right">MONTANT NET À PAYER</td>
+                <td class="text-right">{{ facture.montant_final_net|intcomma }}</td>
+            </tr>
+        </tbody>
+    </table>
+    <p class="mt-4">
+        Arrêté le présent {{ facture.type_document|lower }} à la somme de : **{{ facture.total_lettres }}**
+    </p>
+
+    <div class="seal-box">
+        <p class="font-weight-bold">LA COMPTABILITE</p>
+        <p class="mt-5">{{ facture.signature|default:"CITY PROP" }}</p>
+    </div>
+
+    <div class="footer-note mt-5 pt-3 border-top text-center text-muted small">
+        CITY PROP, SARL au capital de 1 000 000 FCFA, Cocody / Abatta cite Bnetd<br>
+        Tel : (+225) 0747355400 / 0778176097 | citypropre@gmail.com | RCCM CI - ABJ - 03 - 2022 - B13 - 11314
+    </div>
+    
+</div>
+</body>
+</html>

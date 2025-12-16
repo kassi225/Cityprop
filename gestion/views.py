@@ -1,3 +1,5 @@
+from io import BytesIO
+from django.db import transaction
 from django.shortcuts import render, get_object_or_404, redirect
 from django.utils import timezone
 from django.db.models import Count
@@ -12,6 +14,10 @@ from django.db.models import Q
 from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill, Alignment
 from django.http import HttpResponse
+from .models import Commande, Facture, FactureLigne
+from xhtml2pdf import pisa
+from django.template.loader import get_template
+from num2words import num2words
 
 
 
@@ -31,6 +37,56 @@ def logout_view(request):
     return redirect('login')
 
 
+def voir_facture(request, facture_id):
+    facture = get_object_or_404(Facture, id=facture_id)
+    return render(request, "index/voir_facture.html", {"facture": facture})
+
+# Cette fonction est essentielle pour la conversion PDF
+def render_to_pdf(template_src, context_dict={}):
+    template = get_template(template_src)
+    html  = template.render(context_dict)
+    
+    # Créer un tampon binaire en mémoire (BytesIO)
+    result = BytesIO()
+    
+    # Générer le PDF (en utilisant le template facture_detail.html)
+    pdf = pisa.pisaDocument(BytesIO(html.encode("UTF-8")), result)
+    
+    if not pdf.err:
+        return HttpResponse(result.getvalue(), content_type='application/pdf')
+    # Pour le débogage, vous pouvez retourner le HTML si erreur
+    return HttpResponse('Nous avons rencontré des erreurs lors de la génération du PDF: %s' % html)
+
+
+@login_required
+def telecharger_devis_pdf(request, facture_id):
+    """
+    Génère et télécharge le PDF d'une facture/devis spécifique.
+    """
+    facture = get_object_or_404(Facture, id=facture_id) 
+    
+    # 🔑 CORRECTION CRITIQUE : Ajout de l'objet 'request' au contexte
+    # Ceci permet au template de construire l'URL absolue du logo.
+    context = {
+        'facture': facture,
+        'request': request,  
+    }
+
+    # Nom du fichier pour le téléchargement
+    filename = f'{facture.type_document}_CityProp_{facture.numero_document}.pdf'
+    
+    # Le template pour le PDF est 'facture_telechargement.html'
+    # Assurez-vous que render_to_pdf utilise le moteur de template Django correctement
+    pdf_response = render_to_pdf('index/facture_telechargement.html', context)
+    
+    if pdf_response:
+        # Indique au navigateur de télécharger le fichier (attachment)
+        pdf_response['Content-Disposition'] = f'attachment; filename="{filename}"'
+        return pdf_response
+    
+    return HttpResponse("Impossible de générer le PDF.")
+
+# --- Vues de Facturation (corrigée avec la logique robuste) ---
 
 @login_required
 def dashboard(request):
@@ -225,6 +281,7 @@ def liste_fiches(request):
 def detail_fiche(request, fiche_id):
     commande = get_object_or_404(Commande, id=fiche_id)
     
+    
     # Récupération des détails existants
     cityclima = getattr(commande, 'cityclimadetails', None)
     tapis = getattr(commande, 'tapisdetails', None)
@@ -299,11 +356,102 @@ def detail_fiche(request, fiche_id):
         return redirect('detail_fiche', fiche_id=fiche_id)
 
     context = {
-        'commande': commande,
-        'cityclima': cityclima,
-        'tapis': tapis,
+    'commande': commande,
+    'cityclima': cityclima,
+    'tapis': tapis,
+    'factures': Facture.objects.filter(commande=commande),  # ✅ SAFE
+
     }
     return render(request, 'index/detail_fiche.html', context)
+
+
+@login_required
+def creer_facture(request, fiche_id):
+    """
+    Crée une nouvelle Facture et ses lignes associées à partir du formulaire.
+    """
+    if request.method != 'POST':
+        return redirect('detail_fiche', fiche_id=fiche_id)
+
+    commande = get_object_or_404(Commande, id=fiche_id)
+    
+    try:
+        with transaction.atomic():
+            
+            # 1. Création de la Facture principale
+            facture = Facture.objects.create(
+                commande=commande,
+                type_document=request.POST.get('type_document', 'DEVIS'),
+                objet=request.POST.get('objet', ''),
+                lieu_emission=request.POST.get('lieu_emission', 'Abidjan'),
+                signature=request.POST.get('signature', ''),
+                # Le numero_document est généré dans Facture.save()
+            )
+
+            # 2. Récupération et préparation des lignes
+            designations = request.POST.getlist('designation[]')
+            quantites = request.POST.getlist('quantite[]')
+            prix_unitaires = request.POST.getlist('prix_unitaire[]')
+            notes_prix = request.POST.getlist('note_prix[]')
+            
+            lignes_a_creer = []
+            lignes_valides_trouvees = False
+
+            # Parcourir et valider les lignes
+            for i in range(len(designations)):
+                designation = designations[i].strip()
+                
+                if not designation:
+                    continue
+
+                try:
+                    # Conversion des valeurs numériques
+                    quantite = int(quantites[i]) if quantites[i] else 0
+                    prix_unitaire = int(prix_unitaires[i]) if prix_unitaires[i] else 0
+                    note_prix = notes_prix[i].strip() if i < len(notes_prix) else ''
+                    
+                    if quantite > 0 and prix_unitaire > 0:
+                        lignes_valides_trouvees = True
+                        lignes_a_creer.append(FactureLigne(
+                            facture=facture,
+                            designation=designation,
+                            quantite=quantite,
+                            prix_unitaire=prix_unitaire,
+                            note_prix_unitaire=note_prix
+                        ))
+                    
+                except (ValueError, IndexError):
+                    # Lever une erreur qui sera capturée par le bloc try/except externe
+                    raise ValueError(f"Les valeurs de quantité ou de prix unitaire de la ligne '{designation}' sont incorrectes.")
+
+            # 3. Création en masse des lignes
+            if lignes_a_creer:
+                FactureLigne.objects.bulk_create(lignes_a_creer)
+            else:
+                messages.warning(request, "La facture a été créée sans ligne d'article (au moins une désignation, quantité et prix unitaire non nuls sont requis).")
+
+            messages.success(request, f"{facture.type_document} N°{facture.numero_document} créé avec succès!")
+
+            # Rediriger vers la page d'affichage HTML de la facture
+            return redirect('index/voir_facture', facture_id=facture.id) 
+            
+    except ValueError as e:
+        messages.error(request, f"Erreur lors de la création du document: {e}")
+        return redirect('detail_fiche', fiche_id=fiche_id)
+    except Exception as e:
+        messages.error(request, f"Une erreur inattendue est survenue: {e}")
+        return redirect('detail_fiche', fiche_id=fiche_id)
+
+def detail_facture(request, facture_id):
+    facture = get_object_or_404(Facture, id=facture_id)
+    return render(request, 'index/facture_telecharger.html', {
+        'facture': facture
+    })
+
+def voir_facture(request, facture_id):
+    """Affiche la facture dans une page Web (HTML)."""
+    facture = get_object_or_404(Facture, id=facture_id)
+    return render(request, "index/voir_facture.html", {"facture": facture})
 
 
 @login_required
@@ -605,5 +753,69 @@ def alertes_counts(request):
 
 
 
+@login_required
+def creer_facture(request, fiche_id):
+    # Récupération de l'objet Commande nécessaire quelle que soit la méthode
+    commande = get_object_or_404(Commande, id=fiche_id)
+    
+    if request.method == 'POST':
+        # --- 2. Récupération du champ de réduction (Clé du changement) ---
+        # Récupère la valeur 'taux_reduction_pourcentage' envoyée par le formulaire HTML
+        taux_reduction_str = request.POST.get('taux_reduction_pourcentage', '0.00')
+        try:
+            # Convertit la chaîne en nombre décimal
+            taux_reduction = float(taux_reduction_str)
+        except ValueError:
+            # Sécurité en cas d'erreur de saisie
+            taux_reduction = 0.00
+            
+        # --- 3. Création de l'objet Facture ---
+        facture = Facture.objects.create(
+            commande=commande,
+            type_document=request.POST['type_document'],
+            objet=request.POST['objet'],
+            lieu_emission=request.POST.get('lieu_emission', 'Abidjan'),
+            signature=request.POST.get('signature', 'LA COMPTABILITÉ'),
+            taux_reduction_pourcentage=taux_reduction, # <-- Enregistre le taux paramétrable
+        )
+        
+        # --- 4. Traitement des lignes de prestation ---
+        designations = request.POST.getlist('designation[]')
+        quantites = request.POST.getlist('quantite[]')
+        prix_unitaires = request.POST.getlist('prix_unitaire[]')
+        
+        # Parcourt toutes les lignes envoyées
+        for designation, quantite_str, prix_unitaire_str in zip(designations, quantites, prix_unitaires):
+            # Nettoyage et conversion des entrées (gestion des virgules ou points)
+            try:
+                # Remplace la virgule par un point pour la conversion en float
+                quantite = float(quantite_str.replace(',', '.'))
+                prix_unitaire = float(prix_unitaire_str.replace(',', '.'))
+            except ValueError:
+                continue # Ignore la ligne si les valeurs ne sont pas valides
 
+            # Création de l'objet FactureLigne
+            FactureLigne.objects.create(
+                facture=facture,
+                designation=designation,
+                quantite=quantite,
+                prix_unitaire=prix_unitaire,
+            )
 
+        # --- 5. Calculer et mettre à jour le montant final NET ---
+        # La méthode update_final_amount() utilise total_ht_lignes et taux_reduction_pourcentage
+        # pour calculer montant_final_net.
+        facture.update_final_amount() 
+        facture.save() # Sauvegarde nécessaire pour persister montant_final_net dans la BDD
+
+        # Redirection vers la vue de détail de la facture nouvellement créée
+        return redirect('voir_facture', facture_id=facture.pk) # ASSUREZ-VOUS QUE 'detail_facture' EST LE BON NOM D'URL
+        
+    else:
+        # Si la méthode est GET, affiche le formulaire de création/détail de la commande
+        context = {
+            'commande': commande,
+            # Ajoutez ici d'autres données nécessaires à votre template (ex: listes de services)
+        }
+        # REMPLACEZ 'votre_template_creation_facture.html' par le nom réel de votre template
+        return render(request, 'votre_template_creation_facture.html', context)

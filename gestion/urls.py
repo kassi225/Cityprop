@@ -28,6 +28,25 @@ urlpatterns = [
  
     # Export commande
     path("export-commandes/", views.export_commandes_excel, name="export_commandes_excel"),
+    
+    #facture
+    
+
+    # Détails de la commande
+    path('commande/<int:fiche_id>/', views.detail_fiche, name='detail_fiche'),
+
+    
+
+    # ➕ FACTURE
+    path('facture/creer/<int:fiche_id>/', views.creer_facture, name='creer_facture'),
+    path('facture/<int:facture_id>/', views.voir_facture, name='voir_facture'),
+    path('devis/<int:facture_id>/telecharger/', 
+         views.telecharger_devis_pdf, 
+         name='telecharger_devis_pdf'),
+    path('commande/<int:fiche_id>/creer-facture/', views.creer_facture, name='creer_facture'),
+
+
+
 
 
 

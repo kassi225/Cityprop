@@ -1,175 +1,560 @@
 {% extends "base.html" %}
+{% load static %}
 {% block title %}Fiche Client - {{ commande.nom_client }}{% endblock %}
 
 {% block content %}
-<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
 
 <style>
-body { font-size: 0.9rem; }
-.card { border-radius: 0.5rem; transition: transform 0.25s, box-shadow 0.25s; }
-.card:hover { transform: translateY(-3px); box-shadow: 0 8px 15px rgba(0,0,0,0.15); }
-.form-label { font-weight: 600; }
-input, select, textarea { font-size: 0.85rem; padding: 0.3rem 0.5rem; }
-textarea { min-height: 60px; resize: vertical; }
-.btn i { margin-right: 5px; }
+/* Styles généraux optimisés */
+body { font-size: 0.9rem; background-color: #f4f7f6; }
+.card { border-radius: 0.75rem; transition: all 0.3s; box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
+.card:hover { transform: translateY(-2px); box-shadow: 0 6px 15px rgba(0,0,0,0.12); }
+.card-header { border-bottom: none; border-radius: 0.75rem 0.75rem 0 0 !important; font-weight: 700; padding: 0.75rem 1.25rem; }
+.form-label { font-weight: 600; margin-bottom: 0.25rem; color: #343a40; }
+input, select, textarea { font-size: 0.85rem; padding: 0.5rem 0.75rem; border-radius: 0.5rem; }
+.total-ligne-display, #totalHTFacture, #totalFinalFacture { 
+    font-weight: bold !important; 
+    background-color: #e9ecef !important; /* Gris clair pour les champs calculés */
+    border: 1px solid #ced4da;
+    border-radius: 0.5rem;
+}
+.total-ligne-display { color: #007bff; }
+#totalFinalFacture { color: #28a745; font-size: 1.2rem; }
+
+/* Styles pour les champs spécifiques aux types de commande */
+.commande-specific-fields {
+    border-left: 3px solid #17a2b8; /* Une barre pour distinguer les champs spécifiques */
+    padding-left: 10px;
+    margin-top: 15px;
+}
 </style>
 
-<div class="container mt-3">
+<div class="container mt-4 mb-5">
 
-    <h4 class="mb-4"><i class="fa-solid fa-user me-1"></i>Commande: {{ commande.nom_client }}</h4>
+    <h4 class="mb-4 text-primary"><i class="fa-solid fa-file-invoice me-2"></i>Commande N°{{ commande.id }}: **{{ commande.nom_client }}**</h4>
 
-    <div class="row g-3">
-
-        <!-- Colonne gauche: Infos et détails -->
+    <div class="row g-4">
         <div class="col-lg-6 col-md-12">
-
-            <!-- Infos générales -->
-            <div class="card mb-3">
+            
+            <div class="card mb-4 border-primary">
                 <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
-                    <i class="fa-solid fa-info-circle me-1"></i>Infos générales
-                    <button class="btn btn-sm btn-light" data-bs-toggle="collapse" data-bs-target="#infosGen">🔽</button>
+                    <i class="fa-solid fa-info-circle me-1"></i> Infos client & commande
+                    <button class="btn btn-sm btn-light p-1" type="button" data-bs-toggle="collapse" data-bs-target="#infosGen">
+                        <i class="fa-solid fa-chevron-down fa-fw"></i>
+                    </button>
                 </div>
                 <div class="card-body collapse show" id="infosGen">
-                    <div class="row g-1">
-                        <div class="col-6"><strong>Nom:</strong> {{ commande.nom_client }}</div>
-                        <div class="col-6"><strong>Numéro:</strong> {{ commande.numero_client }}</div>
-                        <div class="col-12"><strong>Localisation:</strong> {{ commande.localisation_client }}</div>
-                        <div class="col-12"><strong>Type:</strong>
+                    <div class="row g-2 small">
+                        <div class="col-6"><strong><i class="fa-solid fa-user me-1"></i> Nom:</strong> {{ commande.nom_client }}</div>
+                        <div class="col-6"><strong><i class="fa-solid fa-phone me-1"></i> Numéro:</strong> {{ commande.numero_client }}</div>
+                        <div class="col-12"><strong><i class="fa-solid fa-map-marker-alt me-1"></i> Localisation:</strong> {{ commande.localisation_client }}</div>
+                        <div class="col-6">
+                            <strong><i class="fa-solid fa-list-check me-1"></i> Type:</strong>
                             {% if commande.type_commande == 'CITYPROP' %}
-                                <span class="badge bg-success">Cityprop</span>
+                                <span class="badge bg-success"><i class="fa-solid fa-broom"></i> Cityprop</span>
                             {% elif commande.type_commande == 'CLIMATISEUR' %}
-                                <span class="badge bg-info">Climatiseur</span>
+                                <span class="badge bg-info text-dark"><i class="fa-solid fa-snowflake"></i> Climatiseur</span>
                             {% else %}
-                                <span class="badge bg-warning text-dark">Tapisprop</span>
+                                <span class="badge bg-warning text-dark"><i class="fa-solid fa-rug"></i> Tapisprop</span>
                             {% endif %}
                         </div>
-                        <div class="col-12"><strong>Date création:</strong> {{ commande.date_creation|date:"d/m/Y H:i" }}</div>
+                        <div class="col-6"><strong><i class="fa-solid fa-calendar-alt me-1"></i> Créée le:</strong> {{ commande.date_creation|date:"d/m/Y H:i" }}</div>
                     </div>
                 </div>
             </div>
-
-            <!-- Détails -->
-            <div class="card">
+            
+            <div class="card mb-4 border-secondary">
                 <div class="card-header bg-secondary text-white d-flex justify-content-between align-items-center">
-                    <i class="fa-solid fa-list-ul me-1"></i>Détails
-                    <button class="btn btn-sm btn-light" data-bs-toggle="collapse" data-bs-target="#detailsCard">🔽</button>
+                    <i class="fa-solid fa-clipboard-list me-1"></i> Détails {{ commande.get_type_commande_display }}
+                    <button class="btn btn-sm btn-light p-1" type="button" data-bs-toggle="collapse" data-bs-target="#detailsCard">
+                        <i class="fa-solid fa-chevron-down fa-fw"></i>
+                    </button>
                 </div>
                 <div class="card-body collapse show" id="detailsCard">
-                    {% if commande.type_commande in 'CITYPROP,CLIMATISEUR' %}
-                        <p><strong>Intervention:</strong> {{ cityclima.date_intervention|default:"-" }}
-                           <strong>Satisfaction:</strong>
-                           {% if cityclima %}
-                               {% if cityclima.satisfaction == 'OK' %}<span class="badge bg-success">OK</span>
-                               {% elif cityclima.satisfaction == 'KO_RET' %}<span class="badge bg-warning text-dark">KO - Retouche</span>
-                               {% elif cityclima.satisfaction == 'KO_REFUS' %}<span class="badge bg-danger">KO - Refus</span>
-                               {% else %}<span class="badge bg-secondary">Non défini</span>{% endif %}
-                           {% else %}
-                               <span class="badge bg-secondary">Non défini</span>
-                           {% endif %}
-                        </p>
-                    {% elif commande.type_commande == 'TAPISPROP' %}
-                        <p><strong>Ramassage:</strong> {{ tapis.date_ramassage|default:"-" }} 
-                           <strong>Livraison:</strong> {{ tapis.date_livraison|default:"-" }}</p>
-                        <p><strong>Nb Tapis:</strong> {{ tapis.nombre_tapis|default:"-" }} 
-                           <strong>Coût:</strong> {{ tapis.cout|default:"-" }}</p>
-                        <p><strong>Statut:</strong> 
-                            <span class="badge
-                                {% if tapis.statut == 'NON_RESPECTE' %}bg-danger
-                                {% elif tapis.statut == 'PRET' %}bg-warning text-dark
-                                {% elif tapis.statut == 'CLIENT_INDISPO' %}bg-info text-dark
-                                {% elif tapis.statut == 'LIVRE-satisfait' %}bg-success
-                                {% elif tapis.statut == 'LIVRE-insatisfait' %}bg-danger
-                                {% else %}bg-secondary
-                                {% endif %}">{{ tapis.get_statut_display }}</span>
-                        </p>
-                        <p><strong>Commentaire:</strong> {{ tapis.commentaire|default:"-" }}</p>
+                    {% if commande.type_commande in 'CITYPROP,CLIMATISEUR' and cityclima %}
+                        <div class="row g-2 small">
+                            <div class="col-6"><strong><i class="fa-solid fa-calendar-check me-1"></i> Intervention:</strong> {{ cityclima.date_intervention|default:"-"|date:"d/m/Y" }}</div>
+                            <div class="col-6">
+                                <strong><i class="fa-solid fa-smile-beam me-1"></i> Satisfaction:</strong>
+                                {% if cityclima.satisfaction == 'OK' %}<span class="badge bg-success">Satisfait (OK)</span>
+                                {% elif cityclima.satisfaction == 'KO_RET' %}<span class="badge bg-warning text-dark">KO - Retouche</span>
+                                {% elif cityclima.satisfaction == 'KO_REFUS' %}<span class="badge bg-danger">KO - Refus</span>
+                                {% else %}<span class="badge bg-secondary">Non défini</span>{% endif %}
+                            </div>
+                        </div>
+                    {% elif commande.type_commande == 'TAPISPROP' and tapis %}
+                        <div class="row g-2 small">
+                            <div class="col-6"><strong><i class="fa-solid fa-truck-loading me-1"></i> Ramassage:</strong> {{ tapis.date_ramassage|default:"-"|date:"d/m/Y" }}</div>
+                            <div class="col-6"><strong><i class="fa-solid fa-truck-ramp-box me-1"></i> Livraison:</strong> {{ tapis.date_livraison|default:"-"|date:"d/m/Y" }}</div>
+                            <div class="col-6"><strong><i class="fa-solid fa-boxes-stacked me-1"></i> Nb Tapis:</strong> {{ tapis.nombre_tapis|default:"-" }}</div>
+                            <div class="col-6"><strong><i class="fa-solid fa-coins me-1"></i> Coût Estimé:</strong> {{ tapis.cout|default:"-" }} FCFA</div>
+                            <div class="col-12 mt-2">
+                                <strong><i class="fa-solid fa-tag me-1"></i> Statut:</strong>
+                                <span class="badge 
+                                    {% if tapis.statut == 'NON_RESPECTE' %}bg-danger
+                                    {% elif tapis.statut == 'PRET' %}bg-warning text-dark
+                                    {% elif tapis.statut == 'CLIENT_INDISPO' %}bg-info text-dark
+                                    {% elif tapis.statut == 'LIVRE-satisfait' %}bg-success
+                                    {% elif tapis.statut == 'LIVRE-insatisfait' %}bg-danger
+                                    {% else %}bg-secondary
+                                    {% endif %}">{{ tapis.get_statut_display }}
+                                </span>
+                            </div>
+                            <div class="col-12 mt-2"><strong><i class="fa-solid fa-comment me-1"></i> Commentaire:</strong> <br>{{ tapis.commentaire|default:"-" }}</div>
+                        </div>
+                    {% else %}
+                        <p class="alert alert-info small mb-0">Aucun détail spécifique trouvé pour ce type de commande.</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="card border-info">
+                <div class="card-header bg-info text-white d-flex justify-content-between align-items-center">
+                    <i class="fa-solid fa-receipt me-1"></i> Factures & Devis Associés ({{ factures|length }})
+                    <button class="btn btn-sm btn-light p-1" type="button" data-bs-toggle="collapse" data-bs-target="#facturesCard">
+                        <i class="fa-solid fa-chevron-down fa-fw"></i>
+                    </button>
+                </div>
+                <div class="card-body p-0 collapse show" id="facturesCard">
+                    {% if factures %}
+                        <ul class="list-group list-group-flush small">
+                            {% for facture in factures %}
+                                <li class="list-group-item d-flex justify-content-between align-items-center">
+                                    <span>
+                                        **<span class="text-uppercase text-primary">{{ facture.type_document }}</span>** ({{ facture.date_emission|date:"d/m/Y" }}) - 
+                                        <em class="text-muted">{{ facture.objet }}</em>
+                                    </span>
+                                    <a href="{% url 'voir_facture' facture.id %}" class="btn btn-sm btn-outline-primary" title="Voir ou télécharger la facture">
+                                        <i class="fa-solid fa-download"></i> PDF
+                                    </a>
+                                </li>
+                            {% endfor %}
+                        </ul>
+                    {% else %}
+                        <p class="text-muted p-3 mb-0 small">Aucun document (facture/devis) créé pour cette commande.</p>
                     {% endif %}
                 </div>
             </div>
 
         </div>
 
-        <!-- Colonne droite: Formulaire compact -->
         <div class="col-lg-6 col-md-12">
-            <div class="card">
+            
+            <div class="card mb-4 border-success">
                 <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
-                    <i class="fa-solid fa-pen-to-square me-1"></i>Modifier la commande
-                    <button class="btn btn-sm btn-light" data-bs-toggle="collapse" data-bs-target="#formCard">🔽</button>
+                    <i class="fa-solid fa-pen-to-square me-1"></i> Modifier la commande
+                    <button class="btn btn-sm btn-light p-1" type="button" data-bs-toggle="collapse" data-bs-target="#formCard">
+                        <i class="fa-solid fa-chevron-down fa-fw"></i>
+                    </button>
                 </div>
                 <div class="card-body collapse show" id="formCard">
-                    <form method="POST" class="row g-2">
+                    <form method="POST" class="row g-3">
                         {% csrf_token %}
-                        <div class="col-md-6"><label class="form-label"><i class="fa-solid fa-user me-1"></i>Nom</label>
+                        <div class="col-md-6">
+                            <label class="form-label"><i class="fa-solid fa-user me-1"></i>Nom</label>
                             <input type="text" name="nom_client" class="form-control" value="{{ commande.nom_client }}">
                         </div>
-                        <div class="col-md-6"><label class="form-label"><i class="fa-solid fa-phone me-1"></i>Numéro</label>
+                        <div class="col-md-6">
+                            <label class="form-label"><i class="fa-solid fa-phone me-1"></i>Numéro</label>
                             <input type="text" name="numero_client" class="form-control" value="{{ commande.numero_client }}">
                         </div>
-                        <div class="col-md-12"><label class="form-label"><i class="fa-solid fa-map-marker-alt me-1"></i>Localisation</label>
+                        <div class="col-md-12">
+                            <label class="form-label"><i class="fa-solid fa-map-marker-alt me-1"></i>Localisation</label>
                             <input type="text" name="localisation_client" class="form-control" value="{{ commande.localisation_client }}">
                         </div>
-                        <div class="col-md-12"><label class="form-label"><i class="fa-solid fa-list-check me-1"></i>Type commande</label>
+                        <div class="col-md-12">
+                            <label class="form-label"><i class="fa-solid fa-list-check me-1"></i>Type commande</label>
                             <select name="type_commande" class="form-select">
                                 <option value="CITYPROP" {% if commande.type_commande == "CITYPROP" %}selected{% endif %}>Cityprop</option>
                                 <option value="CLIMATISEUR" {% if commande.type_commande == "CLIMATISEUR" %}selected{% endif %}>Climatiseur</option>
                                 <option value="TAPISPROP" {% if commande.type_commande == "TAPISPROP" %}selected{% endif %}>Tapisprop</option>
                             </select>
                         </div>
+                        
+                        <div class="col-12 commande-specific-fields">
+                            {% if commande.type_commande in 'CITYPROP,CLIMATISEUR' %}
+                                <p class="small text-info fw-bold mb-2">Champs spécifiques {{ commande.get_type_commande_display }}</p>
+                                <div class="row g-3">
+                                    <div class="col-md-6">
+                                        <label class="form-label"><i class="fa-solid fa-calendar-days me-1"></i>Date intervention</label>
+                                        <input type="date" name="date_intervention" class="form-control" value="{{ cityclima.date_intervention|date:"Y-m-d"|default_if_none:'' }}">
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label"><i class="fa-solid fa-smile me-1"></i>Satisfaction</label>
+                                        <select name="satisfaction" class="form-select">
+                                            <option value="">-- Choisir --</option>
+                                            <option value="OK" {% if cityclima.satisfaction == 'OK' %}selected{% endif %}>OK</option>
+                                            <option value="KO_RET" {% if cityclima.satisfaction == 'KO_RET' %}selected{% endif %}>KO - Retouche</option>
+                                            <option value="KO_REFUS" {% if cityclima.satisfaction == 'KO_REFUS' %}selected{% endif %}>KO - Refus</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            {% elif commande.type_commande == 'TAPISPROP' %}
+                                <p class="small text-info fw-bold mb-2">Champs spécifiques Tapisprop</p>
+                                <div class="row g-3">
+                                    <div class="col-md-6">
+                                        <label class="form-label"><i class="fa-solid fa-truck me-1"></i>Date Ramassage</label>
+                                        <input type="date" name="date_ramassage" class="form-control" value="{{ tapis.date_ramassage|date:"Y-m-d"|default_if_none:'' }}">
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label"><i class="fa-solid fa-truck-fast me-1"></i>Date Livraison</label>
+                                        <input type="date" name="date_livraison" class="form-control" value="{{ tapis.date_livraison|date:"Y-m-d"|default_if_none:'' }}">
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label"><i class="fa-solid fa-boxes-stacked me-1"></i>Nb Tapis</label>
+                                        <input type="number" name="nombre_tapis" class="form-control" value="{{ tapis.nombre_tapis|default_if_none:'' }}">
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label"><i class="fa-solid fa-money-bill-wave me-1"></i>Coût Estimé</label>
+                                        <input type="number" name="cout" class="form-control" value="{{ tapis.cout|default_if_none:'' }}">
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label"><i class="fa-solid fa-calendar-check me-1"></i>Fin Traitement</label>
+                                        <input type="date" name="date_traitement" class="form-control" value="{{ tapis.date_traitement|date:"Y-m-d"|default_if_none:'' }}">
+                                    </div>
+                                    <div class="col-md-12">
+                                        <label class="form-label"><i class="fa-solid fa-info me-1"></i>Statut</label>
+                                        <select name="statut" class="form-select">
+                                            <option value="NON_RESPECTE" {% if tapis.statut == 'NON_RESPECTE' %}selected{% endif %}>Délai non respecté</option>
+                                            <option value="PRET" {% if tapis.statut == 'PRET' %}selected{% endif %}>En attente</option>
+                                            <option value="CLIENT_INDISPO" {% if tapis.statut == 'CLIENT_INDISPO' %}selected{% endif %}>Client indisponible</option>
+                                            <option value="LIVRE-satisfait" {% if tapis.statut == 'LIVRE-satisfait' %}selected{% endif %}>Livré satisfait</option>
+                                            <option value="LIVRE-insatisfait" {% if tapis.statut == 'LIVRE-insatisfait' %}selected{% endif %}>Livré insatisfait</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-12">
+                                        <label class="form-label"><i class="fa-solid fa-comment-dots me-1"></i>Commentaire</label>
+                                        <textarea name="commentaire" class="form-control">{{ tapis.commentaire|default_if_none:'' }}</textarea>
+                                    </div>
+                                </div>
+                            {% endif %}
+                        </div>
 
-                        {% if commande.type_commande in 'CITYPROP,CLIMATISEUR' %}
-                            <div class="col-md-6"><label class="form-label"><i class="fa-solid fa-calendar-days me-1"></i>Date intervention</label>
-                                <input type="date" name="date_intervention" class="form-control" value="{{ cityclima.date_intervention|default_if_none:'' }}">
-                            </div>
-                            <div class="col-md-6"><label class="form-label"><i class="fa-solid fa-smile me-1"></i>Satisfaction</label>
-                                <select name="satisfaction" class="form-select">
-                                    <option value="">-- Choisir --</option>
-                                    <option value="OK" {% if cityclima.satisfaction == 'OK' %}selected{% endif %}>OK</option>
-                                    <option value="KO_RET" {% if cityclima.satisfaction == 'KO_RET' %}selected{% endif %}>KO - Retouche</option>
-                                    <option value="KO_REFUS" {% if cityclima.satisfaction == 'KO_REFUS' %}selected{% endif %}>KO - Refus</option>
-                                </select>
-                            </div>
-                        {% elif commande.type_commande == 'TAPISPROP' %}
-                            <div class="col-md-4"><label class="form-label"><i class="fa-solid fa-truck me-1"></i>Ramassage</label>
-                                <input type="date" name="date_ramassage" class="form-control" value="{{ tapis.date_ramassage|default_if_none:'' }}">
-                            </div>
-                            <div class="col-md-2"><label class="form-label"><i class="fa-solid fa-boxes-stacked me-1"></i>Nb Tapis</label>
-                                <input type="number" name="nombre_tapis" class="form-control" value="{{ tapis.nombre_tapis|default_if_none:'' }}">
-                            </div>
-                            <div class="col-md-2"><label class="form-label"><i class="fa-solid fa-coins me-1"></i>Coût</label>
-                                <input type="number" name="cout" class="form-control" value="{{ tapis.cout|default_if_none:'' }}">
-                            </div>
-                            <div class="col-md-4"><label class="form-label"><i class="fa-solid fa-info me-1"></i>Statut</label>
-                                <select name="statut" class="form-select">
-                                    <option value="NON_RESPECTE" {% if tapis.statut == 'NON_RESPECTE' %}selected{% endif %}>Délai non respecté</option>
-                                    <option value="PRET" {% if tapis.statut == 'PRET' %}selected{% endif %}>En attente</option>
-                                    <option value="CLIENT_INDISPO" {% if tapis.statut == 'CLIENT_INDISPO' %}selected{% endif %}>Client indisponible</option>
-                                    <option value="LIVRE-satisfait" {% if tapis.statut == 'LIVRE-satisfait' %}selected{% endif %}>Livré satisfait</option>
-                                    <option value="LIVRE-insatisfait" {% if tapis.statut == 'LIVRE-insatisfait' %}selected{% endif %}>Livré insatisfait</option>
-                                </select>
-                            </div>
-                            <div class="col-md-4"><label class="form-label"><i class="fa-solid fa-calendar-check me-1"></i>Fin traitement</label>
-                                <input type="date" name="date_traitement" class="form-control" value="{{ tapis.date_traitement|default_if_none:'' }}">
-                            </div>
-                            <div class="col-md-4"><label class="form-label"><i class="fa-solid fa-truck-fast me-1"></i>Livraison</label>
-                                <input type="date" name="date_livraison" class="form-control" value="{{ tapis.date_livraison|default_if_none:'' }}">
-                            </div>
-                            <div class="col-12"><label class="form-label"><i class="fa-solid fa-comment me-1"></i>Commentaire</label>
-                                <textarea name="commentaire" class="form-control">{{ tapis.commentaire|default_if_none:'' }}</textarea>
-                            </div>
-                        {% endif %}
-
-                        <div class="col-12 mt-2 d-flex justify-content-between">
-                            <button type="submit" class="btn btn-success"><i class="fa-solid fa-floppy-disk me-1"></i>Mettre à jour</button>
-                            <a href="{% url 'liste_fiches' %}" class="btn btn-secondary"><i class="fa-solid fa-arrow-left me-1"></i>Retour</a>
+                        <div class="col-12 mt-4 d-flex justify-content-between">
+                            <button type="submit" class="btn btn-success"><i class="fa-solid fa-floppy-disk me-1"></i> Mettre à jour</button>
+                            <a href="{% url 'liste_fiches' %}" class="btn btn-secondary"><i class="fa-solid fa-arrow-left me-1"></i> Retour à la liste</a>
                         </div>
                     </form>
                 </div>
             </div>
-        </div>
 
+            <div class="d-grid mt-4">
+                <button class="btn btn-primary btn-lg shadow-lg" data-bs-toggle="modal" data-bs-target="#factureModal">
+                    <i class="fa-solid fa-file-invoice-dollar me-1"></i> **GÉNÉRER FACTURE / DEVIS**
+                </button>
+            </div>
+            
+        </div>
     </div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<div class="modal fade" id="factureModal" tabindex="-1" aria-labelledby="factureModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <form method="POST" action="{% url 'creer_facture' fiche_id=commande.id %}">
+                {% csrf_token %}
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title" id="factureModalLabel"><i class="fa-solid fa-plus me-2"></i>Créer Facture/Devis pour **{{ commande.nom_client }}**</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Fermer"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-3">
+                            <label class="form-label small">Type de document</label>
+                            <select name="type_document" class="form-select form-select-sm">
+                                <option value="DEVIS">DEVIS</option>
+                                <option value="FACTURE">FACTURE</option>
+                            </select>
+                        </div>
+                        <div class="col-md-5">
+                            <label class="form-label small">Objet du document</label>
+                            <input type="text" name="objet" class="form-control form-control-sm" placeholder="Ex: Nettoyage canapés / Prestation Clim">
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label small">Lieu d'émission</label>
+                            <input type="text" name="lieu_emission" class="form-control form-control-sm" value="Abidjan">
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label small">Signature (Rôle)</label>
+                            <input type="text" name="signature" class="form-control form-control-sm" placeholder="Ex: LA COMPTABILITÉ" value="LA COMPTABILITÉ">
+                        </div>
+                    </div>
+
+                    <h6 class="mb-2 text-primary"><i class="fa-solid fa-list-ol me-1"></i>Lignes de Prestation</h6>
+                    <hr class="mt-0">
+
+                    <div class="row g-2 small text-muted mb-1 fw-bold align-items-center">
+                        <div class="col-4">Désignation</div>
+                        <div class="col-1 text-end">Qté</div>
+                        <div class="col-2 text-end">Prix Unitaire</div>
+                        <div class="col-2 text-end">Total Ligne</div> 
+                        <div class="col-2">Note Prix</div>
+                        <div class="col-1"></div>
+                    </div>
+                    
+                    <div id="lignesFacture">
+                        <div class="row g-2 ligne-facture align-items-center mb-2">
+                            <div class="col-4">
+                                <input type="text" name="designation[]" class="form-control form-control-sm" placeholder="Désignation de la prestation">
+                            </div>
+                            <div class="col-1">
+                                <input type="number" name="quantite[]" class="form-control form-control-sm text-end quantite-input" placeholder="Qté" value="1" min="1">
+                            </div>
+                            <div class="col-2">
+                                <input type="number" name="prix_unitaire[]" class="form-control form-control-sm text-end prix-unitaire-input" placeholder="Prix Unitaire" min="0">
+                            </div>
+                            <div class="col-2">
+                                <input type="text" class="form-control form-control-sm text-end total-ligne-display" value="0" readonly>
+                            </div>
+                            <div class="col-2">
+                                <input type="text" name="note_prix[]" class="form-control form-control-sm" placeholder="Ex: lot de 7, HT">
+                            </div>
+                            <div class="col-1">
+                                <button type="button" class="btn btn-outline-danger btn-sm w-100 remove-line" title="Supprimer cette ligne">
+                                    <i class="fa-solid fa-trash-alt"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <button type="button" class="btn btn-sm btn-outline-secondary mt-2" id="ajouterLigne">
+                        <i class="fa-solid fa-plus me-1"></i> Ajouter une ligne de prestation
+                    </button>
+
+                    <hr class="my-4">
+                    
+                    <div class="row g-3 align-items-end">
+                        <div class="col-md-4">
+                            <h6 class="text-muted"><i class="fa-solid fa-calculator me-1"></i> Total Global</h6>
+                            <div class="p-3 border rounded bg-light">
+                                <div class="d-flex justify-content-between mb-2">
+                                    <span class="small fw-bold">Total HT / TTC :</span>
+                                    <span id="totalHTFacture" class="text-primary fw-bold">0 FCFA</span>
+                                </div>
+                                <div class="d-flex justify-content-between pt-2 border-top">
+                                    <span class="fw-bold text-danger">Réduction appliquée :</span>
+                                    <span id="montantReductionDisplay" class="fw-bold text-danger">0 FCFA</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-5">
+                            <h6 class="text-muted"><i class="fa-solid fa-percent me-1"></i> Gestion de la Réduction</h6>
+                            <div class="row g-2">
+                                <div class="col-md-6">
+                                    <label class="form-label small">Taux de Réduction (%)</label>
+                                    <input type="number" step="any" name="taux_reduction_pourcentage" id="tauxReductionInput" class="form-control form-control-sm" placeholder="0 - 100" min="0" max="100" value="{{ current_facture.taux_reduction_pourcentage|default_if_none:'' }}">
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label small">Montant de Réduction (FCFA)</label>
+                                    <input type="number" name="montant_reduction" id="montantReductionInput" class="form-control form-control-sm" placeholder="Montant" value="{{ current_facture.montant_reduction|default_if_none:'' }}">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-3">
+                            <h6 class="text-muted"><i class="fa-solid fa-check me-1"></i> Total Final</h6>
+                            <label class="form-label small text-success">Montant Net à Payer</label>
+                            <div class="input-group">
+                                <input type="text" id="totalFinalFacture" class="form-control text-end" value="0" readonly>
+                                <span class="input-group-text small">FCFA</span>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+                
+                <div class="modal-footer justify-content-end">
+                    <button type="submit" class="btn btn-success btn-lg">
+                        <i class="fa-solid fa-file-invoice-dollar me-1"></i> Générer et Télécharger
+                    </button>
+                    <button type="button" class="btn btn-secondary btn-lg" data-bs-dismiss="modal">Fermer</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const lignesFactureContainer = document.getElementById('lignesFacture');
+    const ajouterLigneBtn = document.getElementById('ajouterLigne');
+    const totalHTFacture = document.getElementById('totalHTFacture');
+    const montantReductionDisplay = document.getElementById('montantReductionDisplay');
+
+    // Réduction inputs
+    const tauxReductionInput = document.getElementById('tauxReductionInput');
+    const montantReductionInput = document.getElementById('montantReductionInput');
+    const totalFinalFacture = document.getElementById('totalFinalFacture');
+
+    // Fonction de formatage (ajoute des séparateurs de milliers)
+    const formatNumber = (num) => {
+        // Utilisez Math.round pour gérer les flottants sans décimales visibles
+        return Math.round(num).toString().replace(/\B(?=(\d{3})+(?!\d))/g, "\u00A0"); // Espace insécable
+    };
+    
+    // --- Partie 1: Calcul des totaux de lignes et généraux ---
+
+    // Calcule le total d'une ligne spécifique
+    const calculateLineTotal = (lineElement) => {
+        const quantite = parseFloat(lineElement.querySelector('.quantite-input').value) || 0;
+        const prixUnitaire = parseFloat(lineElement.querySelector('.prix-unitaire-input').value) || 0;
+        const total = quantite * prixUnitaire;
+        
+        lineElement.querySelector('.total-ligne-display').value = formatNumber(total); 
+        return total;
+    };
+
+    // Calcule et met à jour les totaux globaux
+    const updateGeneralTotals = () => {
+        let generalTotal = 0;
+        // 1. Calculer le Total HT (qui est aussi le TTC Provisoire sans TVA)
+        document.querySelectorAll('.ligne-facture').forEach(lineElement => {
+            generalTotal += calculateLineTotal(lineElement);
+        });
+
+        // 2. Afficher le Total HT/TTC
+        totalHTFacture.textContent = formatNumber(generalTotal) + " FCFA";
+
+        // 3. Recalculer le Total Final (en utilisant la valeur de réduction actuelle)
+        updateFinalTotal(); 
+
+        return generalTotal;
+    };
+
+    // Fonction pour attacher les écouteurs de ligne
+    const setupInputListeners = (lineElement) => {
+        const quantiteInput = lineElement.querySelector('.quantite-input');
+        const prixUnitaireInput = lineElement.querySelector('.prix-unitaire-input');
+
+        // Gérer la suppression de ligne
+        const removeBtn = lineElement.querySelector('.remove-line');
+        removeBtn.addEventListener('click', function() {
+            if (lignesFactureContainer.children.length > 1) {
+                lineElement.remove();
+                updateGeneralTotals(); 
+            } else {
+                alert("Vous devez conserver au moins une ligne de prestation.");
+            }
+        });
+        
+        // Gérer le calcul automatique
+        [quantiteInput, prixUnitaireInput].forEach(input => {
+            input.addEventListener('input', () => updateGeneralTotals());
+        });
+        
+        // Calculer la ligne initiale
+        calculateLineTotal(lineElement); 
+    };
+
+    // Ajout d'une nouvelle ligne
+    ajouterLigneBtn.addEventListener('click', function(){
+        const newLigneHTML = `
+            <div class="row g-2 ligne-facture align-items-center mb-2">
+                <div class="col-4"><input type="text" name="designation[]" class="form-control form-control-sm" placeholder="Désignation de la prestation"></div>
+                <div class="col-1"><input type="number" name="quantite[]" class="form-control form-control-sm text-end quantite-input" placeholder="Qté" value="1" min="1"></div>
+                <div class="col-2"><input type="number" name="prix_unitaire[]" class="form-control form-control-sm text-end prix-unitaire-input" placeholder="Prix Unitaire" min="0"></div>
+                <div class="col-2"><input type="text" class="form-control form-control-sm text-end total-ligne-display" value="0" readonly></div>
+                <div class="col-2"><input type="text" name="note_prix[]" class="form-control form-control-sm" placeholder="Ex: lot de 7, HT"></div>
+                <div class="col-1">
+                    <button type="button" class="btn btn-outline-danger btn-sm w-100 remove-line" title="Supprimer cette ligne">
+                        <i class="fa-solid fa-trash-alt"></i>
+                    </button>
+                </div>
+            </div>
+        `;
+        lignesFactureContainer.insertAdjacentHTML('beforeend', newLigneHTML);
+        const newLigne = lignesFactureContainer.lastElementChild;
+        setupInputListeners(newLigne);
+        updateGeneralTotals();
+    });
+
+    // 1. Initialiser toutes les lignes existantes au chargement du DOM
+    document.querySelectorAll('.ligne-facture').forEach(setupInputListeners);
+
+
+    // --- Partie 2: Logique de Réduction (Taux vs Montant) ---
+
+    const updateFinalTotal = () => {
+        // Récupérer le Total HT/TTC (base pour la réduction)
+        const totalBase = parseFloat(totalHTFacture.textContent.replace(/\s/g, '')) || 0;
+        
+        // Récupérer le montant de la réduction saisi/calculé
+        let reduction = parseFloat(montantReductionInput.value) || 0;
+
+        // Limiter la réduction au total base pour éviter les montants négatifs
+        if (reduction > totalBase) {
+            reduction = totalBase;
+            montantReductionInput.value = reduction.toFixed(0);
+        }
+
+        const totalFinal = totalBase - reduction;
+        
+        montantReductionDisplay.textContent = formatNumber(reduction) + " FCFA";
+        totalFinalFacture.value = formatNumber(totalFinal);
+    };
+
+    // A. Si l'utilisateur modifie le MONTANT de réduction
+    montantReductionInput.addEventListener('input', function() {
+        let reductionMontant = parseFloat(this.value) || 0;
+        const totalBase = parseFloat(totalHTFacture.textContent.replace(/\s/g, '')) || 0;
+
+        // Limiter le montant à la base
+        if (reductionMontant < 0) reductionMontant = 0;
+        if (reductionMontant > totalBase) reductionMontant = totalBase;
+
+        let taux = 0;
+        if (totalBase > 0) {
+            taux = (reductionMontant / totalBase) * 100;
+        }
+        
+        // Mettre à jour le taux (formaté à 2 décimales)
+        tauxReductionInput.value = taux.toFixed(2);
+        this.value = reductionMontant.toFixed(0); // S'assurer que la valeur est propre
+        
+        updateFinalTotal();
+    });
+
+    // B. Si l'utilisateur modifie le TAUX de réduction
+    tauxReductionInput.addEventListener('input', function() {
+        let taux = parseFloat(this.value) || 0;
+        
+        // Borner le taux entre 0 et 100
+        if (taux < 0) taux = 0;
+        if (taux > 100) taux = 100;
+        this.value = taux.toFixed(2); // S'assurer que la valeur est propre
+
+        const totalBase = parseFloat(totalHTFacture.textContent.replace(/\s/g, '')) || 0;
+        
+        const reductionMontant = (totalBase * taux) / 100;
+        
+        // Mettre à jour le montant (formaté à 0 décimale)
+        montantReductionInput.value = Math.round(reductionMontant).toFixed(0);
+        
+        updateFinalTotal();
+    });
+
+    // --- Initialisation au chargement du modal ---
+    var factureModal = document.getElementById('factureModal');
+    if (factureModal) {
+        factureModal.addEventListener('shown.bs.modal', function () {
+            // S'assurer que les totaux sont recalculés avec les dernières valeurs de la commande
+            updateGeneralTotals(); 
+            // Recalculer la réduction et le total final au cas où le total de base a changé
+            
+            // On prend la valeur du TAUX saisi (s'il y en a une) et on recalcule le montant
+            if (tauxReductionInput.value) {
+                tauxReductionInput.dispatchEvent(new Event('input'));
+            } else if (montantReductionInput.value) {
+                montantReductionInput.dispatchEvent(new Event('input'));
+            } else {
+                updateFinalTotal();
+            }
+        });
+    }
+
+    // Calculer les totaux au chargement de la page (même si le modal est caché)
+    updateGeneralTotals(); 
+});
+</script>
 {% endblock %}

@@ -1,0 +1,239 @@
+{% load static %}
+{% load humanize %}
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>{{ facture.type_document }} {{ facture.numero_document }}</title>
+
+<style>
+@page {
+    size: A4;
+    margin: 1.8cm;
+}
+
+body {
+    font-family: "Helvetica Neue", Arial, sans-serif;
+    font-size: 10pt;
+    color: #1f2937;
+    line-height: 1.5;
+}
+
+/* ================= HEADER ================= */
+.header {
+    border-bottom: 2px solid #1e3a8a;
+    padding-bottom: 14px;
+    margin-bottom: 24px;
+}
+
+.header-table {
+    width: 100%;
+}
+
+/* 🔹 LOGO PLUS VOLUMINEUX */
+.logo {
+    width: 75px;
+    margin-bottom: 6px;
+}
+
+.company-name {
+    font-size: 15pt;
+    font-weight: 700;
+    color: #1e3a8a;
+    letter-spacing: 0.5px;
+}
+
+.company-tagline {
+    font-size: 9pt;
+    color: #555;
+}
+
+.doc-box {
+    text-align: right;
+}
+
+.doc-title {
+    font-size: 16pt;
+    font-weight: 700;
+    letter-spacing: 1px;
+}
+
+.doc-number {
+    font-size: 9.5pt;
+    color: #444;
+}
+
+/* ================= INFO CLIENT ================= */
+.info-table {
+    width: 100%;
+    margin-bottom: 22px;
+}
+
+.client-box {
+    border: 1px solid #cbd5e1;
+    padding: 12px;
+    font-size: 9.5pt;
+    line-height: 1.6;
+}
+
+.client-box strong {
+    color: #1e3a8a;
+}
+
+/* ================= TABLE ================= */
+.items-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 18px;
+}
+
+.items-table th {
+    background: #f1f5f9;
+    font-size: 9.5pt;
+    padding: 9px;
+    border: 1px solid #000;
+    text-align: center;
+}
+
+.items-table td {
+    border: 1px solid #000;
+    padding: 8px;
+    font-size: 9.5pt;
+}
+
+.text-right { text-align: right; }
+.text-center { text-align: center; }
+
+/* ================= TOTAL ================= */
+.total-row {
+    background: #e5e7eb;
+    font-weight: bold;
+}
+
+.net-row {
+    background: #1e3a8a;
+    color: #fff;
+    font-size: 11.5pt;
+}
+
+/* ================= SIGNATURE ================= */
+.signature {
+    margin-top: 45px;
+    text-align: right;
+    font-weight: bold;
+}
+
+/* ================= FOOTER ================= */
+.footer {
+    margin-top: 38px;
+    font-size: 8.5pt;
+    text-align: center;
+    color: #444;
+    border-top: 1px solid #cbd5e1;
+    padding-top: 10px;
+}
+</style>
+</head>
+
+<body>
+
+<!-- ================= HEADER ================= -->
+<div class="header">
+<table class="header-table">
+<tr>
+<td>
+    <img src="{{ request.scheme }}://{{ request.get_host }}{% static 'images/cityprop_logo.png' %}" class="logo"><br>
+    <span class="company-name">CITY PROP</span><br>
+    <span class="company-tagline">Nettoyage industriel & assainissement</span>
+</td>
+<td class="doc-box">
+    <div class="doc-title">{{ facture.type_document|upper }}</div>
+    <div class="doc-number">N° {{ facture.numero_document }}</div>
+    <div class="doc-number">Émise le {{ facture.date_emission|date:"d/m/Y" }}</div>
+</td>
+</tr>
+</table>
+</div>
+
+<!-- ================= CLIENT INFO ================= -->
+<table class="info-table">
+<tr>
+<td style="width:60%; vertical-align: top;">
+    <p><strong>Objet :</strong><br>
+    {{ facture.objet|default:"Prestations professionnelles de nettoyage" }}</p>
+</td>
+<td style="width:40%; vertical-align: top;">
+    <div class="client-box">
+        <p><strong>CLIENT :</strong> {{ facture.commande.nom_client|upper }}</p>
+        <p><strong>LIEU :</strong> {{ facture.commande.localisation_client }}</p>
+        <p><strong>TÉL :</strong> {{ facture.commande.numero_client }}</p>
+    </div>
+</td>
+</tr>
+</table>
+
+<!-- ================= ITEMS ================= -->
+<table class="items-table">
+<thead>
+<tr>
+    <th>Désignation</th>
+    <th>Qté</th>
+    <th>Prix unitaire (FCFA)</th>
+    <th>Total (FCFA)</th>
+</tr>
+</thead>
+<tbody>
+{% for ligne in facture.lignes.all %}
+<tr>
+    <td>
+        {{ ligne.designation }}
+        {% if ligne.note_prix_unitaire %}
+            <br><small style="color:#555;">{{ ligne.note_prix_unitaire }}</small>
+        {% endif %}
+    </td>
+    <td class="text-center">{{ ligne.quantite }}</td>
+    <td class="text-right">{{ ligne.prix_unitaire|intcomma }}</td>
+    <td class="text-right">{{ ligne.prix_total|intcomma }}</td>
+</tr>
+{% endfor %}
+
+<tr class="total-row">
+    <td colspan="3" class="text-right">SOUS-TOTAL</td>
+    <td class="text-right">{{ facture.total|intcomma }}</td>
+</tr>
+
+{% if facture.montant_reduction > 0 %}
+<tr>
+    <td colspan="3" class="text-right">RÉDUCTION</td>
+    <td class="text-right">- {{ facture.montant_reduction|intcomma }}</td>
+</tr>
+{% endif %}
+
+<tr class="net-row">
+    <td colspan="3" class="text-right">MONTANT NET À PAYER</td>
+    <td class="text-right">{{ facture.montant_final_net|intcomma }}</td>
+</tr>
+</tbody>
+</table>
+
+<!-- ================= TOTAL EN LETTRES ================= -->
+<p style="margin-top:18px;">
+Arrêtée la présente facture à la somme de :  
+<strong>{{ facture.total_lettres }}</strong>
+</p>
+
+<!-- ================= SIGNATURE ================= -->
+<div class="signature">
+{{ facture.lieu_emission|default:"Abidjan" }}, le {{ facture.date_emission|date:"d/m/Y" }}<br><br>
+{{ facture.signature|default:"LA COMPTABILITÉ"|upper }}
+</div>
+
+<!-- ================= FOOTER ================= -->
+<div class="footer">
+CITY PROP SARL – Capital 1 000 000 FCFA – Cocody Abatta, Abidjan<br>
+Tél : (+225) 0747355400 / 0778176097 – citypropre@gmail.com<br>
+RCCM CI-ABJ-03-2022-B13-11314
+</div>
+
+</body>
+</html>
