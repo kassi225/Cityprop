@@ -1,0 +1,204 @@
+{% extends "base.html" %}
+{% load static %}
+{% load humanize %}
+{% block title %}Tapis Abandonnés{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+
+    <!-- TITRE -->
+    <div class="d-flex align-items-center justify-content-between mb-4">
+        <h4 class="fw-bold text-danger mb-0">
+            <i class="fa-solid fa-trash-can me-2"></i>
+            Commandes Tapis Abandonnées
+            <span class="badge bg-danger ms-2">ABANDON</span>
+        </h4>
+
+        <span class="text-muted">
+            <i class="fa-solid fa-list me-1"></i>
+            Total : {{ total_abandons }}
+        </span>
+    </div>
+
+    <!-- FILTRES -->
+    <div class="card shadow-sm border-0 rounded-4 mb-4">
+        <div class="card-body">
+            <form method="get" class="row g-3 align-items-end">
+
+                <div class="col-md-4">
+                    <label class="form-label fw-semibold">
+                        <i class="fa-solid fa-magnifying-glass me-1"></i>
+                        Recherche
+                    </label>
+                    <input type="text"
+                           name="search"
+                           value="{{ search }}"
+                           class="form-control"
+                           placeholder="Nom, numéro, localisation">
+                </div>
+
+                <div class="col-md-3">
+                    <label class="form-label fw-semibold">
+                        <i class="fa-solid fa-calendar-day me-1"></i>
+                        Date de ramassage
+                    </label>
+                    <input type="date"
+                           name="date_ramassage"
+                           value="{{ date_ramassage }}"
+                           class="form-control">
+                </div>
+
+                <div class="col-md-3">
+                    <label class="form-label fw-semibold">
+                        <i class="fa-solid fa-layer-group me-1"></i>
+                        Nombre de tapis
+                    </label>
+                    <input type="number"
+                           name="nb_tapis"
+                           value="{{ nb_tapis }}"
+                           min="1"
+                           class="form-control">
+                </div>
+
+                <div class="col-md-2 d-grid">
+                    <button type="submit" class="btn btn-success">
+                        <i class="fa-solid fa-filter me-1"></i>
+                        Filtrer
+                    </button>
+                </div>
+
+            </form>
+        </div>
+    </div>
+
+    {% if commandes %}
+
+    <!-- TABLE -->
+    <div class="card shadow-sm border-0 rounded-4">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light text-uppercase small">
+                    <tr>
+                        <th><i class="fa-solid fa-user me-1"></i> Client</th>
+                        <th><i class="fa-solid fa-phone me-1"></i> Numéro</th>
+                        <th><i class="fa-solid fa-location-dot me-1"></i> Localisation</th>
+                        <th><i class="fa-solid fa-calendar-day me-1"></i> Ramassage</th>
+                        <th><i class="fa-solid fa-layer-group me-1"></i> Nb tapis</th>
+                        <th><i class="fa-solid fa-circle-info me-1"></i> Statut</th>
+                        <th class="text-center"><i class="fa-solid fa-file-lines me-1"></i> Fiche</th>
+                        <th class="text-center"><i class="fa-solid fa-gear me-1"></i> Actions</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    {% for commande in commandes %}
+                    <tr>
+                        <td class="fw-semibold">
+                            {{ commande.commande.nom_client|default:"—" }}
+                        </td>
+
+                        <td>
+                            {{ commande.commande.numero_client|default:"—" }}
+                        </td>
+
+                        <td>
+                            {{ commande.commande.localisation_client|default:"—" }}
+                        </td>
+
+                        <td class="text-muted">
+                            {{ commande.date_ramassage|date:"d/m/Y"|default:"N/A" }}
+                        </td>
+
+                        <td>
+                            <span class="badge bg-secondary">
+                                {{ commande.nombre_tapis|default:"0" }}
+                            </span>
+                        </td>
+
+                        <td>
+                            <span class="badge bg-danger">
+                                <i class="fa-solid fa-ban me-1"></i>
+                                {{ commande.statut }}
+                            </span>
+                        </td>
+
+                        <td class="text-center">
+                            <a href="{% url 'detail_fiche' fiche_id=commande.commande.id %}"
+                               class="btn btn-sm btn-outline-info">
+                                <i class="fa-solid fa-eye me-1"></i>
+                                Voir
+                            </a>
+                        </td>
+
+                        <td class="text-center">
+                            <a href="{% url 'detail_alerte_tapis_abandon' id=commande.id %}"
+                               class="btn btn-sm btn-outline-secondary">
+                                <i class="fa-solid fa-sliders me-1"></i>
+                                Gérer
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- PAGINATION -->
+    {% if page_obj.has_other_pages %}
+    <nav class="mt-4">
+        <ul class="pagination justify-content-center">
+
+            {% if page_obj.has_previous %}
+            <li class="page-item">
+                <a class="page-link"
+                   href="?page={{ page_obj.previous_page_number }}&search={{ search }}&date_ramassage={{ date_ramassage }}&nb_tapis={{ nb_tapis }}">
+                    <i class="fa-solid fa-angle-left"></i>
+                </a>
+            </li>
+            {% endif %}
+
+            {% for num in page_obj.paginator.page_range %}
+                {% if page_obj.number == num %}
+                    <li class="page-item active">
+                        <span class="page-link">{{ num }}</span>
+                    </li>
+                {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                    <li class="page-item">
+                        <a class="page-link"
+                           href="?page={{ num }}&search={{ search }}&date_ramassage={{ date_ramassage }}&nb_tapis={{ nb_tapis }}">
+                            {{ num }}
+                        </a>
+                    </li>
+                {% endif %}
+            {% endfor %}
+
+            {% if page_obj.has_next %}
+            <li class="page-item">
+                <a class="page-link"
+                   href="?page={{ page_obj.next_page_number }}&search={{ search }}&date_ramassage={{ date_ramassage }}&nb_tapis={{ nb_tapis }}">
+                    <i class="fa-solid fa-angle-right"></i>
+                </a>
+            </li>
+            {% endif %}
+
+        </ul>
+    </nav>
+    {% endif %}
+
+    {% else %}
+
+    <!-- EMPTY STATE -->
+    <div class="card border-0 shadow-sm mt-4">
+        <div class="card-body text-center py-5">
+            <i class="fa-solid fa-circle-check text-success fa-3x mb-3"></i>
+            <h5 class="fw-bold">Aucune commande abandonnée</h5>
+            <p class="text-muted mb-0">
+                Toutes les commandes tapis sont actuellement actives ou traitées.
+            </p>
+        </div>
+    </div>
+
+    {% endif %}
+</div>
+{% endblock %}

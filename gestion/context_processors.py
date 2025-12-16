@@ -20,7 +20,7 @@ def alertes_sidebar(request):
     alertes_tapis = TapisDetails.objects.filter(
         date_ramassage__isnull=False,
         date_ramassage__lte=today - timedelta(days=7)
-    ).exclude(statut__in=['LIVRE-satisfait', 'LIVRE-insatisfait']).count()
+    ).exclude(statut__in=['LIVRE-satisfait', 'LIVRE-insatisfait','ABANDON']).count()
 
     return {
         "alertes_city": alertes_city,

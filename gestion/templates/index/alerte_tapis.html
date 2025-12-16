@@ -39,6 +39,8 @@
                                 <span class="badge bg-success">{{ tapis.get_statut_display }}</span>
                             {% elif tapis.statut == 'LIVRE-insatisfait' %}
                                 <span class="badge bg-danger">{{ tapis.get_statut_display }}</span>
+                             {% elif tapis.statut == 'ABANDON' %}
+                                <span class="badge bg-danger">{{ tapis.get_statut_display }}</span>
                             {% else %}
                                 <span class="badge bg-secondary">{{ tapis.get_statut_display }}</span>
                             {% endif %}

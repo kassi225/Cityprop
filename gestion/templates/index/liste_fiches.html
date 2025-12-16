@@ -41,11 +41,12 @@
             <label class="form-label small">Statut tapis</label>
             <select name="statut" class="form-select form-select-sm">
                 <option value="">Tous</option>
-                <option value="NON_RESPECTE" {% if statut_filter == "NON_RESPECTE" %}selected{% endif %}>Non respecté</option>
-                <option value="PRET" {% if statut_filter == "PRET" %}selected{% endif %}>Prêt</option>
-                <option value="CLIENT_INDISPO" {% if statut_filter == "CLIENT_INDISPO" %}selected{% endif %}>Indisponible</option>
+                <option value="NON_RESPECTE" {% if statut_filter == "NON_RESPECTE" %}selected{% endif %}>delai Non respecté</option>
+                <option value="PRET" {% if statut_filter == "PRET" %}selected{% endif %}>En attente</option>
+                <option value="CLIENT_INDISPO" {% if statut_filter == "CLIENT_INDISPO" %}selected{% endif %}>Tapis Prêt client Indispo</option>
                 <option value="LIVRE-satisfait" {% if statut_filter == "LIVRE-satisfait" %}selected{% endif %}>Livré satisfait</option>
                 <option value="LIVRE-insatisfait" {% if statut_filter == "LIVRE-insatisfait" %}selected{% endif %}>Livré insatisfait</option>
+                <option value="ABANDON" {% if statut_filter == "ABANDON" %}selected{% endif %}>Tapis Abandonné</option>
             </select>
         </div>
 

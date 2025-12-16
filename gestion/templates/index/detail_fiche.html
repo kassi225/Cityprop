@@ -96,6 +96,7 @@ input, select, textarea { font-size: 0.85rem; padding: 0.5rem 0.75rem; border-ra
                                     {% elif tapis.statut == 'CLIENT_INDISPO' %}bg-info text-dark
                                     {% elif tapis.statut == 'LIVRE-satisfait' %}bg-success
                                     {% elif tapis.statut == 'LIVRE-insatisfait' %}bg-danger
+                                     {% elif tapis.statut == 'ABANDON' %}bg-warning
                                     {% else %}bg-secondary
                                     {% endif %}">{{ tapis.get_statut_display }}
                                 </span>
@@ -220,6 +221,7 @@ input, select, textarea { font-size: 0.85rem; padding: 0.5rem 0.75rem; border-ra
                                             <option value="CLIENT_INDISPO" {% if tapis.statut == 'CLIENT_INDISPO' %}selected{% endif %}>Client indisponible</option>
                                             <option value="LIVRE-satisfait" {% if tapis.statut == 'LIVRE-satisfait' %}selected{% endif %}>Livré satisfait</option>
                                             <option value="LIVRE-insatisfait" {% if tapis.statut == 'LIVRE-insatisfait' %}selected{% endif %}>Livré insatisfait</option>
+                                            <option value="ABANDON" {% if tapis.statut == 'ABANDON' %}selected{% endif %}>Tapis Abandonné/option>
                                         </select>
                                     </div>
                                     <div class="col-12">

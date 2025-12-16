@@ -82,6 +82,7 @@ class Facture(models.Model):
         self.montant_final_net = int(net)
         return self.montant_final_net
 
+
     def __str__(self):
         return f"{self.type_document} #{self.numero_document} - {self.commande.nom_client}"
 
@@ -152,6 +153,7 @@ class TapisDetails(models.Model):
         ('CLIENT_INDISPO', 'Tapis prêt mais client indisponible'),
         ('LIVRE-satisfait', 'client satisfait'),
         ('LIVRE-insatisfait', 'client insatisfait'),
+        ('ABANDON', 'Tapis abandonné'),
     )
     
     commande = models.OneToOneField(Commande, on_delete=models.CASCADE)

@@ -591,12 +591,15 @@ def detail_fidelisation(request, id):
 def alertes_tapis_retard(request):
     today = timezone.now().date()
     
+    # Liste des statuts qui arrêtent l'alerte
+    STATUTS_FINAUX = ['LIVRE-satisfait', 'LIVRE-insatisfait', 'ABANDON']
+    
     # On récupère les commandes TAPISPROP dont la date de ramassage est dépassée de 7 jours
-    # et qui ne sont pas encore livrées (statut != LIVRE-satisfait/LIVRE-insatisfait)
+    # et qui ne sont pas encore résolues (statut non inclus dans STATUTS_FINAUX)
     alertes = TapisDetails.objects.filter(
         date_ramassage__isnull=False,
         date_ramassage__lte=today - timedelta(days=7)
-    ).exclude(statut__in=['LIVRE-satisfait', 'LIVRE-insatisfait'])
+    ).exclude(statut__in=STATUTS_FINAUX) # <-- Modification ici pour exclure ABANDON
 
     context = {
         "alertes": alertes
@@ -604,25 +607,56 @@ def alertes_tapis_retard(request):
     return render(request, "index/alerte_tapis.html", context)
 
 
+
 @login_required
 def detail_alerte_tapis(request, id):
     tapis = get_object_or_404(TapisDetails, id=id)
+    
+    # 1. Détermination du contexte de l'appel
+    url_name = request.resolver_match.url_name
+    
+    STATUTS_LIVRES = ["LIVRE-satisfait", "LIVRE-insatisfait"]
+    STATUT_ABANDON = "ABANDON"
+    STATUTS_FINAUX_ALERTE = STATUTS_LIVRES + [STATUT_ABANDON] # Statuts qui suppriment l'alerte de la liste initiale
 
-    # Empêcher l’accès si la commande n'est plus en alerte
-    if tapis.statut in ["LIVRE-satisfait", "LIVRE-insatisfait"]:
-        messages.info(request, "Cette commande n'est plus en alerte.")
-        return redirect("alertes_tapis_retard")
+    # =======================================================
+    # 2. GESTION DES GARDES-FOUS (Accès en GET)
+    # =======================================================
+
+    if url_name == "detail_alerte_tapis_abandon":
+        # Si nous sommes sur l'URL d'abandon :
+        # On bloque uniquement si c'est LIVRÉ, car ABANDON doit rester accessible ici
+        if tapis.statut in STATUTS_LIVRES:
+            messages.info(request, "Cette commande a été livrée. Elle n'est plus en gestion d'abandon.")
+            return redirect("alertes_tapis_retard")
+        
+        # Et si le statut n'est pas ABANDON, on redirige aussi pour rester propre
+        elif tapis.statut != STATUT_ABANDON:
+             messages.info(request, "Cette commande n'est pas abandonnée. Affichage classique des alertes.")
+             return redirect("detail_alerte_tapis", id=id)
+
+    else: # Contexte par défaut (detail_alerte_tapis)
+        # Si nous sommes sur l'URL d'alerte normale :
+        # On bloque si le statut est LIVRÉ OU ABANDONNÉ
+        if tapis.statut in STATUTS_FINAUX_ALERTE:
+            messages.info(request, "Cette commande n'est plus en alerte (livrée ou abandonnée).")
+            return redirect("alertes_tapis_retard")
+
+
+    # =======================================================
+    # 3. GESTION DE LA SOUMISSION (POST)
+    # =======================================================
 
     if request.method == "POST":
-        # Nouveau commentaire
+        # ... (Nouveau commentaire - code inchangé) ...
         texte = request.POST.get("commentaire", "").strip()
         if texte:
-            from .models import TapisAlerteCommentaire
-            TapisAlerteCommentaire.objects.create(
-                tapis=tapis,
-                texte=texte
-            )
-            messages.success(request, "Commentaire ajouté avec succès.")
+             from .models import TapisAlerteCommentaire
+             TapisAlerteCommentaire.objects.create(
+                 tapis=tapis,
+                 texte=texte
+             )
+             messages.success(request, "Commentaire ajouté avec succès.")
 
         # Mise à jour du statut
         new_statut = request.POST.get("statut")
@@ -631,19 +665,32 @@ def detail_alerte_tapis(request, id):
             tapis.save()
             messages.success(request, "Statut mis à jour.")
 
-            # Si statut = livré -> supprimer de l'alerte
-            if new_statut in ["LIVRE-satisfait", "LIVRE-insatisfait"]:
+            # Gestion de la redirection après résolution de l'alerte
+            if new_statut in STATUTS_LIVRES:
+                # Si LIVRÉ, l'alerte est levée et on redirige vers la liste des alertes (d'où elle disparaîtra)
                 return redirect("alertes_tapis_retard")
+            
+            elif new_statut == STATUT_ABANDON:
+                # Si ABANDONNÉ, l'alerte est levée, on redirige vers l'URL d'abandon
+                # (Assurez-vous que cette URL pointe vers une VUE qui liste les commandes ABANDONNÉES)
+                # Si vous n'avez pas de vue de LISTE d'abandon, vous pouvez rediriger vers la page de détail d'abandon
+                return redirect("detail_alerte_tapis_abandon", id=id)
 
-        return redirect("detail_alerte_tapis", id=id)
+        # Redirection par défaut (si seulement un commentaire a été ajouté ou si le statut n'est ni LIVRÉ ni ABANDON)
+        # On redirige vers l'URL par laquelle l'utilisateur est entré pour conserver le contexte.
+        return redirect(url_name, id=id) 
 
+    # =======================================================
+    # 4. Rendu de la page (GET)
+    # =======================================================
     context = {
         "tapis": tapis,
-        "commentaires": tapis.commentaires_alerte.order_by("-date")
+        "commentaires": tapis.commentaires_alerte.order_by("-date"),
+        # Optionnel: pour adapter l'affichage du template HTML
+        "is_abandon_context": url_name == "detail_alerte_tapis_abandon" 
     }
 
     return render(request, "index/detail_alerte_tapis.html", context)
-
 
 @login_required
 def export_commandes_excel(request):
@@ -819,3 +866,64 @@ def creer_facture(request, fiche_id):
         }
         # REMPLACEZ 'votre_template_creation_facture.html' par le nom réel de votre template
         return render(request, 'votre_template_creation_facture.html', context)
+    
+    
+@login_required
+
+
+def listes_tapis_abandon(request):
+    """
+    Liste paginée des commandes de tapis abandonnées
+    avec système de filtres.
+    """
+
+    STATUT_ABANDON = "ABANDON"
+
+    # =========================
+    # FILTRES (GET)
+    # =========================
+    search = request.GET.get("search", "")
+    date_ramassage = request.GET.get("date_ramassage", "")
+    nb_tapis = request.GET.get("nb_tapis", "")
+
+    commandes = TapisDetails.objects.filter(statut=STATUT_ABANDON)
+
+    # Recherche globale (client, numéro, localisation)
+    if search:
+        commandes = commandes.filter(
+            Q(commande__nom_client__icontains=search) |
+            Q(commande__numero_client__icontains=search) |
+            Q(commande__localisation_client__icontains=search)
+        )
+
+    # Filtre date de ramassage
+    if date_ramassage:
+        commandes = commandes.filter(date_ramassage=date_ramassage)
+
+    # Filtre nombre de tapis
+    if nb_tapis:
+        commandes = commandes.filter(nombre_tapis=nb_tapis)
+
+    commandes = commandes.order_by("-date_ramassage")
+
+    # =========================
+    # PAGINATION
+    # =========================
+    paginator = Paginator(commandes, 10)  # 10 lignes par page
+    page_number = request.GET.get("page")
+    page_obj = paginator.get_page(page_number)
+
+    context = {
+        "commandes": page_obj,
+        "page_obj": page_obj,
+        "total_abandons": commandes.count(),
+
+        # garder les valeurs des filtres
+        "search": search,
+        "date_ramassage": date_ramassage,
+        "nb_tapis": nb_tapis,
+    }
+
+    return render(request, "index/alerte_tapis_abandon.html", context)
+
+
