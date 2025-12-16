@@ -1,6 +1,8 @@
 from django.db import models
 from django.utils import timezone
 from num2words import num2words
+from decimal import Decimal, ROUND_HALF_UP
+
 
 
 class Facture(models.Model):
@@ -46,12 +48,16 @@ class Facture(models.Model):
         # Note: 'lignes' est le related_name utilisé dans FactureLigne
         return sum(ligne.prix_total for ligne in self.lignes.all())
 
+
     @property
     def montant_reduction(self):
-        """Calcule le montant de la réduction en FCFA."""
+        """Calcule le montant de la réduction en FCFA arrondi à l'entier le plus proche."""
         if self.taux_reduction_pourcentage > 0:
-            # S'assurer que le calcul est fait avec le montant total HT
-            return self.total_ht_lignes * (self.taux_reduction_pourcentage / 100)
+            total_ht = Decimal(self.total_ht_lignes)
+            reduction = (total_ht * Decimal(self.taux_reduction_pourcentage) / Decimal('100')).quantize(
+                Decimal('1'), rounding=ROUND_HALF_UP  # Arrondi à l'entier
+            )
+            return int(reduction)
         return 0
         
     @property
@@ -66,14 +72,19 @@ class Facture(models.Model):
         # Utilise la propriété 'total' (montant net)
         return num2words(self.total, lang='fr').upper() + " FRANC CFA"
 
+    
     def update_final_amount(self):
-        """Calcule et met à jour le montant final net avant sauvegarde."""
-        total_net = self.total_ht_lignes - self.montant_reduction
-        self.montant_final_net = round(total_net)
+        """Calcule et met à jour le montant final net arrondi à l'entier."""
+        total_ht = Decimal(self.total_ht_lignes)
+        net = (total_ht - Decimal(self.montant_reduction)).quantize(
+            Decimal('1'), rounding=ROUND_HALF_UP
+        )
+        self.montant_final_net = int(net)
         return self.montant_final_net
 
     def __str__(self):
         return f"{self.type_document} #{self.numero_document} - {self.commande.nom_client}"
+
 
 class FactureLigne(models.Model):
     facture = models.ForeignKey(
