@@ -161,6 +161,15 @@
             <li><a href="{% url 'alertes_fidelisation' %}"><i class="fa-solid fa-heart-circle-bolt"></i> Fidélisation {% if alertes_city|add:alertes_clima > 0 %}<span class="badge bg-danger">{{ alertes_city|add:alertes_clima }}</span>{% endif %}</a></li>
             <li><a href="{% url 'alertes_tapis_retard' %}" class="{% if request.resolver_match.url_name == 'alertes_tapis_retard' %}active{% endif %}"><i class="fa-solid fa-bell"></i> Alertes tapis {% if alertes_tapis > 0 %}<span class="badge bg-danger">{{ alertes_tapis }}</span>{% endif %}</a></li>
             <li><a href="{% url 'listes_tapis_abandon' %}" class="{% if request.resolver_match.url_name == 'listes_tapis_abandon' %}active{% endif %}"><i class="fa-solid fa-box-open"></i> Tapis abandonnés</a></li>
+            
+            {% if request.user.is_superuser or request.user.groups.all.0.name == "ADMIN" or request.user.groups.all.0.name == "SUPERUSER" %}
+            <hr class="my-2 text-muted">
+            <li>
+                <a href="/admin/" target="_blank" style="color: #dc3545;">
+                    <i class="fa-solid fa-user-shield"></i> Administration
+                </a>
+            </li>
+            {% endif %}
         </ul>
     </div>
 </nav>

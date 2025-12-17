@@ -1,0 +1,26 @@
+{% extends "admin/base.html" %}
+{% load static %}
+
+{% block title %}{{ title }} | CityProp Admin{% endblock %}
+
+{% block branding %}
+<h1 id="site-name">
+    <img src="{% static 'images/cityprop_logo.png' %}" 
+         alt="CityProp" 
+         style="height: 30px; width: auto; margin-right: 10px; vertical-align: middle; background: white; border-radius: 3px; padding: 2px;">
+    <span style="vertical-align: middle;">Administration CITYPROP</span>
+</h1>
+{% endblock %}
+
+{% block extrastyle %}
+<style>
+    /* Ajustement léger pour que le logo blanc ne jure pas avec le bleu Django */
+    #header {
+        background: #417690 !important; /* Le bleu officiel Django */
+    }
+    #branding h1 {
+        display: flex;
+        align-items: center;
+    }
+</style>
+{% endblock %}

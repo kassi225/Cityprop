@@ -1,24 +1,37 @@
+# 1. Bibliothèques Python Standard
+import datetime
 from io import BytesIO
-from django.contrib.auth.decorators import user_passes_test
-from django.db import transaction
-from django.shortcuts import render, get_object_or_404, redirect
-from django.utils import timezone
-from django.db.models import Count
 from datetime import timedelta
-from django.contrib.auth import authenticate, login, logout
-from django.contrib.auth.decorators import login_required
+
+# 2. Django Core (Raccourcis, Auth, Base)
+from django.shortcuts import render, get_object_or_404, redirect
+from django.http import HttpResponse
 from django.contrib import messages
+from django.contrib.auth import authenticate, login, logout
+from django.contrib.auth.decorators import login_required, user_passes_test
+from django.utils import timezone
+
+# 3. Django Database (Modèles, Requêtes, Transactions)
+from django.db import transaction
+from django.db.models import Count, Q
 from django.core.paginator import Paginator
-from django.contrib.auth.decorators import login_required
-from .models import Commande, CityClimaDetails, FidelisationNote, TapisDetails
-from django.db.models import Q
+
+# 4. Bibliothèques Tierces (Excel, PDF, Texte)
 from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill, Alignment
-from django.http import HttpResponse
-from .models import Commande, Facture, FactureLigne
 from xhtml2pdf import pisa
 from django.template.loader import get_template
 from num2words import num2words
+
+# 5. Vos modèles (Regroupés en une seule ligne)
+from .models import (
+    Commande, 
+    CityClimaDetails, 
+    FidelisationNote, 
+    TapisDetails, 
+    Facture, 
+    FactureLigne
+)
 
 
 
@@ -103,8 +116,13 @@ def telecharger_devis_pdf(request, facture_id):
 
 @login_required
 def dashboard(request):
-    today = timezone.now().date()
-    first_day_month = today.replace(day=1)
+    # On récupère l'instant présent (avec fuseau horaire)
+    now = timezone.now()
+    today = now.date()
+    
+    # CORRECTION : On crée un datetime complet pour le 1er du mois à 00:00:00
+    # Cela évite le RuntimeWarning lors de la comparaison avec date_creation
+    first_day_month = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
 
     # Comptages globaux
     total_commandes = Commande.objects.count()
@@ -115,10 +133,12 @@ def dashboard(request):
     # Fidélisation
     fidelises = CityClimaDetails.objects.filter(fidelise=True).count() + TapisDetails.objects.filter(fidelise=True).count()
     non_fidelises = total_commandes - fidelises
+    
+    # Utilisation de first_day_month (Datetime aware)
     fidelisations_mois = CityClimaDetails.objects.filter(fidelise=True, commande__date_creation__gte=first_day_month).count() + \
                         TapisDetails.objects.filter(fidelise=True, commande__date_creation__gte=first_day_month).count()
 
-    # Alertes TAPIS >7 jours
+    # Alertes TAPIS >7 jours (Ici today est utilisable car date_ramassage est souvent un DateField simple)
     alertes_tapis_7j = TapisDetails.objects.filter(
         date_ramassage__lte=today - timedelta(days=7),
         statut__in=["NON_RESPECTE","PRET","CLIENT_INDISPO"]
@@ -139,7 +159,7 @@ def dashboard(request):
     # Commandes récentes
     commandes_recents = Commande.objects.order_by('-date_creation')[:5]
     
-    # Alertes fidélisation (renommées pour ne pas masquer le context processor)
+    # Alertes fidélisation
     alertes_city = CityClimaDetails.objects.filter(fidelise=False, commande__type_commande='CITYPROP', date_intervention__lte=today - timedelta(days=180)).count()
     alertes_clima = CityClimaDetails.objects.filter(fidelise=False, commande__type_commande='CLIMATISEUR', date_intervention__lte=today - timedelta(days=90)).count()
     alertes_tapis_fidelisation = TapisDetails.objects.filter(fidelise=False, date_livraison__lte=today - timedelta(days=180)).count()
@@ -157,7 +177,7 @@ def dashboard(request):
         "fidelisations_mois": fidelisations_mois,
         "alertes_city": alertes_city,
         "alertes_clima": alertes_clima,
-        "alertes_tapis_fidelisation": alertes_tapis_fidelisation,  # <-- corrigé
+        "alertes_tapis_fidelisation": alertes_tapis_fidelisation,
         "alertes_tapis_7j": alertes_tapis_7j,
         "tapis_traite_mois": tapis_traite_mois,
         "tapis_non_respecte": tapis_non_respecte,
@@ -170,7 +190,6 @@ def dashboard(request):
     }
 
     return render(request, "index/dashboard.html", context)
-
 
 @login_required
 def nouvelle_commande(request):
@@ -233,6 +252,7 @@ def nouvelle_commande(request):
     return render(request, 'index/nouvelle_commande.html')
 
 
+
 @login_required
 def liste_fiches(request):
     commandes = Commande.objects.all().order_by('-date_creation')
@@ -257,11 +277,19 @@ def liste_fiches(request):
     if numero_filter:
         commandes = commandes.filter(numero_client__icontains=numero_filter)
 
+    # CORRECTION DES DATES POUR ÉVITER LE RUNTIME WARNING
     if date_debut:
-        commandes = commandes.filter(date_creation__date__gte=date_debut)
+        # On convertit la chaîne "YYYY-MM-DD" en datetime à 00:00:00
+        d_debut = datetime.datetime.strptime(date_debut, '%Y-%m-%d')
+        # On rend la date "consciente" du fuseau horaire (Africa/Abidjan)
+        date_debut_aware = timezone.make_aware(d_debut)
+        commandes = commandes.filter(date_creation__gte=date_debut_aware)
 
     if date_fin:
-        commandes = commandes.filter(date_creation__date__lte=date_fin)
+        # On convertit la chaîne et on règle l'heure à 23:59:59 pour inclure toute la journée
+        d_fin = datetime.datetime.strptime(date_fin, '%Y-%m-%d').replace(hour=23, minute=59, second=59)
+        date_fin_aware = timezone.make_aware(d_fin)
+        commandes = commandes.filter(date_creation__lte=date_fin_aware)
 
     if fidelise_filter == "oui":
         commandes = commandes.filter(
@@ -288,7 +316,6 @@ def liste_fiches(request):
     }
 
     return render(request, 'index/liste_fiches.html', context)
-
 
 @login_required
 def detail_fiche(request, fiche_id):

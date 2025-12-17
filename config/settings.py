@@ -69,7 +69,10 @@ ROOT_URLCONF = 'config.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [BASE_DIR / 'gestion' / 'templates' / 'index'],  # <-- mettre le bon chemin, en minuscule
+        'DIRS': [
+                    BASE_DIR / 'gestion' / 'templates' / 'index', # Pour votre site actuel (sans rien changer aux vues)
+                    BASE_DIR / 'gestion' / 'templates',           # Pour l'administration personnalisée
+                ],  # <-- mettre le bon chemin, en minuscule
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -82,6 +85,7 @@ TEMPLATES = [
         },
     },
 ]
+
 
 WSGI_APPLICATION = 'config.wsgi.application'
 
