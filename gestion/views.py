@@ -1,4 +1,5 @@
 from io import BytesIO
+from django.contrib.auth.decorators import user_passes_test
 from django.db import transaction
 from django.shortcuts import render, get_object_or_404, redirect
 from django.utils import timezone
@@ -35,6 +36,18 @@ def login_view(request):
 def logout_view(request):
     logout(request)
     return redirect('login')
+
+def is_admin(user):
+    return user.is_superuser or user.groups.filter(name='ADMIN').exists()
+
+@user_passes_test(is_admin)
+def supprimer_commande(request, id):
+    if request.method == 'POST':
+        commande = get_object_or_404(Commande, id=id)
+        nom_client = commande.nom_client
+        commande.delete()
+        messages.success(request, f"La commande de {nom_client} a été supprimée avec succès.")
+    return redirect('liste_fiches')
 
 
 def voir_facture(request, facture_id):

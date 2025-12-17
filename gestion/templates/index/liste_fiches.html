@@ -2,33 +2,37 @@
 {% block title %}Liste des commandes{% endblock %}
 
 {% block content %}
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
 <div class="container mt-2" style="font-size: 13px;">
 
-    <!-- Titre + Export Excel -->
     <div class="d-flex justify-content-between align-items-center mb-2">
-        <h5 class="mb-0"><i class="fa-solid fa-list-check me-1"></i>Liste des commandes</h5>
-        <a href="{% url 'export_commandes_excel' %}?{{ request.GET.urlencode }}" class="btn btn-success btn-sm">
+        <h5 class="mb-0 fw-bold"><i class="fa-solid fa-list-check me-1 text-primary"></i>Liste des commandes</h5>
+        <a href="{% url 'export_commandes_excel' %}?{{ request.GET.urlencode }}" class="btn btn-success btn-sm shadow-sm">
             <i class="fa-solid fa-file-excel me-1"></i>Exporter Excel
         </a>
     </div>
 
-    <!-- Recherche rapide -->
-    <input type="text" id="quickSearch" class="form-control form-control-sm mb-2" placeholder="🔍 Recherche rapide">
+    <div class="mb-2">
+        <div class="input-group input-group-sm">
+            <span class="input-group-text bg-white border-end-0"><i class="fa-solid fa-magnifying-glass text-muted"></i></span>
+            <input type="text" id="quickSearch" class="form-control border-start-0" placeholder="Recherche rapide (nom, numéro, ville...)">
+        </div>
+    </div>
 
-    <!-- Filtre avancé -->
-    <form method="GET" class="row g-1 mb-2 align-items-end">
-        <div class="col-auto">
-            <label class="form-label small">Nom client</label>
+    <form method="GET" class="row g-1 mb-2 align-items-end bg-light p-2 rounded shadow-sm border">
+        <div class="col-md-2">
+            <label class="form-label small fw-bold">Nom client</label>
             <input type="text" name="nom_client" value="{{ nom_filter }}" class="form-control form-control-sm">
         </div>
 
-        <div class="col-auto">
-            <label class="form-label small">Numéro client</label>
+        <div class="col-md-2">
+            <label class="form-label small fw-bold">Numéro</label>
             <input type="text" name="numero_client" value="{{ numero_filter }}" class="form-control form-control-sm">
         </div>
 
-        <div class="col-auto">
-            <label class="form-label small">Type</label>
+        <div class="col-md-1">
+            <label class="form-label small fw-bold">Type</label>
             <select name="type_commande" class="form-select form-select-sm">
                 <option value="">Tous</option>
                 <option value="CITYPROP" {% if type_filter == "CITYPROP" %}selected{% endif %}>Cityprop</option>
@@ -37,31 +41,31 @@
             </select>
         </div>
 
-        <div class="col-auto">
-            <label class="form-label small">Statut tapis</label>
+        <div class="col-md-2">
+            <label class="form-label small fw-bold">Statut tapis</label>
             <select name="statut" class="form-select form-select-sm">
                 <option value="">Tous</option>
-                <option value="NON_RESPECTE" {% if statut_filter == "NON_RESPECTE" %}selected{% endif %}>delai Non respecté</option>
+                <option value="NON_RESPECTE" {% if statut_filter == "NON_RESPECTE" %}selected{% endif %}>Délai Non respecté</option>
                 <option value="PRET" {% if statut_filter == "PRET" %}selected{% endif %}>En attente</option>
-                <option value="CLIENT_INDISPO" {% if statut_filter == "CLIENT_INDISPO" %}selected{% endif %}>Tapis Prêt client Indispo</option>
+                <option value="CLIENT_INDISPO" {% if statut_filter == "CLIENT_INDISPO" %}selected{% endif %}>Tapis prêt Client Indisponible</option>
                 <option value="LIVRE-satisfait" {% if statut_filter == "LIVRE-satisfait" %}selected{% endif %}>Livré satisfait</option>
                 <option value="LIVRE-insatisfait" {% if statut_filter == "LIVRE-insatisfait" %}selected{% endif %}>Livré insatisfait</option>
                 <option value="ABANDON" {% if statut_filter == "ABANDON" %}selected{% endif %}>Tapis Abandonné</option>
             </select>
         </div>
 
-        <div class="col-auto">
-            <label class="form-label small">Date début</label>
+        <div class="col-md-1">
+            <label class="form-label small fw-bold">Début</label>
             <input type="date" name="date_debut" id="date_debut" value="{{ date_debut }}" class="form-control form-control-sm">
         </div>
 
-        <div class="col-auto">
-            <label class="form-label small">Date fin</label>
+        <div class="col-md-1">
+            <label class="form-label small fw-bold">Fin</label>
             <input type="date" name="date_fin" id="date_fin" value="{{ date_fin }}" class="form-control form-control-sm">
         </div>
 
-        <div class="col-auto">
-            <label class="form-label small">Fidélisé</label>
+        <div class="col-md-1">
+            <label class="form-label small fw-bold">Fidélisé</label>
             <select name="fidelise" class="form-select form-select-sm">
                 <option value="">Tous</option>
                 <option value="oui" {% if fidelise_filter == "oui" %}selected{% endif %}>Oui</option>
@@ -69,15 +73,14 @@
             </select>
         </div>
 
-        <div class="col-auto d-flex gap-1">
-            <button class="btn btn-primary btn-sm"><i class="fa-solid fa-filter me-1"></i>Filtrer</button>
-            <a href="{% url 'liste_fiches' %}" class="btn btn-secondary btn-sm"><i class="fa-solid fa-rotate-left me-1"></i>Réinitialiser</a>
+        <div class="col-md-2 d-flex gap-1">
+            <button type="submit" class="btn btn-primary btn-sm flex-grow-1"><i class="fa-solid fa-filter me-1"></i>Filtrer</button>
+            <a href="{% url 'liste_fiches' %}" class="btn btn-secondary btn-sm"><i class="fa-solid fa-rotate-left"></i></a>
         </div>
     </form>
 
-    <!-- Tableau responsive -->
-    <div class="table-responsive shadow-sm rounded">
-        <table class="table table-bordered table-hover table-sm align-middle mb-0">
+    <div class="table-responsive shadow-sm rounded border">
+        <table class="table table-bordered table-hover table-sm align-middle mb-0 bg-white">
             <thead class="table-dark text-center small">
                 <tr>
                     <th>Client</th>
@@ -85,22 +88,22 @@
                     <th>Localisation</th>
                     <th>Type</th>
                     <th>Date</th>
-                    <th>Détails</th>
+                    <th>Détails de Suivi</th>
                     <th>Fidélisé</th>
-                    <th>Action</th>
+                    <th style="width: 100px;">Action</th>
                 </tr>
             </thead>
             <tbody class="text-center small">
                 {% for c in commandes %}
                 <tr>
-                    <td>{{ c.nom_client }}</td>
+                    <td class="fw-bold">{{ c.nom_client }}</td>
                     <td>{{ c.numero_client }}</td>
                     <td class="text-start" style="max-width:200px; white-space:normal;">{{ c.localisation_client }}</td>
                     <td>
                         {% if c.type_commande == 'CITYPROP' %}
                             <span class="badge bg-success">Cityprop</span>
                         {% elif c.type_commande == 'CLIMATISEUR' %}
-                            <span class="badge bg-info">Climatiseur</span>
+                            <span class="badge bg-info text-dark">Climatiseur</span>
                         {% else %}
                             <span class="badge bg-warning text-dark">Tapisprop</span>
                         {% endif %}
@@ -108,83 +111,117 @@
                     <td>{{ c.date_creation|date:"d/m/Y" }}</td>
                     <td class="text-start">
                         {% if c.type_commande in 'CITYPROP,CLIMATISEUR' and c.cityclimadetails %}
-                            <strong>Intervention :</strong> {{ c.cityclimadetails.date_intervention|default:"-" }}<br>
-                            <strong>Satisfaction :</strong> {{ c.cityclimadetails.satisfaction|default:"-" }}
+                            <small><strong>RDV :</strong> {{ c.cityclimadetails.date_intervention|default:"-" }}</small><br>
+                            <small><strong>Sat. :</strong> {{ c.cityclimadetails.satisfaction|default:"-" }}</small>
                         {% elif c.type_commande == 'TAPISPROP' and c.tapisdetails %}
-                            <strong>Ramassage :</strong> {{ c.tapisdetails.date_ramassage|default:"-" }}<br>
-                            <strong>Livraison :</strong> {{ c.tapisdetails.date_livraison|default:"-" }}<br>
-                            <strong>Statut :</strong> {{ c.tapisdetails.get_statut_display }}
+                            <small><strong>Livraison :</strong> {{ c.tapisdetails.date_livraison|default:"-" }}</small><br>
+                            <small><strong>Statut :</strong> {{ c.tapisdetails.get_statut_display }}</small>
                         {% else %}
                             <span class="text-muted">—</span>
                         {% endif %}
                     </td>
                     <td>
                         {% if c.cityclimadetails and c.cityclimadetails.fidelise %}
-                            <a href="{% url 'detail_fidelisation' c.cityclimadetails.id %}" class="btn btn-sm btn-success"><i class="fa-solid fa-star me-1"></i>Oui</a>
+                            <a href="{% url 'detail_fidelisation' c.cityclimadetails.id %}" class="btn btn-xs btn-success py-0 px-2 fw-bold" style="font-size: 10px;">
+                                <i class="fa-solid fa-star me-1"></i>OUI
+                            </a>
                         {% elif c.tapisdetails and c.tapisdetails.fidelise %}
-                            <a href="{% url 'detail_fidelisation' c.tapisdetails.id %}" class="btn btn-sm btn-success"><i class="fa-solid fa-star me-1"></i>Oui</a>
+                            <a href="{% url 'detail_fidelisation' c.tapisdetails.id %}" class="btn btn-xs btn-success py-0 px-2 fw-bold" style="font-size: 10px;">
+                                <i class="fa-solid fa-star me-1"></i>OUI
+                            </a>
                         {% else %}
-                            <span class="badge bg-secondary">Non</span>
+                            <span class="badge bg-secondary opacity-50" style="font-size: 10px;">NON</span>
                         {% endif %}
                     </td>
                     <td>
-                        <a href="{% url 'detail_fiche' c.id %}" class="btn btn-sm btn-primary"><i class="fa-solid fa-pen-to-square me-1"></i>voir</a>
+                        <div class="d-flex gap-1 justify-content-center">
+                            <a href="{% url 'detail_fiche' c.id %}" class="btn btn-sm btn-primary" title="Modifier/Voir">
+                                <i class="fa-solid fa-pen-to-square"></i>
+                            </a>
+
+                            {% if request.user.is_superuser or request.user.groups.all.0.name == "ADMIN" %}
+                            <form action="{% url 'supprimer_commande' c.id %}" method="POST" class="delete-form" data-client="{{ c.nom_client|escapejs }}">
+                                {% csrf_token %}
+                                <button type="button" class="btn btn-sm btn-outline-danger btn-delete-trigger" title="Supprimer">
+                                    <i class="fa-solid fa-trash"></i>
+                                </button>
+                            </form>
+                            {% endif %}
+                        </div>
                     </td>
                 </tr>
                 {% empty %}
-                <tr><td colspan="8" class="text-center">Aucune commande trouvée</td></tr>
+                <tr><td colspan="8" class="text-center py-3 text-muted fst-italic">Aucune commande trouvée</td></tr>
                 {% endfor %}
             </tbody>
         </table>
     </div>
 
-    <!-- Pagination -->
-    <nav class="mt-1">
+    {% if commandes.has_other_pages %}
+    <nav class="mt-2">
         <ul class="pagination justify-content-center pagination-sm mb-0">
             {% if commandes.has_previous %}
-                <li class="page-item"><a class="page-link" href="?page={{ commandes.previous_page_number }}">Précédent</a></li>
+                <li class="page-item"><a class="page-link" href="?page={{ commandes.previous_page_number }}{% if request.GET.urlencode %}&{{ request.GET.urlencode|cut:'page=' }}{% endif %}">Précédent</a></li>
             {% endif %}
-            {% for num in commandes.paginator.page_range %}
-                {% if commandes.number == num %}
-                    <li class="page-item active"><span class="page-link">{{ num }}</span></li>
-                {% elif num > commandes.number|add:-3 and num < commandes.number|add:3 %}
-                    <li class="page-item"><a class="page-link" href="?page={{ num }}">{{ num }}</a></li>
-                {% endif %}
-            {% endfor %}
+            
+            <li class="page-item active"><span class="page-link">Page {{ commandes.number }} sur {{ commandes.paginator.num_pages }}</span></li>
+            
             {% if commandes.has_next %}
-                <li class="page-item"><a class="page-link" href="?page={{ commandes.next_page_number }}">Suivant</a></li>
+                <li class="page-item"><a class="page-link" href="?page={{ commandes.next_page_number }}{% if request.GET.urlencode %}&{{ request.GET.urlencode|cut:'page=' }}{% endif %}">Suivant</a></li>
             {% endif %}
         </ul>
     </nav>
+    {% endif %}
 </div>
 
 <script>
-    // Recherche rapide
+    // Recherche rapide instantanée
     document.getElementById("quickSearch").addEventListener("keyup", function () {
         let value = this.value.toLowerCase();
         document.querySelectorAll("tbody tr").forEach(row => {
-            row.style.display = row.innerText.toLowerCase().includes(value) ? "" : "none";
+            if (!row.innerText.includes("Aucune commande trouvée")) {
+                row.style.display = row.innerText.toLowerCase().includes(value) ? "" : "none";
+            }
         });
     });
 
-    // Survol des lignes
-    document.querySelectorAll("tbody tr").forEach(row => {
-        row.addEventListener("mouseenter", () => row.style.backgroundColor = "#E6F4EE");
-        row.addEventListener("mouseleave", () => row.style.backgroundColor = "");
-    });
-
-    // Gestion dates: date_fin >= date_debut
+    // Gestion des dates
     const dateDebut = document.getElementById("date_debut");
     const dateFin = document.getElementById("date_fin");
+    if(dateDebut && dateFin){
+        dateDebut.addEventListener("change", function() {
+            dateFin.min = this.value;
+        });
+    }
 
-    if(dateDebut.value){ dateFin.min = dateDebut.value; }
-    dateDebut.addEventListener("change", function() {
-        dateFin.min = this.value;
-        if(dateFin.value && dateFin.value < this.value){ dateFin.value = this.value; }
-    });
+    // --- CHANGEMENT 2 : LE NOUVEAU SCRIPT DE POPUP ---
+    document.querySelectorAll('.btn-delete-trigger').forEach(btn => {
+        btn.addEventListener('click', function(e) {
+            const form = this.closest('.delete-form');
+            const client = form.getAttribute('data-client');
 
-    dateFin.addEventListener("change", function() {
-        if(dateDebut.value && this.value < dateDebut.value){ this.value = dateDebut.value; }
+            Swal.fire({
+                title: 'Supprimer ?',
+                text: `Voulez-vous vraiment supprimer la commande de ${client} ?`,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#d33',
+                cancelButtonColor: '#3085d6',
+                confirmButtonText: 'Oui, supprimer !',
+                cancelButtonText: 'Annuler'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    form.submit();
+                }
+            });
+        });
     });
 </script>
+
+<style>
+    .btn-xs { padding: 1px 5px; font-size: 10px; line-height: 1.5; border-radius: 3px; }
+    .table-hover tbody tr:hover { background-color: #f8f9fa !important; }
+    /* Aligner le bouton supprimer correctement */
+    .delete-form { display: inline-block; margin: 0; }
+</style>
 {% endblock %}

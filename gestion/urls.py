@@ -16,6 +16,7 @@ urlpatterns = [
     # Fiches clients (Page de détail unique)
     path('fiches/', views.liste_fiches, name='liste_fiches'),
     path('fiches/<int:fiche_id>/', views.detail_fiche, name='detail_fiche'), # J'utilise uniquement cette URL pour le détail
+    path('commande/supprimer/<int:id>/', views.supprimer_commande, name='supprimer_commande'),
     
     # Alertes fidélisation
     path('alertes/fidelisation/', views.alertes_fidelisation, name='alertes_fidelisation'),

@@ -5,14 +5,13 @@
     <meta charset="UTF-8">
     <title>{% block title %}CITYPROP{% endblock %}</title>
 
-    <!-- Bootstrap -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 
-    <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
-    <!-- Google Font -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
     <style>
@@ -48,15 +47,9 @@
             gap: 10px;
         }
 
-        .logo img {
-            width: 34px;
-            height: 34px;
-        }
-
+        .logo img { width: 34px; height: 34px; }
         .menu { list-style: none; padding: 0; margin: 0; }
-
         .menu li { margin: 10px 0; }
-
         .menu a {
             padding: 12px 16px;
             display: flex;
@@ -69,27 +62,10 @@
             font-size: 15px;
             position: relative;
         }
-
-        .menu a i {
-            width: 22px;
-            font-size: 16px;
-            transition: transform 0.2s ease;
-        }
-
-        .menu a:hover {
-            background: #E6F4EE;
-            color: #1D9A6C;
-        }
-
-        .menu a:hover i {
-            transform: translateX(4px);
-        }
-
-        .menu a.active {
-            background: #E6F4EE;
-            color: #1D9A6C;
-            font-weight: 600;
-        }
+        .menu a i { width: 22px; font-size: 16px; transition: transform 0.2s ease; }
+        .menu a:hover { background: #E6F4EE; color: #1D9A6C; }
+        .menu a:hover i { transform: translateX(4px); }
+        .menu a.active { background: #E6F4EE; color: #1D9A6C; font-weight: 600; }
 
         .menu a.active::before {
             content: "";
@@ -103,12 +79,7 @@
             border-radius: 0 8px 8px 0;
         }
 
-        .menu .badge {
-            margin-left: auto;
-            font-size: 11px;
-            padding: 4px 7px;
-            border-radius: 50px;
-        }
+        .menu .badge { margin-left: auto; font-size: 11px; padding: 4px 7px; border-radius: 50px; }
 
         /* TOPBAR */
         .topbar {
@@ -135,18 +106,8 @@
             font-size: 18px;
         }
 
-        .topbar-logo img {
-            width: 40px;
-            height: 40px;
-        }
-
-        .username {
-            color: #fff;
-            font-weight: 600;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-        }
+        .topbar-logo img { width: 40px; height: 40px; }
+        .username { color: #fff; font-weight: 600; display: flex; align-items: center; gap: 6px; }
 
         .logout-btn {
             display: flex;
@@ -186,7 +147,6 @@
 
 <body>
 
-<!-- SIDEBAR -->
 <nav class="sidebar">
     <div>
         <div class="logo">
@@ -195,60 +155,16 @@
         </div>
 
         <ul class="menu">
-
-            <li>
-                <a href="{% url 'dashboard' %}" class="{% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">
-                    <i class="fa-solid fa-gauge-high"></i>
-                    Dashboard
-                </a>
-            </li>
-
-            <li>
-                <a href="{% url 'nouvelle_commande' %}" class="{% if request.resolver_match.url_name == 'nouvelle_commande' %}active{% endif %}">
-                    <i class="fa-solid fa-cart-plus"></i>
-                    Créer une commande
-                </a>
-            </li>
-
-            <li>
-                <a href="{% url 'liste_fiches' %}" class="{% if request.resolver_match.url_name == 'liste_fiches' %}active{% endif %}">
-                    <i class="fa-solid fa-clipboard-list"></i>
-                    Liste des commandes
-                </a>
-            </li>
-
-            <li>
-                <a href="{% url 'alertes_fidelisation' %}">
-                    <i class="fa-solid fa-heart-circle-bolt"></i>
-                    Fidélisation
-                    {% if alertes_city|add:alertes_clima > 0 %}
-                        <span class="badge bg-danger">{{ alertes_city|add:alertes_clima }}</span>
-                    {% endif %}
-                </a>
-            </li>
-
-            <li>
-                <a href="{% url 'alertes_tapis_retard' %}" class="{% if request.resolver_match.url_name == 'alertes_tapis_retard' %}active{% endif %}">
-                    <i class="fa-solid fa-bell"></i>
-                    Alertes tapis
-                    {% if alertes_tapis > 0 %}
-                        <span class="badge bg-danger">{{ alertes_tapis }}</span>
-                    {% endif %}
-                </a>
-            </li>
-
-            <li>
-                <a href="{% url 'listes_tapis_abandon' %}" class="{% if request.resolver_match.url_name == 'listes_tapis_abandon' %}active{% endif %}">
-                    <i class="fa-solid fa-box-open"></i>
-                    Tapis abandonnés
-                </a>
-            </li>
-
+            <li><a href="{% url 'dashboard' %}" class="{% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}"><i class="fa-solid fa-gauge-high"></i> Dashboard</a></li>
+            <li><a href="{% url 'nouvelle_commande' %}" class="{% if request.resolver_match.url_name == 'nouvelle_commande' %}active{% endif %}"><i class="fa-solid fa-cart-plus"></i> Créer une commande</a></li>
+            <li><a href="{% url 'liste_fiches' %}" class="{% if request.resolver_match.url_name == 'liste_fiches' %}active{% endif %}"><i class="fa-solid fa-clipboard-list"></i> Liste des commandes</a></li>
+            <li><a href="{% url 'alertes_fidelisation' %}"><i class="fa-solid fa-heart-circle-bolt"></i> Fidélisation {% if alertes_city|add:alertes_clima > 0 %}<span class="badge bg-danger">{{ alertes_city|add:alertes_clima }}</span>{% endif %}</a></li>
+            <li><a href="{% url 'alertes_tapis_retard' %}" class="{% if request.resolver_match.url_name == 'alertes_tapis_retard' %}active{% endif %}"><i class="fa-solid fa-bell"></i> Alertes tapis {% if alertes_tapis > 0 %}<span class="badge bg-danger">{{ alertes_tapis }}</span>{% endif %}</a></li>
+            <li><a href="{% url 'listes_tapis_abandon' %}" class="{% if request.resolver_match.url_name == 'listes_tapis_abandon' %}active{% endif %}"><i class="fa-solid fa-box-open"></i> Tapis abandonnés</a></li>
         </ul>
     </div>
 </nav>
 
-<!-- TOPBAR -->
 <nav class="topbar">
     <div class="topbar-logo">
         <img src="{% static 'images/cityprop_logo.png' %}">
@@ -256,27 +172,14 @@
     </div>
 
     <div class="d-flex align-items-center gap-3">
-        <span class="username">
-            <i class="fa-solid fa-circle-user"></i>
-            {{ request.user.username }}
-        </span>
-
-        <img src="https://ui-avatars.com/api/?name={{ request.user.username }}&background=ffffff&color=157347&rounded=true"
-             class="rounded-circle shadow-sm"
-             width="38" height="38">
-
-        <a href="{% url 'logout' %}" class="btn btn-danger logout-btn">
-            <i class="fa-solid fa-power-off"></i>
-            Déconnexion
-        </a>
+        <span class="username"><i class="fa-solid fa-circle-user"></i> {{ request.user.username }}</span>
+        <img src="https://ui-avatars.com/api/?name={{ request.user.username }}&background=ffffff&color=157347&rounded=true" class="rounded-circle shadow-sm" width="38" height="38">
+        <a href="{% url 'logout' %}" class="btn btn-danger logout-btn"><i class="fa-solid fa-power-off"></i> Déconnexion</a>
     </div>
 </nav>
 
-<!-- MESSAGES -->
 {% if messages %}
-<div style="position: fixed; top: 80px; left: 50%; transform: translateX(-50%);
-            z-index: 9999; display: flex; flex-direction: column; gap: 10px;
-            width: 80%; max-width: 500px;">
+<div style="position: fixed; top: 80px; left: 50%; transform: translateX(-50%); z-index: 9999; display: flex; flex-direction: column; gap: 10px; width: 80%; max-width: 500px;">
     {% for message in messages %}
         <div class="auto-message {{ message.tags }}">
             {% if message.tags == 'success' %}<i class="fa-solid fa-circle-check me-2"></i>
@@ -305,7 +208,6 @@
 </script>
 {% endif %}
 
-<!-- CONTENT -->
 <main class="content">
     {% block content %}{% endblock %}
 </main>
