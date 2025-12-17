@@ -1,33 +1,120 @@
 {% extends "base.html" %}
+{% load static %}
+{% load humanize %}
 {% block title %}Alertes Tapis{% endblock %}
 
 {% block content %}
-<div class="container mt-4" style="font-size: 0.95rem;">
+<div class="container-fluid">
 
-    <h4 class="mb-4" style="font-weight: 600; color: #1D9A6C;">⚠️ Alertes TAPIS - Ramassage dépassé de 7 jours</h4>
+    <!-- TITRE -->
+    <div class="d-flex align-items-center justify-content-between mb-4">
+        <h4 class="fw-bold text-warning mb-0">
+            <i class="fa-solid fa-triangle-exclamation me-2"></i>
+            Alertes TAPIS – Ramassage dépassé
+            <span class="badge bg-warning text-dark ms-2">+7 jours</span>
+        </h4>
+
+        <span class="text-muted">
+            <i class="fa-solid fa-list me-1"></i>
+            Total : {{ total_alertes }}
+        </span>
+    </div>
+
+    <!-- FILTRES -->
+    <div class="card shadow-sm border-0 rounded-4 mb-4">
+        <div class="card-body">
+            <form method="get" class="row g-3 align-items-end">
+
+                <div class="col-md-4">
+                    <label class="form-label fw-semibold">
+                        <i class="fa-solid fa-magnifying-glass me-1"></i>
+                        Recherche
+                    </label>
+                    <input type="text"
+                           name="search"
+                           value="{{ search }}"
+                           class="form-control"
+                           placeholder="Nom, numéro, localisation">
+                </div>
+
+                <div class="col-md-3">
+                    <label class="form-label fw-semibold">
+                        <i class="fa-solid fa-calendar-day me-1"></i>
+                        Date ramassage
+                    </label>
+                    <input type="date"
+                           name="date_ramassage"
+                           value="{{ date_ramassage }}"
+                           class="form-control">
+                </div>
+
+                <div class="col-md-3">
+                    <label class="form-label fw-semibold">
+                        <i class="fa-solid fa-layer-group me-1"></i>
+                        Nombre de tapis
+                    </label>
+                    <input type="number"
+                           name="nb_tapis"
+                           value="{{ nb_tapis }}"
+                           min="1"
+                           class="form-control">
+                </div>
+
+                <div class="col-md-2 d-grid">
+                    <button type="submit" class="btn btn-success">
+                        <i class="fa-solid fa-filter me-1"></i>
+                        Filtrer
+                    </button>
+                </div>
+
+            </form>
+        </div>
+    </div>
 
     {% if alertes %}
-        <div class="table-responsive shadow-sm rounded">
-            <table class="table table-striped table-hover align-middle">
-                <thead class="table-dark">
+
+    <!-- TABLE -->
+    <div class="card shadow-sm border-0 rounded-4">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light text-uppercase small">
                     <tr>
-                        <th>Client</th>
-                        <th>Numéro</th>
-                        <th>Localisation</th>
-                        <th>Date Ramassage</th>
-                        <th>Nombre de tapis</th>
-                        <th>Statut</th>
-                        <th>Détails</th>
+                        <th><i class="fa-solid fa-user me-1"></i> Client</th>
+                        <th><i class="fa-solid fa-phone me-1"></i> Numéro</th>
+                        <th><i class="fa-solid fa-location-dot me-1"></i> Localisation</th>
+                        <th><i class="fa-solid fa-calendar-day me-1"></i> Ramassage</th>
+                        <th><i class="fa-solid fa-layer-group me-1"></i> Nb tapis</th>
+                        <th><i class="fa-solid fa-circle-info me-1"></i> Statut</th>
+                        <th class="text-center"><i class="fa-solid fa-eye me-1"></i> Détails</th>
                     </tr>
                 </thead>
+
                 <tbody>
                     {% for tapis in alertes %}
                     <tr>
-                        <td>{{ tapis.commande.nom_client }}</td>
-                        <td>{{ tapis.commande.numero_client }}</td>
-                        <td>{{ tapis.commande.localisation_client }}</td>
-                        <td>{{ tapis.date_ramassage|date:"d/m/Y" }}</td>
-                        <td>{{ tapis.nombre_tapis }}</td>
+
+                        <td class="fw-semibold">
+                            {{ tapis.commande.nom_client|default:"—" }}
+                        </td>
+
+                        <td>
+                            {{ tapis.commande.numero_client|default:"—" }}
+                        </td>
+
+                        <td>
+                            {{ tapis.commande.localisation_client|default:"—" }}
+                        </td>
+
+                        <td class="text-muted">
+                            {{ tapis.date_ramassage|date:"d/m/Y" }}
+                        </td>
+
+                        <td>
+                            <span class="badge bg-secondary">
+                                {{ tapis.nombre_tapis }}
+                            </span>
+                        </td>
+
                         <td>
                             {% if tapis.statut == 'NON_RESPECTE' %}
                                 <span class="badge bg-danger">{{ tapis.get_statut_display }}</span>
@@ -39,26 +126,83 @@
                                 <span class="badge bg-success">{{ tapis.get_statut_display }}</span>
                             {% elif tapis.statut == 'LIVRE-insatisfait' %}
                                 <span class="badge bg-danger">{{ tapis.get_statut_display }}</span>
-                             {% elif tapis.statut == 'ABANDON' %}
+                            {% elif tapis.statut == 'ABANDON' %}
                                 <span class="badge bg-danger">{{ tapis.get_statut_display }}</span>
                             {% else %}
                                 <span class="badge bg-secondary">{{ tapis.get_statut_display }}</span>
                             {% endif %}
                         </td>
-                        <td>
-                            <a href="{% url 'detail_alerte_tapis' tapis.id %}" class="btn btn-sm btn-primary">
-                                Détails
+
+                        <td class="text-center">
+                            <a href="{% url 'detail_alerte_tapis' tapis.id %}"
+                               class="btn btn-sm btn-outline-primary">
+                                <i class="fa-solid fa-eye me-1"></i>
+                                Voir
                             </a>
                         </td>
+
                     </tr>
                     {% endfor %}
                 </tbody>
             </table>
         </div>
+    </div>
+
+    <!-- PAGINATION -->
+    {% if page_obj.has_other_pages %}
+    <nav class="mt-4">
+        <ul class="pagination justify-content-center">
+
+            {% if page_obj.has_previous %}
+            <li class="page-item">
+                <a class="page-link"
+                   href="?page={{ page_obj.previous_page_number }}&search={{ search }}&date_ramassage={{ date_ramassage }}&nb_tapis={{ nb_tapis }}">
+                    <i class="fa-solid fa-angle-left"></i>
+                </a>
+            </li>
+            {% endif %}
+
+            {% for num in page_obj.paginator.page_range %}
+                {% if page_obj.number == num %}
+                    <li class="page-item active">
+                        <span class="page-link">{{ num }}</span>
+                    </li>
+                {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                    <li class="page-item">
+                        <a class="page-link"
+                           href="?page={{ num }}&search={{ search }}&date_ramassage={{ date_ramassage }}&nb_tapis={{ nb_tapis }}">
+                            {{ num }}
+                        </a>
+                    </li>
+                {% endif %}
+            {% endfor %}
+
+            {% if page_obj.has_next %}
+            <li class="page-item">
+                <a class="page-link"
+                   href="?page={{ page_obj.next_page_number }}&search={{ search }}&date_ramassage={{ date_ramassage }}&nb_tapis={{ nb_tapis }}">
+                    <i class="fa-solid fa-angle-right"></i>
+                </a>
+            </li>
+            {% endif %}
+
+        </ul>
+    </nav>
+    {% endif %}
+
     {% else %}
-        <div class="alert alert-success mt-3" style="font-weight: 500;">
-            ✅ Aucune alerte TAPIS pour le moment.
+
+    <!-- EMPTY STATE -->
+    <div class="card border-0 shadow-sm mt-4">
+        <div class="card-body text-center py-5">
+            <i class="fa-solid fa-circle-check text-success fa-3x mb-3"></i>
+            <h5 class="fw-bold">Aucune alerte TAPIS</h5>
+            <p class="text-muted mb-0">
+                Aucun ramassage en retard pour le moment.
+            </p>
         </div>
+    </div>
+
     {% endif %}
 </div>
 {% endblock %}

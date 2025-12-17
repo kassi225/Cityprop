@@ -96,7 +96,7 @@
                 <h5>{{ tapis_pret }}</h5>
             </div>
             <div class="col-md">
-                <span class="badge bg-info text-dark badge-status">Client indispo</span>
+                <span class="badge bg-info text-dark badge-status">Tapis PRET Client indispo</span>
                 <h5>{{ tapis_client_indispo }}</h5>
             </div>
             <div class="col-md">
@@ -124,7 +124,7 @@
             </thead>
             <tbody>
                 {% for c in commandes_recents %}
-                <tr onclick="window.location.href='{% url 'detail_fiche' c.id %}'">
+                <tr>
                     <td>{{ c.nom_client }}</td>
                     <td>{{ c.numero_client }}</td>
                     <td>{{ c.type_commande }}</td>

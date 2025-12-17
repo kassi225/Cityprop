@@ -218,7 +218,7 @@ input, select, textarea { font-size: 0.85rem; padding: 0.5rem 0.75rem; border-ra
                                         <select name="statut" class="form-select">
                                             <option value="NON_RESPECTE" {% if tapis.statut == 'NON_RESPECTE' %}selected{% endif %}>Délai non respecté</option>
                                             <option value="PRET" {% if tapis.statut == 'PRET' %}selected{% endif %}>En attente</option>
-                                            <option value="CLIENT_INDISPO" {% if tapis.statut == 'CLIENT_INDISPO' %}selected{% endif %}>Client indisponible</option>
+                                            <option value="CLIENT_INDISPO" {% if tapis.statut == 'CLIENT_INDISPO' %}selected{% endif %}>Tapis prêt Client indisponible</option>
                                             <option value="LIVRE-satisfait" {% if tapis.statut == 'LIVRE-satisfait' %}selected{% endif %}>Livré satisfait</option>
                                             <option value="LIVRE-insatisfait" {% if tapis.statut == 'LIVRE-insatisfait' %}selected{% endif %}>Livré insatisfait</option>
                                             <option value="ABANDON" {% if tapis.statut == 'ABANDON' %}selected{% endif %}>Tapis Abandonné/option>
@@ -378,185 +378,186 @@ input, select, textarea { font-size: 0.85rem; padding: 0.5rem 0.75rem; border-ra
 </div>
 
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    const lignesFactureContainer = document.getElementById('lignesFacture');
-    const ajouterLigneBtn = document.getElementById('ajouterLigne');
-    const totalHTFacture = document.getElementById('totalHTFacture');
-    const montantReductionDisplay = document.getElementById('montantReductionDisplay');
+    document.addEventListener('DOMContentLoaded', function() {
+        const lignesFactureContainer = document.getElementById('lignesFacture');
+        const ajouterLigneBtn = document.getElementById('ajouterLigne');
+        const totalHTFacture = document.getElementById('totalHTFacture');
+        const montantReductionDisplay = document.getElementById('montantReductionDisplay');
 
-    // Réduction inputs
-    const tauxReductionInput = document.getElementById('tauxReductionInput');
-    const montantReductionInput = document.getElementById('montantReductionInput');
-    const totalFinalFacture = document.getElementById('totalFinalFacture');
+        // Réduction inputs
+        const tauxReductionInput = document.getElementById('tauxReductionInput');
+        const montantReductionInput = document.getElementById('montantReductionInput');
+        const totalFinalFacture = document.getElementById('totalFinalFacture');
 
-    // Fonction de formatage (ajoute des séparateurs de milliers)
-    const formatNumber = (num) => {
-        // Utilisez Math.round pour gérer les flottants sans décimales visibles
-        return Math.round(num).toString().replace(/\B(?=(\d{3})+(?!\d))/g, "\u00A0"); // Espace insécable
-    };
-    
-    // --- Partie 1: Calcul des totaux de lignes et généraux ---
-
-    // Calcule le total d'une ligne spécifique
-    const calculateLineTotal = (lineElement) => {
-        const quantite = parseFloat(lineElement.querySelector('.quantite-input').value) || 0;
-        const prixUnitaire = parseFloat(lineElement.querySelector('.prix-unitaire-input').value) || 0;
-        const total = quantite * prixUnitaire;
+        // Fonction de formatage (ajoute des séparateurs de milliers)
+        const formatNumber = (num) => {
+            // Utilisez Math.round pour gérer les flottants sans décimales visibles
+            return Math.round(num).toString().replace(/\B(?=(\d{3})+(?!\d))/g, "\u00A0"); // Espace insécable
+        };
         
-        lineElement.querySelector('.total-ligne-display').value = formatNumber(total); 
-        return total;
-    };
+        // --- Partie 1: Calcul des totaux de lignes et généraux ---
 
-    // Calcule et met à jour les totaux globaux
-    const updateGeneralTotals = () => {
-        let generalTotal = 0;
-        // 1. Calculer le Total HT (qui est aussi le TTC Provisoire sans TVA)
-        document.querySelectorAll('.ligne-facture').forEach(lineElement => {
-            generalTotal += calculateLineTotal(lineElement);
-        });
-
-        // 2. Afficher le Total HT/TTC
-        totalHTFacture.textContent = formatNumber(generalTotal) + " FCFA";
-
-        // 3. Recalculer le Total Final (en utilisant la valeur de réduction actuelle)
-        updateFinalTotal(); 
-
-        return generalTotal;
-    };
-
-    // Fonction pour attacher les écouteurs de ligne
-    const setupInputListeners = (lineElement) => {
-        const quantiteInput = lineElement.querySelector('.quantite-input');
-        const prixUnitaireInput = lineElement.querySelector('.prix-unitaire-input');
-
-        // Gérer la suppression de ligne
-        const removeBtn = lineElement.querySelector('.remove-line');
-        removeBtn.addEventListener('click', function() {
-            if (lignesFactureContainer.children.length > 1) {
-                lineElement.remove();
-                updateGeneralTotals(); 
-            } else {
-                alert("Vous devez conserver au moins une ligne de prestation.");
-            }
-        });
-        
-        // Gérer le calcul automatique
-        [quantiteInput, prixUnitaireInput].forEach(input => {
-            input.addEventListener('input', () => updateGeneralTotals());
-        });
-        
-        // Calculer la ligne initiale
-        calculateLineTotal(lineElement); 
-    };
-
-    // Ajout d'une nouvelle ligne
-    ajouterLigneBtn.addEventListener('click', function(){
-        const newLigneHTML = `
-            <div class="row g-2 ligne-facture align-items-center mb-2">
-                <div class="col-4"><input type="text" name="designation[]" class="form-control form-control-sm" placeholder="Désignation de la prestation"></div>
-                <div class="col-1"><input type="number" name="quantite[]" class="form-control form-control-sm text-end quantite-input" placeholder="Qté" value="1" min="1"></div>
-                <div class="col-2"><input type="number" name="prix_unitaire[]" class="form-control form-control-sm text-end prix-unitaire-input" placeholder="Prix Unitaire" min="0"></div>
-                <div class="col-2"><input type="text" class="form-control form-control-sm text-end total-ligne-display" value="0" readonly></div>
-                <div class="col-2"><input type="text" name="note_prix[]" class="form-control form-control-sm" placeholder="Ex: lot de 7, HT"></div>
-                <div class="col-1">
-                    <button type="button" class="btn btn-outline-danger btn-sm w-100 remove-line" title="Supprimer cette ligne">
-                        <i class="fa-solid fa-trash-alt"></i>
-                    </button>
-                </div>
-            </div>
-        `;
-        lignesFactureContainer.insertAdjacentHTML('beforeend', newLigneHTML);
-        const newLigne = lignesFactureContainer.lastElementChild;
-        setupInputListeners(newLigne);
-        updateGeneralTotals();
-    });
-
-    // 1. Initialiser toutes les lignes existantes au chargement du DOM
-    document.querySelectorAll('.ligne-facture').forEach(setupInputListeners);
-
-
-    // --- Partie 2: Logique de Réduction (Taux vs Montant) ---
-
-    const updateFinalTotal = () => {
-        // Récupérer le Total HT/TTC (base pour la réduction)
-        const totalBase = parseFloat(totalHTFacture.textContent.replace(/\s/g, '')) || 0;
-        
-        // Récupérer le montant de la réduction saisi/calculé
-        let reduction = parseFloat(montantReductionInput.value) || 0;
-
-        // Limiter la réduction au total base pour éviter les montants négatifs
-        if (reduction > totalBase) {
-            reduction = totalBase;
-            montantReductionInput.value = reduction.toFixed(0);
-        }
-
-        const totalFinal = totalBase - reduction;
-        
-        montantReductionDisplay.textContent = formatNumber(reduction) + " FCFA";
-        totalFinalFacture.value = formatNumber(totalFinal);
-    };
-
-    // A. Si l'utilisateur modifie le MONTANT de réduction
-    montantReductionInput.addEventListener('input', function() {
-        let reductionMontant = parseFloat(this.value) || 0;
-        const totalBase = parseFloat(totalHTFacture.textContent.replace(/\s/g, '')) || 0;
-
-        // Limiter le montant à la base
-        if (reductionMontant < 0) reductionMontant = 0;
-        if (reductionMontant > totalBase) reductionMontant = totalBase;
-
-        let taux = 0;
-        if (totalBase > 0) {
-            taux = (reductionMontant / totalBase) * 100;
-        }
-        
-        // Mettre à jour le taux (formaté à 2 décimales)
-        tauxReductionInput.value = taux.toFixed(2);
-        this.value = reductionMontant.toFixed(0); // S'assurer que la valeur est propre
-        
-        updateFinalTotal();
-    });
-
-    // B. Si l'utilisateur modifie le TAUX de réduction
-    tauxReductionInput.addEventListener('input', function() {
-        let taux = parseFloat(this.value) || 0;
-        
-        // Borner le taux entre 0 et 100
-        if (taux < 0) taux = 0;
-        if (taux > 100) taux = 100;
-        this.value = taux.toFixed(2); // S'assurer que la valeur est propre
-
-        const totalBase = parseFloat(totalHTFacture.textContent.replace(/\s/g, '')) || 0;
-        
-        const reductionMontant = (totalBase * taux) / 100;
-        
-        // Mettre à jour le montant (formaté à 0 décimale)
-        montantReductionInput.value = Math.round(reductionMontant).toFixed(0);
-        
-        updateFinalTotal();
-    });
-
-    // --- Initialisation au chargement du modal ---
-    var factureModal = document.getElementById('factureModal');
-    if (factureModal) {
-        factureModal.addEventListener('shown.bs.modal', function () {
-            // S'assurer que les totaux sont recalculés avec les dernières valeurs de la commande
-            updateGeneralTotals(); 
-            // Recalculer la réduction et le total final au cas où le total de base a changé
+        // Calcule le total d'une ligne spécifique
+        const calculateLineTotal = (lineElement) => {
+            const quantite = parseFloat(lineElement.querySelector('.quantite-input').value) || 0;
+            const prixUnitaire = parseFloat(lineElement.querySelector('.prix-unitaire-input').value) || 0;
+            const total = quantite * prixUnitaire;
             
-            // On prend la valeur du TAUX saisi (s'il y en a une) et on recalcule le montant
-            if (tauxReductionInput.value) {
-                tauxReductionInput.dispatchEvent(new Event('input'));
-            } else if (montantReductionInput.value) {
-                montantReductionInput.dispatchEvent(new Event('input'));
-            } else {
-                updateFinalTotal();
-            }
-        });
-    }
+            lineElement.querySelector('.total-ligne-display').value = formatNumber(total); 
+            return total;
+        };
 
-    // Calculer les totaux au chargement de la page (même si le modal est caché)
-    updateGeneralTotals(); 
-});
+        // Calcule et met à jour les totaux globaux
+        const updateGeneralTotals = () => {
+            let generalTotal = 0;
+            // 1. Calculer le Total HT (qui est aussi le TTC Provisoire sans TVA)
+            document.querySelectorAll('.ligne-facture').forEach(lineElement => {
+                generalTotal += calculateLineTotal(lineElement);
+            });
+
+            // 2. Afficher le Total HT/TTC
+            totalHTFacture.textContent = formatNumber(generalTotal) + " FCFA";
+
+            // 3. Recalculer le Total Final (en utilisant la valeur de réduction actuelle)
+            updateFinalTotal(); 
+
+            return generalTotal;
+        };
+
+        // Fonction pour attacher les écouteurs de ligne
+        const setupInputListeners = (lineElement) => {
+            const quantiteInput = lineElement.querySelector('.quantite-input');
+            const prixUnitaireInput = lineElement.querySelector('.prix-unitaire-input');
+
+            // Gérer la suppression de ligne
+            const removeBtn = lineElement.querySelector('.remove-line');
+            removeBtn.addEventListener('click', function() {
+                if (lignesFactureContainer.children.length > 1) {
+                    lineElement.remove();
+                    updateGeneralTotals(); 
+                } else {
+                    alert("Vous devez conserver au moins une ligne de prestation.");
+                }
+            });
+            
+            // Gérer le calcul automatique
+            [quantiteInput, prixUnitaireInput].forEach(input => {
+                input.addEventListener('input', () => updateGeneralTotals());
+            });
+            
+            // Calculer la ligne initiale
+            calculateLineTotal(lineElement); 
+        };
+
+        // Ajout d'une nouvelle ligne
+        ajouterLigneBtn.addEventListener('click', function(){
+            const newLigneHTML = `
+                <div class="row g-2 ligne-facture align-items-center mb-2">
+                    <div class="col-4"><input type="text" name="designation[]" class="form-control form-control-sm" placeholder="Désignation de la prestation"></div>
+                    <div class="col-1"><input type="number" name="quantite[]" class="form-control form-control-sm text-end quantite-input" placeholder="Qté" value="1" min="1"></div>
+                    <div class="col-2"><input type="number" name="prix_unitaire[]" class="form-control form-control-sm text-end prix-unitaire-input" placeholder="Prix Unitaire" min="0"></div>
+                    <div class="col-2"><input type="text" class="form-control form-control-sm text-end total-ligne-display" value="0" readonly></div>
+                    <div class="col-2"><input type="text" name="note_prix[]" class="form-control form-control-sm" placeholder="Ex: lot de 7, HT"></div>
+                    <div class="col-1">
+                        <button type="button" class="btn btn-outline-danger btn-sm w-100 remove-line" title="Supprimer cette ligne">
+                            <i class="fa-solid fa-trash-alt"></i>
+                        </button>
+                    </div>
+                </div>
+            `;
+            lignesFactureContainer.insertAdjacentHTML('beforeend', newLigneHTML);
+            const newLigne = lignesFactureContainer.lastElementChild;
+            setupInputListeners(newLigne);
+            updateGeneralTotals();
+        });
+
+        // 1. Initialiser toutes les lignes existantes au chargement du DOM
+        document.querySelectorAll('.ligne-facture').forEach(setupInputListeners);
+
+
+        // --- Partie 2: Logique de Réduction (Taux vs Montant) ---
+
+        const updateFinalTotal = () => {
+            // Récupérer le Total HT/TTC (base pour la réduction)
+            const totalBase = parseFloat(totalHTFacture.textContent.replace(/\s/g, '')) || 0;
+            
+            // Récupérer le montant de la réduction saisi/calculé
+            let reduction = parseFloat(montantReductionInput.value) || 0;
+
+            // Limiter la réduction au total base pour éviter les montants négatifs
+            if (reduction > totalBase) {
+                reduction = totalBase;
+                montantReductionInput.value = reduction.toFixed(0);
+            }
+
+            const totalFinal = totalBase - reduction;
+            
+            montantReductionDisplay.textContent = formatNumber(reduction) + " FCFA";
+            totalFinalFacture.value = formatNumber(totalFinal);
+        };
+
+        // A. Si l'utilisateur modifie le MONTANT de réduction
+        montantReductionInput.addEventListener('input', function() {
+            let reductionMontant = parseFloat(this.value) || 0;
+            const totalBase = parseFloat(totalHTFacture.textContent.replace(/\s/g, '')) || 0;
+
+            // Limiter le montant à la base
+            if (reductionMontant < 0) reductionMontant = 0;
+            if (reductionMontant > totalBase) reductionMontant = totalBase;
+
+            let taux = 0;
+            if (totalBase > 0) {
+                taux = (reductionMontant / totalBase) * 100;
+            }
+            
+            // Mettre à jour le taux (formaté à 2 décimales)
+            tauxReductionInput.value = taux.toFixed(2);
+            this.value = reductionMontant.toFixed(0); // S'assurer que la valeur est propre
+            
+            updateFinalTotal();
+        });
+
+        // B. Si l'utilisateur modifie le TAUX de réduction
+        tauxReductionInput.addEventListener('input', function() {
+            let taux = parseFloat(this.value) || 0;
+            
+            // Borner le taux entre 0 et 100
+            if (taux < 0) taux = 0;
+            if (taux > 100) taux = 100;
+            this.value = taux.toFixed(2); // S'assurer que la valeur est propre
+
+            const totalBase = parseFloat(totalHTFacture.textContent.replace(/\s/g, '')) || 0;
+            
+            const reductionMontant = (totalBase * taux) / 100;
+            
+            // Mettre à jour le montant (formaté à 0 décimale)
+            montantReductionInput.value = Math.round(reductionMontant).toFixed(0);
+            
+            updateFinalTotal();
+        });
+
+        // --- Initialisation au chargement du modal ---
+        var factureModal = document.getElementById('factureModal');
+        if (factureModal) {
+            factureModal.addEventListener('shown.bs.modal', function () {
+                // S'assurer que les totaux sont recalculés avec les dernières valeurs de la commande
+                updateGeneralTotals(); 
+                // Recalculer la réduction et le total final au cas où le total de base a changé
+                
+                // On prend la valeur du TAUX saisi (s'il y en a une) et on recalcule le montant
+                if (tauxReductionInput.value) {
+                    tauxReductionInput.dispatchEvent(new Event('input'));
+                } else if (montantReductionInput.value) {
+                    montantReductionInput.dispatchEvent(new Event('input'));
+                } else {
+                    updateFinalTotal();
+                }
+            });
+        }
+
+        // Calculer les totaux au chargement de la page (même si le modal est caché)
+        updateGeneralTotals(); 
+    });
 </script>
+
 {% endblock %}

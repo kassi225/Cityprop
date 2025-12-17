@@ -456,85 +456,156 @@ def voir_facture(request, facture_id):
 
 @login_required
 def alertes_fidelisation(request):
-    """
-    Liste des commandes devant être rappelées pour fidélisation
-    CITYPROP: date_intervention > 6 mois
-    CLIMATISEUR: date_intervention > 3 mois
-    TAPISPROP: date_livraison > 6 mois
-    """
     now = timezone.now().date()
-
-    # CITYPROP → intervention > 6 mois
-    city_alertes = CityClimaDetails.objects.filter(
+    
+    # Récupération des paramètres de filtre/recherche
+    search_query = request.GET.get('search', '')
+    page_number = request.GET.get('page', 1)
+    
+    # --- 1. Requêtes de base pour les alertes (filtrées par temps écoulé) ---
+    
+    # Création d'un filtre Q pour la recherche sur Nom ou Numéro de client
+    search_filter = Q()
+    if search_query:
+        search_filter = Q(commande__nom_client__icontains=search_query) | \
+                        Q(commande__numero_client__icontains=search_query)
+                        
+    # 1. CITYPROP (intervention > 6 mois)
+    city_qs = CityClimaDetails.objects.filter(
+        search_filter, # Application de la recherche
         fidelise=False,
         commande__type_commande='CITYPROP',
         date_intervention__isnull=False,
         date_intervention__lte=now - timedelta(days=180)
-    )
+    ).select_related('commande')
 
-    # CLIMATISEUR → intervention > 3 mois
-    clima_alertes = CityClimaDetails.objects.filter(
+    # 2. CLIMATISEUR (intervention > 3 mois)
+    clima_qs = CityClimaDetails.objects.filter(
+        search_filter, # Application de la recherche
         fidelise=False,
         commande__type_commande='CLIMATISEUR',
         date_intervention__isnull=False,
         date_intervention__lte=now - timedelta(days=90)
-    )
+    ).select_related('commande')
 
-    # TAPISPROP → livraison > 6 mois
-    tapis_alertes = TapisDetails.objects.filter(
+    # 3. TAPISPROP (livraison > 6 mois)
+    tapis_qs = TapisDetails.objects.filter(
+        search_filter, # Application de la recherche
         fidelise=False,
         date_livraison__isnull=False,
-        date_livraison__lte=now - timedelta(days=180)
-    )
+        date_livraison__lte=now - timedelta(days=180),
+        # Le statut 'LIVRE-satisfait' est la seule fin qui nécessite une fidélisation
+        statut__in=['LIVRE-satisfait', 'LIVRE-insatisfait'] 
+    ).select_related('commande')
+
+    # --- 2. Unification et normalisation des données ---
+    alertes_list = []
+    
+    # Normalisation des alertes Cityprop/Climatiseur
+    for obj in list(city_qs) + list(clima_qs):
+        alertes_list.append({
+            'id': obj.id,
+            'type': obj.commande.get_type_commande_display(),
+            'nom_client': obj.commande.nom_client,
+            'numero_client': obj.commande.numero_client,
+            'date_cle': obj.date_intervention,
+            'url_detail': obj.id, # ID pour le lien fidelisation
+            'url_commande': obj.commande.id, # ID pour le lien commande
+        })
+        
+    # Normalisation des alertes Tapisprop
+    for obj in tapis_qs:
+        alertes_list.append({
+            'id': obj.id,
+            'type': obj.commande.get_type_commande_display(),
+            'nom_client': obj.commande.nom_client,
+            'numero_client': obj.commande.numero_client,
+            'date_cle': obj.date_livraison, # Date clé est la date de livraison pour Tapisprop
+            'url_detail': obj.id,
+            'url_commande': obj.commande.id,
+        })
+        
+    # Tri de la liste unifiée par la date clé (la plus ancienne d'abord)
+    alertes_list.sort(key=lambda x: x['date_cle'])
+    
+    # --- 3. Pagination ---
+    paginator = Paginator(alertes_list, 20) # 20 éléments par page
+    page_obj = paginator.get_page(page_number)
 
     context = {
-        "city_alertes": city_alertes,
-        "clima_alertes": clima_alertes,
-        "tapis_alertes": tapis_alertes,
+        "page_obj": page_obj,
+        "alertes_list": page_obj.object_list, # La liste pour le template
+        "total_alertes": len(alertes_list), # Le total non paginé
+        "search_query": search_query, # Pour conserver le filtre dans le template
     }
     return render(request, "index/fidelisation.html", context)
-
 
 @login_required
 def marquer_fidelise(request, id):
     """
-    Marque une commande comme fidélisée et enregistre un commentaire facultatif
+    Marque une commande comme fidélisée et enregistre un commentaire facultatif.
     """
-    commentaire = request.POST.get("commentaire", "").strip()
+    
+    if request.method != 'POST':
+        return redirect('alertes_fidelisation')
 
+    commentaire = request.POST.get("commentaire", "").strip()
+    # fidelise_check est 'True' uniquement si la case est cochée (pour les cas non encore fidélisés)
+    fidelise_action = request.POST.get("fidelise_check") == 'True'
+    
     try:
-        # Identifier le détail correspondant à l'ID
+        # 1. Identifier le détail
+        detail = None
         if CityClimaDetails.objects.filter(id=id).exists():
             detail = CityClimaDetails.objects.get(id=id)
             type_detail = "CITYCLIMA"
-        else:
+        elif TapisDetails.objects.filter(id=id).exists():
             detail = TapisDetails.objects.get(id=id)
             type_detail = "TAPIS"
+        else:
+            messages.error(request, "Détail de commande introuvable.")
+            return redirect('alertes_fidelisation')
 
-        # Marquer la commande comme fidélisée
-        detail.fidelise = True
-        detail.save()
-
-        # Enregistrer le commentaire dans FidelisationNote si présent
+        # 2. Logique de Marquage (seulement si non encore fidélisé ET case cochée)
+        marquage_effectue = False
+        if fidelise_action and not detail.fidelise:
+            detail.fidelise = True
+            detail.save()
+            marquage_effectue = True
+            # Message de succès pour le marquage de fidélisation
+            messages.success(request, f"Le client {detail.commande.nom_client} est désormais FIDÉLISÉ. Il ne sera plus en alerte.")
+        
+        # 3. Enregistrement du commentaire (si présent)
         if commentaire:
+            
+            # Si le marquage a eu lieu lors de cette soumission, on le note dans la FidelisationNote
+            is_fidelise_note = marquage_effectue
+
+            # Création de la FidelisationNote
             if type_detail == "CITYCLIMA":
                 FidelisationNote.objects.create(
                     detail_city_clima=detail,
-                    commentaire=commentaire
+                    commentaire=commentaire,
+                    fidelise_marquee=is_fidelise_note
                 )
             else:
                 FidelisationNote.objects.create(
                     detail_tapis=detail,
-                    commentaire=commentaire
+                    commentaire=commentaire,
+                    fidelise_marquee=is_fidelise_note
                 )
+            
+            # Message de succès pour l'ajout de commentaire seul (si pas de marquage)
+            if not marquage_effectue:
+                 messages.success(request, "Observation ajoutée avec succès.")
 
-        messages.success(request, "Fidélisation enregistrée avec succès.")
 
     except Exception as e:
         print("Erreur fidélisation:", e)
-        messages.error(request, "Impossible de mettre à jour la fidélisation.")
+        messages.error(request, "Impossible de traiter la demande de fidélisation.")
 
-    return redirect('alertes_fidelisation')
+    # Rediriger vers la page détaillée pour voir le nouvel état/commentaire
+    return redirect('detail_fidelisation', id=id)
 
 @login_required
 def detail_fidelisation(request, id):
@@ -589,21 +660,76 @@ def detail_fidelisation(request, id):
 
 @login_required
 def alertes_tapis_retard(request):
+    """
+    Liste des alertes tapis dont le ramassage est dépassé de 7 jours,
+    avec filtres et pagination.
+    """
+
     today = timezone.now().date()
-    
-    # Liste des statuts qui arrêtent l'alerte
-    STATUTS_FINAUX = ['LIVRE-satisfait', 'LIVRE-insatisfait', 'ABANDON']
-    
-    # On récupère les commandes TAPISPROP dont la date de ramassage est dépassée de 7 jours
-    # et qui ne sont pas encore résolues (statut non inclus dans STATUTS_FINAUX)
+
+    # Statuts qui stoppent l'alerte
+    STATUTS_FINAUX = [
+        'LIVRE-satisfait',
+        'LIVRE-insatisfait',
+        'ABANDON'
+    ]
+
+    # =========================
+    # FILTRES (GET)
+    # =========================
+    search = request.GET.get("search", "")
+    date_ramassage = request.GET.get("date_ramassage", "")
+    nb_tapis = request.GET.get("nb_tapis", "")
+
+    # =========================
+    # QUERYSET DE BASE
+    # =========================
     alertes = TapisDetails.objects.filter(
         date_ramassage__isnull=False,
         date_ramassage__lte=today - timedelta(days=7)
-    ).exclude(statut__in=STATUTS_FINAUX) # <-- Modification ici pour exclure ABANDON
+    ).exclude(
+        statut__in=STATUTS_FINAUX
+    )
+
+    # =========================
+    # RECHERCHE GLOBALE
+    # =========================
+    if search:
+        alertes = alertes.filter(
+            Q(commande__nom_client__icontains=search) |
+            Q(commande__numero_client__icontains=search) |
+            Q(commande__localisation_client__icontains=search)
+        )
+
+    # =========================
+    # FILTRES SPÉCIFIQUES
+    # =========================
+    if date_ramassage:
+        alertes = alertes.filter(date_ramassage=date_ramassage)
+
+    if nb_tapis:
+        alertes = alertes.filter(nombre_tapis=nb_tapis)
+
+    alertes = alertes.order_by("-date_ramassage")
+
+    # =========================
+    # PAGINATION
+    # =========================
+    paginator = Paginator(alertes, 10)  # 10 lignes / page
+    page_number = request.GET.get("page")
+    page_obj = paginator.get_page(page_number)
 
     context = {
-        "alertes": alertes
+        "alertes": page_obj,
+        "page_obj": page_obj,
+        "total_alertes": alertes.count(),
+
+        # valeurs filtres
+        "search": search,
+        "date_ramassage": date_ramassage,
+        "nb_tapis": nb_tapis,
     }
+
     return render(request, "index/alerte_tapis.html", context)
 
 

@@ -176,7 +176,10 @@ class FidelisationNote(models.Model):
     detail_tapis = models.ForeignKey(TapisDetails, null=True, blank=True, on_delete=models.CASCADE)
     commentaire = models.TextField()
     date = models.DateTimeField(auto_now_add=True)
-
+    
+    # --- AJOUTER CETTE LIGNE ---
+    fidelise_marquee = models.BooleanField(default=False) 
+    
     @property
     def client_name(self):
         if self.detail_city_clima:
@@ -187,8 +190,8 @@ class FidelisationNote(models.Model):
 
     def __str__(self):
         return f"Note fidélisation {self.client_name} - {self.date}"
-    
-    
+
+
 class TapisAlerteCommentaire(models.Model):
     tapis = models.ForeignKey(TapisDetails, on_delete=models.CASCADE, related_name="commentaires_alerte")
     texte = models.TextField()
