@@ -36,5 +36,9 @@ urlpatterns = [
     path('facture/creer/<int:fiche_id>/', views.creer_facture, name='creer_facture'),
     path('facture/<int:facture_id>/', views.voir_facture, name='voir_facture'),
     path('devis/<int:facture_id>/telecharger/', views.telecharger_devis_pdf, name='telecharger_devis_pdf'),
+    # ... vos autres urls ...
+    path('facture/modifier/<int:pk>/', views.modifier_facture, name='modifier_facture'),
+    path('facture/supprimer/<int:pk>/', views.supprimer_facture, name='supprimer_facture'),
+
 
 ]

@@ -29,9 +29,8 @@ input, select, textarea { font-size: 0.85rem; padding: 0.5rem 0.75rem; border-ra
 }
 </style>
 
-<div class="container mt-4 mb-5">
-
-    <h4 class="mb-4 text-primary"><i class="fa-solid fa-file-invoice me-2"></i>Commande N°{{ commande.id }}: **{{ commande.nom_client }}**</h4>
+<div class="container" style="margin-top: 0.2rem !important; margin-bottom: 0.5rem !important;">
+    <h5 class="mb-4 text-primary"><i class="fa-solid fa-file-invoice me-2"></i>Commande N°{{ commande.id }}: **{{ commande.nom_client }}**</h5>
 
     <div class="row g-4">
         <div class="col-lg-6 col-md-12">
@@ -109,33 +108,91 @@ input, select, textarea { font-size: 0.85rem; padding: 0.5rem 0.75rem; border-ra
                 </div>
             </div>
 
-            <div class="card border-info">
-                <div class="card-header bg-info text-white d-flex justify-content-between align-items-center">
-                    <i class="fa-solid fa-receipt me-1"></i> Factures & Devis Associés ({{ factures|length }})
-                    <button class="btn btn-sm btn-light p-1" type="button" data-bs-toggle="collapse" data-bs-target="#facturesCard">
-                        <i class="fa-solid fa-chevron-down fa-fw"></i>
-                    </button>
-                </div>
-                <div class="card-body p-0 collapse show" id="facturesCard">
-                    {% if factures %}
-                        <ul class="list-group list-group-flush small">
-                            {% for facture in factures %}
-                                <li class="list-group-item d-flex justify-content-between align-items-center">
-                                    <span>
-                                        **<span class="text-uppercase text-primary">{{ facture.type_document }}</span>** ({{ facture.date_emission|date:"d/m/Y" }}) - 
-                                        <em class="text-muted">{{ facture.objet }}</em>
-                                    </span>
-                                    <a href="{% url 'voir_facture' facture.id %}" class="btn btn-sm btn-outline-primary" title="Voir ou télécharger la facture">
-                                        <i class="fa-solid fa-download"></i> PDF
+                    
+        <div class="card border-info">
+            <div class="card-header bg-info text-white d-flex justify-content-between align-items-center">
+                <i class="fa-solid fa-receipt me-1"></i> Factures & Devis Associés ({{ factures|length }})
+                <button class="btn btn-sm btn-light p-1" type="button" data-bs-toggle="collapse" data-bs-target="#facturesCard">
+                    <i class="fa-solid fa-chevron-down fa-fw"></i>
+                </button>
+            </div>
+            <div class="card-body p-0 collapse show" id="facturesCard">
+                {% if factures %}
+                    <ul class="list-group list-group-flush small">
+                        {% for facture in factures %}
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                <span>
+                                    **<span class="text-uppercase text-primary">{{ facture.type_document }}</span>** ({{ facture.date_emission|date:"d/m/Y" }}) - 
+                                    <em class="text-muted">{{ facture.objet }}</em> - 
+                                    <strong class="text-dark">{{ facture.total|default:"0" }} FCFA</strong>
+                                </span>
+                                <div class="btn-group">
+                                    <a href="{% url 'voir_facture' facture.id %}" class="btn btn-sm btn-outline-primary" title="Télécharger PDF">
+                                        <i class="fa-solid fa-file-pdf"></i>
                                     </a>
-                                </li>
-                            {% endfor %}
-                        </ul>
-                    {% else %}
-                        <p class="text-muted p-3 mb-0 small">Aucun document (facture/devis) créé pour cette commande.</p>
-                    {% endif %}
+                                    <button type="button" class="btn btn-sm btn-outline-warning btn-edit-facture" 
+                                            data-id="{{ facture.id }}" 
+                                            title="Modifier la facture">
+                                        <i class="fa-solid fa-pen"></i>
+                                    </button>
+                                    <button type="button" class="btn btn-sm btn-outline-danger btn-delete-facture" 
+                                            data-id="{{ facture.id }}" 
+                                            data-numero="{{ facture.numero_document }}"
+                                            title="Supprimer la facture">
+                                        <i class="fa-solid fa-trash"></i>
+                                    </button>
+                                </div>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                {% else %}
+                    <p class="text-muted p-3 mb-0 small">Aucun document créé pour cette commande.</p>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="modal fade" id="modifierFactureModal" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-xl">
+                <div class="modal-content border-warning">
+                    <form method="POST" id="formModifierFacture">
+                        {% csrf_token %}
+                        <div class="modal-header bg-warning text-dark">
+                            <h5 class="modal-title"><i class="fa-solid fa-pen-to-square me-2"></i>Modifier <span id="editTitle"></span></h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
+                        </div>
+                        <div class="modal-body" id="modifierFactureBody">
+                            <p class="text-center my-4"><i class="fa-solid fa-circle-notch fa-spin me-2"></i>Chargement des données...</p>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="submit" class="btn btn-warning"><i class="fa-solid fa-save me-1"></i> Enregistrer les modifications</button>
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                        </div>
+                    </form>
                 </div>
             </div>
+        </div>
+
+        <div class="modal fade" id="deleteFactureModal" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-sm">
+                <div class="modal-content border-danger">
+                    <form method="POST" id="formSupprimerFacture">
+                        {% csrf_token %}
+                        <div class="modal-header bg-danger text-white p-2">
+                            <h6 class="modal-title">Confirmer la suppression</h6>
+                        </div>
+                        <div class="modal-body text-center small">
+                            <p>Êtes-vous sûr de vouloir supprimer la facture <br><strong id="deleteFactureNum"></strong> ?</p>
+                            <p class="text-danger">Cette action est irréversible.</p>
+                        </div>
+                        <div class="modal-footer p-1 border-0 justify-content-center">
+                            <button type="submit" class="btn btn-danger btn-sm">Supprimer</button>
+                            <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Annuler</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+         </div>
+
 
         </div>
 
@@ -379,60 +436,75 @@ input, select, textarea { font-size: 0.85rem; padding: 0.5rem 0.75rem; border-ra
 
 <script>
     document.addEventListener('DOMContentLoaded', function() {
+        // === ELEMENTS EXISTANTS ===
         const lignesFactureContainer = document.getElementById('lignesFacture');
         const ajouterLigneBtn = document.getElementById('ajouterLigne');
         const totalHTFacture = document.getElementById('totalHTFacture');
         const montantReductionDisplay = document.getElementById('montantReductionDisplay');
-
-        // Réduction inputs
         const tauxReductionInput = document.getElementById('tauxReductionInput');
         const montantReductionInput = document.getElementById('montantReductionInput');
         const totalFinalFacture = document.getElementById('totalFinalFacture');
 
-        // Fonction de formatage (ajoute des séparateurs de milliers)
+        // === NOUVEAUX ELEMENTS (MODIFS/SUPPR) ===
+        const modifierFactureModal = new bootstrap.Modal(document.getElementById('modifierFactureModal'));
+        const deleteFactureModal = new bootstrap.Modal(document.getElementById('deleteFactureModal'));
+        const formModifierFacture = document.getElementById('formModifierFacture');
+        const formSupprimerFacture = document.getElementById('formSupprimerFacture');
+
+        // --- FONCTIONS DE CALCUL (VOTRE LOGIQUE) ---
+
         const formatNumber = (num) => {
-            // Utilisez Math.round pour gérer les flottants sans décimales visibles
-            return Math.round(num).toString().replace(/\B(?=(\d{3})+(?!\d))/g, "\u00A0"); // Espace insécable
+            return Math.round(num).toString().replace(/\B(?=(\d{3})+(?!\d))/g, "\u00A0");
         };
         
-        // --- Partie 1: Calcul des totaux de lignes et généraux ---
-
-        // Calcule le total d'une ligne spécifique
         const calculateLineTotal = (lineElement) => {
             const quantite = parseFloat(lineElement.querySelector('.quantite-input').value) || 0;
             const prixUnitaire = parseFloat(lineElement.querySelector('.prix-unitaire-input').value) || 0;
             const total = quantite * prixUnitaire;
-            
             lineElement.querySelector('.total-ligne-display').value = formatNumber(total); 
             return total;
         };
 
-        // Calcule et met à jour les totaux globaux
         const updateGeneralTotals = () => {
             let generalTotal = 0;
-            // 1. Calculer le Total HT (qui est aussi le TTC Provisoire sans TVA)
             document.querySelectorAll('.ligne-facture').forEach(lineElement => {
                 generalTotal += calculateLineTotal(lineElement);
             });
-
-            // 2. Afficher le Total HT/TTC
             totalHTFacture.textContent = formatNumber(generalTotal) + " FCFA";
-
-            // 3. Recalculer le Total Final (en utilisant la valeur de réduction actuelle)
             updateFinalTotal(); 
-
             return generalTotal;
         };
 
-        // Fonction pour attacher les écouteurs de ligne
+        const updateFinalTotal = () => {
+    const totalBase = parseFloat(totalHTFacture.textContent.replace(/\s/g, '').replace(/\u00A0/g, '')) || 0;
+    let reduction = parseFloat(montantReductionInput.value) || 0;
+
+    // --- APPLICATION DE VOTRE RÈGLE EN JS ---
+    let valeur = Math.round(reduction);
+    let dernierChiffre = valeur % 10;
+    let base = Math.floor(valeur / 10) * 10;
+    
+    if (dernierChiffre < 5) {
+        reduction = base;
+    } else {
+        reduction = base + 5;
+    }
+    // ---------------------------------------
+
+    const totalFinal = totalBase - reduction;
+    montantReductionDisplay.textContent = "-" + formatNumber(reduction) + " FCFA";
+    totalFinalFacture.value = formatNumber(totalFinal) + " FCFA";
+};
+
+        // --- GESTION DES INPUTS ET LIGNES ---
+
         const setupInputListeners = (lineElement) => {
             const quantiteInput = lineElement.querySelector('.quantite-input');
             const prixUnitaireInput = lineElement.querySelector('.prix-unitaire-input');
-
-            // Gérer la suppression de ligne
             const removeBtn = lineElement.querySelector('.remove-line');
+
             removeBtn.addEventListener('click', function() {
-                if (lignesFactureContainer.children.length > 1) {
+                if (document.querySelectorAll('.ligne-facture').length > 1) {
                     lineElement.remove();
                     updateGeneralTotals(); 
                 } else {
@@ -440,124 +512,77 @@ input, select, textarea { font-size: 0.85rem; padding: 0.5rem 0.75rem; border-ra
                 }
             });
             
-            // Gérer le calcul automatique
             [quantiteInput, prixUnitaireInput].forEach(input => {
                 input.addEventListener('input', () => updateGeneralTotals());
             });
-            
-            // Calculer la ligne initiale
             calculateLineTotal(lineElement); 
         };
 
-        // Ajout d'une nouvelle ligne
-        ajouterLigneBtn.addEventListener('click', function(){
-            const newLigneHTML = `
-                <div class="row g-2 ligne-facture align-items-center mb-2">
-                    <div class="col-4"><input type="text" name="designation[]" class="form-control form-control-sm" placeholder="Désignation de la prestation"></div>
-                    <div class="col-1"><input type="number" name="quantite[]" class="form-control form-control-sm text-end quantite-input" placeholder="Qté" value="1" min="1"></div>
-                    <div class="col-2"><input type="number" name="prix_unitaire[]" class="form-control form-control-sm text-end prix-unitaire-input" placeholder="Prix Unitaire" min="0"></div>
-                    <div class="col-2"><input type="text" class="form-control form-control-sm text-end total-ligne-display" value="0" readonly></div>
-                    <div class="col-2"><input type="text" name="note_prix[]" class="form-control form-control-sm" placeholder="Ex: lot de 7, HT"></div>
-                    <div class="col-1">
-                        <button type="button" class="btn btn-outline-danger btn-sm w-100 remove-line" title="Supprimer cette ligne">
-                            <i class="fa-solid fa-trash-alt"></i>
-                        </button>
-                    </div>
-                </div>
-            `;
-            lignesFactureContainer.insertAdjacentHTML('beforeend', newLigneHTML);
-            const newLigne = lignesFactureContainer.lastElementChild;
-            setupInputListeners(newLigne);
-            updateGeneralTotals();
-        });
-
-        // 1. Initialiser toutes les lignes existantes au chargement du DOM
+        // Initialisation lignes existantes
         document.querySelectorAll('.ligne-facture').forEach(setupInputListeners);
 
-
-        // --- Partie 2: Logique de Réduction (Taux vs Montant) ---
-
-        const updateFinalTotal = () => {
-            // Récupérer le Total HT/TTC (base pour la réduction)
-            const totalBase = parseFloat(totalHTFacture.textContent.replace(/\s/g, '')) || 0;
-            
-            // Récupérer le montant de la réduction saisi/calculé
-            let reduction = parseFloat(montantReductionInput.value) || 0;
-
-            // Limiter la réduction au total base pour éviter les montants négatifs
-            if (reduction > totalBase) {
-                reduction = totalBase;
-                montantReductionInput.value = reduction.toFixed(0);
-            }
-
-            const totalFinal = totalBase - reduction;
-            
-            montantReductionDisplay.textContent = formatNumber(reduction) + " FCFA";
-            totalFinalFacture.value = formatNumber(totalFinal);
-        };
-
-        // A. Si l'utilisateur modifie le MONTANT de réduction
-        montantReductionInput.addEventListener('input', function() {
-            let reductionMontant = parseFloat(this.value) || 0;
-            const totalBase = parseFloat(totalHTFacture.textContent.replace(/\s/g, '')) || 0;
-
-            // Limiter le montant à la base
-            if (reductionMontant < 0) reductionMontant = 0;
-            if (reductionMontant > totalBase) reductionMontant = totalBase;
-
-            let taux = 0;
-            if (totalBase > 0) {
-                taux = (reductionMontant / totalBase) * 100;
-            }
-            
-            // Mettre à jour le taux (formaté à 2 décimales)
-            tauxReductionInput.value = taux.toFixed(2);
-            this.value = reductionMontant.toFixed(0); // S'assurer que la valeur est propre
-            
-            updateFinalTotal();
-        });
-
-        // B. Si l'utilisateur modifie le TAUX de réduction
-        tauxReductionInput.addEventListener('input', function() {
-            let taux = parseFloat(this.value) || 0;
-            
-            // Borner le taux entre 0 et 100
-            if (taux < 0) taux = 0;
-            if (taux > 100) taux = 100;
-            this.value = taux.toFixed(2); // S'assurer que la valeur est propre
-
-            const totalBase = parseFloat(totalHTFacture.textContent.replace(/\s/g, '')) || 0;
-            
-            const reductionMontant = (totalBase * taux) / 100;
-            
-            // Mettre à jour le montant (formaté à 0 décimale)
-            montantReductionInput.value = Math.round(reductionMontant).toFixed(0);
-            
-            updateFinalTotal();
-        });
-
-        // --- Initialisation au chargement du modal ---
-        var factureModal = document.getElementById('factureModal');
-        if (factureModal) {
-            factureModal.addEventListener('shown.bs.modal', function () {
-                // S'assurer que les totaux sont recalculés avec les dernières valeurs de la commande
-                updateGeneralTotals(); 
-                // Recalculer la réduction et le total final au cas où le total de base a changé
-                
-                // On prend la valeur du TAUX saisi (s'il y en a une) et on recalcule le montant
-                if (tauxReductionInput.value) {
-                    tauxReductionInput.dispatchEvent(new Event('input'));
-                } else if (montantReductionInput.value) {
-                    montantReductionInput.dispatchEvent(new Event('input'));
-                } else {
-                    updateFinalTotal();
-                }
+        // Ajout ligne
+        if(ajouterLigneBtn){
+            ajouterLigneBtn.addEventListener('click', function(){
+                const newLigneHTML = `
+                    <div class="row g-2 ligne-facture align-items-center mb-2">
+                        <div class="col-4"><input type="text" name="designation[]" class="form-control form-control-sm" placeholder="Désignation"></div>
+                        <div class="col-1"><input type="number" name="quantite[]" class="form-control form-control-sm text-end quantite-input" value="1" min="1"></div>
+                        <div class="col-2"><input type="number" name="prix_unitaire[]" class="form-control form-control-sm text-end prix-unitaire-input" min="0"></div>
+                        <div class="col-2"><input type="text" class="form-control form-control-sm text-end total-ligne-display" value="0" readonly></div>
+                        <div class="col-2"><input type="text" name="note_prix[]" class="form-control form-control-sm" placeholder="Note"></div>
+                        <div class="col-1"><button type="button" class="btn btn-outline-danger btn-sm w-100 remove-line"><i class="fa-solid fa-trash-alt"></i></button></div>
+                    </div>`;
+                lignesFactureContainer.insertAdjacentHTML('beforeend', newLigneHTML);
+                setupInputListeners(lignesFactureContainer.lastElementChild);
+                updateGeneralTotals();
             });
         }
 
-        // Calculer les totaux au chargement de la page (même si le modal est caché)
+        // --- LOGIQUE RÉDUCTION ---
+
+        tauxReductionInput.addEventListener('input', function() {
+            let taux = parseFloat(this.value) || 0;
+            taux = Math.max(0, Math.min(100, taux));
+            const totalBase = parseFloat(totalHTFacture.textContent.replace(/\s/g, '').replace(/\u00A0/g, '')) || 0;
+            const reductionMontant = (totalBase * taux) / 100;
+            montantReductionInput.value = Math.round(reductionMontant).toFixed(0);
+            updateFinalTotal();
+        });
+
+        montantReductionInput.addEventListener('input', function() {
+            let reductionMontant = parseFloat(this.value) || 0;
+            const totalBase = parseFloat(totalHTFacture.textContent.replace(/\s/g, '').replace(/\u00A0/g, '')) || 0;
+            let taux = totalBase > 0 ? (reductionMontant / totalBase) * 100 : 0;
+            tauxReductionInput.value = taux.toFixed(2);
+            updateFinalTotal();
+        });
+
+        // --- NOUVEAU : GESTION DES ACTIONS (MODIFIER / SUPPRIMER) ---
+
+        // 1. Ouvrir le modal de suppression
+        document.querySelectorAll('.btn-delete-facture').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const id = this.dataset.id;
+                const numero = this.dataset.numero;
+                document.getElementById('deleteFactureNum').textContent = numero;
+                formSupprimerFacture.action = `/facture/supprimer/${id}/`; // L'URL sera créée à l'étape 3
+                deleteFactureModal.show();
+            });
+        });
+
+        // 2. Ouvrir le modal de modification (Redirection vers une page dédiée ou chargement AJAX)
+        document.querySelectorAll('.btn-edit-facture').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const id = this.dataset.id;
+                // Pour la simplicité, on redirige vers une vue de modification 
+                // ou on peut charger un formulaire. Ici, on prépare l'URL :
+                window.location.href = `/facture/modifier/${id}/`;
+            });
+        });
+
+        // Initialisation au chargement
         updateGeneralTotals(); 
     });
 </script>
-
 {% endblock %}

@@ -31,6 +31,7 @@ from .models import (
     TapisDetails, 
     Facture, 
     FactureLigne
+    
 )
 
 
@@ -66,6 +67,82 @@ def supprimer_commande(request, id):
 def voir_facture(request, facture_id):
     facture = get_object_or_404(Facture, id=facture_id)
     return render(request, "index/voir_facture.html", {"facture": facture})
+
+
+def supprimer_facture(request, pk):
+    """ Gère la suppression d'une facture """
+    facture = get_object_or_404(Facture, pk=pk)
+    
+    # On récupère l'ID de la commande AVANT de supprimer la facture
+    # car votre modèle utilise l'attribut 'commande'
+    fiche_id = facture.commande.id 
+
+    if request.method == "POST":
+        facture.delete()
+        messages.success(request, "Le document a été supprimé avec succès.")
+        
+        # Redirection vers la fiche avec le bon nom de paramètre 'fiche_id'
+        return redirect('detail_fiche', fiche_id=fiche_id)
+
+    # Si on arrive ici sans POST (sécurité), on redirige simplement
+    return redirect('detail_fiche', fiche_id=fiche_id)
+
+
+def modifier_facture(request, pk):
+    """ Gère la modification d'une facture existante """
+    facture = get_object_or_404(Facture, pk=pk)
+    commande = facture.commande 
+
+    if request.method == "POST":
+        try:
+            # 1. Mise à jour des infos de base
+            facture.type_document = request.POST.get('type_document')
+            facture.objet = request.POST.get('objet')
+            facture.date_emission = request.POST.get('date_emission')
+            
+            # Conversion sécurisée du taux
+            taux_post = request.POST.get('taux_reduction') or 0
+            facture.taux_reduction_pourcentage = float(str(taux_post).replace(',', '.'))
+            facture.save()
+
+            # 2. Mise à jour des lignes
+            facture.lignes.all().delete() 
+            
+            designations = request.POST.getlist('designation[]')
+            quantites = request.POST.getlist('quantite[]')
+            prix_unitaires = request.POST.getlist('prix_unitaire[]')
+            notes = request.POST.getlist('note_prix[]')
+
+            from .models import FactureLigne
+            for i in range(len(designations)):
+                if designations[i].strip():
+                    qty = int(float(quantites[i] or 0))
+                    pu = int(float(prix_unitaires[i] or 0))
+                    
+                    FactureLigne.objects.create(
+                        facture=facture,
+                        designation=designations[i],
+                        quantite=qty,
+                        prix_unitaire=pu,
+                        note_prix_unitaire=notes[i]
+                    )
+            
+            # 3. Recalcul final
+            facture.update_final_amount()
+            facture.save()
+
+            messages.success(request, "Le document a été modifié avec succès.")
+            return redirect('detail_fiche', fiche_id=commande.id)
+
+        except Exception as e:
+            # C'est cette partie qui manquait ou était mal placée
+            messages.error(request, f"Erreur lors de la modification : {e}")
+            return redirect('modifier_facture', pk=pk)
+
+    return render(request, 'index/modifier_facture.html', {
+        'facture': facture,
+        'commande': commande
+    })
 
 # Cette fonction est essentielle pour la conversion PDF
 def render_to_pdf(template_src, context_dict={}):

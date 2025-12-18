@@ -4,7 +4,6 @@ from num2words import num2words
 from decimal import Decimal, ROUND_HALF_UP
 
 
-
 class Facture(models.Model):
     TYPE_CHOICES = (
         ('DEVIS', 'Devis'),
@@ -19,7 +18,6 @@ class Facture(models.Model):
     objet = models.CharField(max_length=255, blank=True)
     signature = models.CharField(max_length=255, blank=True)
     
-    # --- NOUVEAUX CHAMPS POUR LA RÉDUCTION ---
     taux_reduction_pourcentage = models.DecimalField(
         max_digits=5, 
         decimal_places=2, 
@@ -27,61 +25,76 @@ class Facture(models.Model):
         verbose_name="Réduction (%)"
     )
     
-    # Champ qui stockera le total après réduction (le montant à payer)
     montant_final_net = models.IntegerField(
         default=0, 
         verbose_name="Montant Net à Payer"
     )
-    # ----------------------------------------
-    
+
     def save(self, *args, **kwargs):
-        # Génération du numéro de document (votre code existant)
+        # 1. Génération du numéro de document
         if not self.numero_document:
             date_str = timezone.now().strftime("%Y%m%d")
-            self.numero_document = f"{date_str}-{self.id or 'TEMP'}-ABJ" 
-            
+            # Utilisation d'un placeholder temporaire si l'ID n'existe pas encore
+            temp_id = self.id if self.id else "NEW"
+            self.numero_document = f"{date_str}-{temp_id}-ABJ" 
+        
+        # 2. On sauvegarde une première fois pour s'assurer que les lignes sont accessibles
         super().save(*args, **kwargs)
+        
+        # 3. Mise à jour automatique du montant final net après calcul
+        # Note: On appelle update_final_amount puis on resauvegarde uniquement ce champ
+        self.update_final_amount()
+        super().save(update_fields=['montant_final_net'])
         
     @property
     def total_ht_lignes(self):
         """Calcule le montant total des lignes (Total HT avant réduction)."""
-        # Note: 'lignes' est le related_name utilisé dans FactureLigne
         return sum(ligne.prix_total for ligne in self.lignes.all())
-
 
     @property
     def montant_reduction(self):
-        """Calcule le montant de la réduction en FCFA arrondi à l'entier le plus proche."""
-        if self.taux_reduction_pourcentage > 0:
-            total_ht = Decimal(self.total_ht_lignes)
-            reduction = (total_ht * Decimal(self.taux_reduction_pourcentage) / Decimal('100')).quantize(
-                Decimal('1'), rounding=ROUND_HALF_UP  # Arrondi à l'entier
-            )
-            return int(reduction)
+        """
+        Calcule la réduction avec la règle commerciale :
+        Dernier chiffre 0-4 -> devient 0 | 5-9 -> devient 5
+        """
+        taux = Decimal(str(self.taux_reduction_pourcentage))
+        if taux > 0:
+            total_ht = Decimal(str(self.total_ht_lignes))
+            # Calcul mathématique de base
+            reduction_brute = (total_ht * taux / Decimal('100'))
+            valeur = int(reduction_brute.quantize(Decimal('1'), rounding=ROUND_HALF_UP))
+            
+            # Application de votre règle d'arrondi (0/5)
+            dernier_chiffre = valeur % 10
+            base_dizaine = (valeur // 10) * 10
+            
+            if dernier_chiffre < 5:
+                return base_dizaine  # ex: 1001 -> 1000
+            else:
+                return base_dizaine + 5  # ex: 1007 -> 1005
         return 0
         
     @property
     def total(self):
-        """Retourne le montant final NET à payer (lu depuis montant_final_net)."""
-        # Le 'total' est désormais le montant net stocké.
+        """Retourne le montant final NET à payer."""
         return self.montant_final_net
 
     @property
     def total_lettres(self):
         """Convertit le total final (net) en lettres."""
-        # Utilise la propriété 'total' (montant net)
-        return num2words(self.total, lang='fr').upper() + " FRANC CFA"
+        try:
+            return num2words(self.total, lang='fr').upper() + " FRANC CFA"
+        except:
+            return "ZERO FRANC CFA"
 
-    
     def update_final_amount(self):
-        """Calcule et met à jour le montant final net arrondi à l'entier."""
-        total_ht = Decimal(self.total_ht_lignes)
-        net = (total_ht - Decimal(self.montant_reduction)).quantize(
-            Decimal('1'), rounding=ROUND_HALF_UP
-        )
+        """Calcule et met à jour le montant final net en tenant compte de la réduction arrondie."""
+        total_ht = Decimal(str(self.total_ht_lignes))
+        # Le montant_reduction ici utilise déjà votre règle (0 ou 5)
+        net = total_ht - Decimal(str(self.montant_reduction))
+        
         self.montant_final_net = int(net)
         return self.montant_final_net
-
 
     def __str__(self):
         return f"{self.type_document} #{self.numero_document} - {self.commande.nom_client}"
