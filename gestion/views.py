@@ -401,86 +401,78 @@ def liste_fiches(request):
 def detail_fiche(request, fiche_id):
     commande = get_object_or_404(Commande, id=fiche_id)
     
-    
-    # Récupération des détails existants
+    # Récupération des détails existants via les related_names
     cityclima = getattr(commande, 'cityclimadetails', None)
     tapis = getattr(commande, 'tapisdetails', None)
 
     if request.method == 'POST':
-        # --- Mise à jour champs généraux ---
+        # --- 1. Mise à jour champs généraux ---
         commande.nom_client = request.POST.get('nom_client', commande.nom_client)
         commande.numero_client = request.POST.get('numero_client', commande.numero_client)
         commande.localisation_client = request.POST.get('localisation_client', commande.localisation_client)
         commande.type_commande = request.POST.get('type_commande', commande.type_commande)
         commande.save()
 
-        # --- Mise à jour détails CityClima ---
+        # --- 2. Mise à jour détails CityClima (Cityprop / Climatiseur) ---
         if commande.type_commande in ['CITYPROP', 'CLIMATISEUR']:
+            date_int = request.POST.get('date_intervention') or None
+            satisfact = request.POST.get('satisfaction') or None
+            
             if cityclima:
-                if request.POST.get('date_intervention'):
-                    cityclima.date_intervention = request.POST.get('date_intervention')
-                if request.POST.get('satisfaction'):
-                    cityclima.satisfaction = request.POST.get('satisfaction')
+                cityclima.date_intervention = date_int
+                cityclima.satisfaction = satisfact
                 cityclima.save()
-            else:
-                date_intervention = request.POST.get('date_intervention') or None
-                satisfaction = request.POST.get('satisfaction') or None
-                if date_intervention or satisfaction:
-                    CityClimaDetails.objects.create(
-                        commande=commande,
-                        date_intervention=date_intervention,
-                        satisfaction=satisfaction
-                    )
+            elif date_int or satisfact:
+                CityClimaDetails.objects.create(
+                    commande=commande,
+                    date_intervention=date_int,
+                    satisfaction=satisfact
+                )
 
-        # --- Mise à jour détails Tapis ---
+        # --- 3. Mise à jour détails Tapis (Tapisprop) ---
         elif commande.type_commande == 'TAPISPROP':
+            # On récupère toutes les données du formulaire
+            d_ramassage = request.POST.get('date_ramassage') or None
+            d_livraison = request.POST.get('date_livraison') or None
+            d_traitement = request.POST.get('date_traitement') or None
+            nb_tapis = request.POST.get('nombre_tapis') or 0
+            prix_cout = request.POST.get('cout') or 0
+            stat = request.POST.get('statut') or 'NON_RESPECTE'
+            comm = request.POST.get('commentaire', '')
+
             if tapis:
-                if request.POST.get('date_ramassage'):
-                    tapis.date_ramassage = request.POST.get('date_ramassage')
-                if request.POST.get('nombre_tapis'):
-                    tapis.nombre_tapis = request.POST.get('nombre_tapis')
-                if request.POST.get('cout'):
-                    tapis.cout = request.POST.get('cout')
-                if request.POST.get('date_traitement'):
-                    tapis.date_traitement = request.POST.get('date_traitement')
-                if request.POST.get('date_livraison'):
-                    tapis.date_livraison = request.POST.get('date_livraison')
-                if request.POST.get('commentaire') is not None:
-                    tapis.commentaire = request.POST.get('commentaire')
-                if request.POST.get('statut'):
-                    tapis.statut = request.POST.get('statut')
+                # MISE À JOUR SYSTÉMATIQUE (Permet la modification)
+                tapis.date_ramassage = d_ramassage
+                tapis.date_livraison = d_livraison  # <--- Sera mis à jour correctement
+                tapis.date_traitement = d_traitement
+                tapis.nombre_tapis = nb_tapis
+                tapis.cout = prix_cout
+                tapis.statut = stat
+                tapis.commentaire = comm
                 tapis.save()
             else:
-                # Créer le détail uniquement si l'utilisateur a renseigné au moins un champ
-                date_ramassage = request.POST.get('date_ramassage') or None
-                nombre_tapis = request.POST.get('nombre_tapis') or None
-                cout = request.POST.get('cout') or None
-                date_traitement = request.POST.get('date_traitement') or None
-                date_livraison = request.POST.get('date_livraison') or None
-                commentaire = request.POST.get('commentaire') or ''
-                statut = request.POST.get('statut') or 'NON_RESPECTE'
-                
-                if any([date_ramassage, nombre_tapis, cout, date_traitement, date_livraison, commentaire]):
+                # CRÉATION si n'existait pas encore
+                if any([d_ramassage, d_livraison, nb_tapis, prix_cout]):
                     TapisDetails.objects.create(
                         commande=commande,
-                        date_ramassage=date_ramassage,
-                        nombre_tapis=nombre_tapis,
-                        cout=cout,
-                        date_traitement=date_traitement,
-                        date_livraison=date_livraison,
-                        commentaire=commentaire,
-                        statut=statut
+                        date_ramassage=d_ramassage,
+                        date_livraison=d_livraison,
+                        date_traitement=d_traitement,
+                        nombre_tapis=nb_tapis,
+                        cout=prix_cout,
+                        statut=stat,
+                        commentaire=comm
                     )
 
-        messages.success(request, "Commande mise à jour avec succès !")
+        messages.success(request, "La fiche et les dates ont été mises à jour !")
         return redirect('detail_fiche', fiche_id=fiche_id)
 
+    # Contexte pour le rendu
     context = {
-    'commande': commande,
-    'cityclima': cityclima,
-    'tapis': tapis,
-    'factures': Facture.objects.filter(commande=commande),  # ✅ SAFE
-
+        'commande': commande,
+        'cityclima': cityclima,
+        'tapis': tapis,
+        'factures': Facture.objects.filter(commande=commande).order_by('-date_emission'),
     }
     return render(request, 'index/detail_fiche.html', context)
 
