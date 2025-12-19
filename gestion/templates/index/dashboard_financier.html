@@ -1,0 +1,130 @@
+{% extends 'index/base.html' %}
+
+{% block content %}
+<style>
+    .finance-card { border: 1px solid #dee2e6; border-radius: 6px; background: #fff; }
+    .table-sm-custom { font-size: 0.82rem; }
+    .table-sm-custom th { background: #f8f9fa; color: #495057; font-weight: 700; text-transform: uppercase; font-size: 0.75rem; }
+    .kpi-value { font-size: 1.4rem; font-weight: 800; color: #157347; }
+    .badge-devis { background-color: #ffc107; color: #000; font-size: 0.7rem; }
+    .badge-facture { background-color: #198754; color: #fff; font-size: 0.7rem; }
+</style>
+
+<div class="container-fluid py-3">
+    <div class="row align-items-center mb-3">
+        <div class="col-md-6">
+            <h4 class="mb-0"><i class="fas fa-wallet text-primary me-2"></i>Dashboard Financier</h4>
+        </div>
+        <div class="col-md-3">
+            <div class="finance-card p-2 shadow-sm text-center">
+                <div class="small text-muted text-uppercase">Chiffre d'Affaires</div>
+                <div class="kpi-value">{{ total_encaisse }} FCFA</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="finance-card p-2 shadow-sm text-center">
+                <div class="small text-muted text-uppercase">Total Documents</div>
+                <div class="kpi-value text-dark">{{ nombre_factures }}</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card p-3 mb-3 shadow-sm border-0 bg-light">
+        <form method="GET" id="filterForm" class="row g-2 align-items-end">
+            <div class="col-md-3">
+                <label class="small fw-bold">Recherche Client / N°</label>
+                <input type="text" name="search_name" value="{{ search_name|default:'' }}" class="form-control form-control-sm">
+            </div>
+            <div class="col-md-2">
+                <label class="small fw-bold text-success">Du (Début)</label>
+                <input type="date" id="start_date" name="start_date" value="{{ start_date }}" class="form-control form-control-sm border-success">
+            </div>
+            <div class="col-md-2">
+                <label class="small fw-bold text-danger">Au (Fin)</label>
+                <input type="date" id="end_date" name="end_date" value="{{ end_date }}" class="form-control form-control-sm border-danger">
+            </div>
+            <div class="col-md-5 d-flex gap-1">
+                <button type="submit" class="btn btn-sm btn-primary w-100">Filtrer</button>
+                <a href="{% url 'dashboard_financier' %}" class="btn btn-sm btn-secondary">Réinitialiser</a>
+            </div>
+        </form>
+    </div>
+
+    <div class="card shadow-sm border-0">
+        <div class="table-responsive">
+            <table class="table table-hover table-sm-custom mb-0 align-middle">
+                <thead>
+                    <tr>
+                        <th class="ps-3">Type</th>
+                        <th>Date</th>
+                        <th>Référence</th>
+                        <th>Client</th>
+                        <th class="text-end">Montant</th>
+                        <th class="text-center">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for doc in factures %}
+                    <tr>
+                        <td class="ps-3">
+                            {% if doc.type_document == 'FACTURE' %}
+                                <span class="badge badge-facture">FACTURE</span>
+                            {% else %}
+                                <span class="badge badge-devis">DEVIS</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-muted">{{ doc.date_emission|date:"d/m/Y" }}</td>
+                        <td class="fw-bold">{{ doc.numero_document }}</td>
+                        <td>
+                            <a href="{% url 'detail_fiche' doc.commande.id %}" class="text-decoration-none fw-bold text-dark">
+                                <i class="fas fa-user-circle text-primary me-1"></i> {{ doc.commande.nom_client }}
+                            </a>
+                        </td>
+                        <td class="text-end fw-bold">{{ doc.montant_final_net }} F</td>
+                        <td class="text-center">
+                            <a href="{% url 'voir_facture' doc.id %}" class="btn btn-sm btn-light border"><i class="fas fa-eye"></i></a>
+                            <a href="{% url 'telecharger_devis_pdf' doc.id %}" class="btn btn-sm btn-success text-white"><i class="fas fa-file-pdf"></i></a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="6" class="text-center py-4">Aucun document trouvé.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+    const startDateInput = document.getElementById('start_date');
+    const endDateInput = document.getElementById('end_date');
+
+    function updateDateConstraints() {
+        const startVal = startDateInput.value;
+        const endVal = endDateInput.value;
+
+        // Si une date de début est choisie, on grise tout ce qui est avant dans "Date Fin"
+        if (startVal) {
+            endDateInput.min = startVal;
+        } else {
+            endDateInput.removeAttribute('min');
+        }
+
+        // Si une date de fin est choisie, on grise tout ce qui est après dans "Date Début"
+        if (endVal) {
+            startDateInput.max = endVal;
+        } else {
+            startDateInput.removeAttribute('max');
+        }
+    }
+
+    // Écouter les changements sur les deux champs
+    startDateInput.addEventListener('change', updateDateConstraints);
+    endDateInput.addEventListener('change', updateDateConstraints);
+
+    // Exécuter au chargement de la page pour les dates déjà remplies
+    window.onload = updateDateConstraints;
+</script>
+{% endblock %}

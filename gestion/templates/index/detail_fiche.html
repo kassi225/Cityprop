@@ -273,7 +273,7 @@ input, select, textarea { font-size: 0.85rem; padding: 0.5rem 0.75rem; border-ra
                                     <div class="col-md-12">
                                         <label class="form-label"><i class="fa-solid fa-info me-1"></i>Statut</label>
                                         <select name="statut" class="form-select">
-                                            <option value="NON_RESPECTE" {% if tapis.statut == 'NON_RESPECTE' %}selected{% endif %}>Délai non respecté</option>
+                                            <option value="NON_RESPECTE" {% if tapis.statut == 'NON_RESPECTE' %}selected{% endif %}>En cours</option>
                                             <option value="PRET" {% if tapis.statut == 'PRET' %}selected{% endif %}>En attente</option>
                                             <option value="CLIENT_INDISPO" {% if tapis.statut == 'CLIENT_INDISPO' %}selected{% endif %}>Tapis prêt Client indisponible</option>
                                             <option value="LIVRE-satisfait" {% if tapis.statut == 'LIVRE-satisfait' %}selected{% endif %}>Livré satisfait</option>

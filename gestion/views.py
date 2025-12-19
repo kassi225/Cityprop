@@ -2,6 +2,9 @@
 import datetime
 from io import BytesIO
 from datetime import timedelta
+from django.db.models import Sum
+from .models import Facture
+from datetime import datetime
 
 # 2. Django Core (Raccourcis, Auth, Base)
 from django.shortcuts import render, get_object_or_404, redirect
@@ -1168,5 +1171,60 @@ def listes_tapis_abandon(request):
     }
 
     return render(request, "index/alerte_tapis_abandon.html", context)
+
+@login_required
+@user_passes_test(is_admin)
+def dashboard_financier(request):
+    # 1. Base : Uniquement les factures avec optimisation de la base de données
+    queryset = Facture.objects.filter(type_document='FACTURE').select_related('commande').order_by('-date_emission')
+
+    # 2. Récupération des filtres
+    start_date = request.GET.get('start_date')
+    end_date = request.GET.get('end_date')
+    type_cmd = request.GET.get('type_commande')
+    search_name = request.GET.get('search_name')
+
+    # 3. Validation de l'intervalle de date (Sécurité Serveur)
+    if start_date and end_date:
+        if start_date > end_date:
+            messages.error(request, "Incohérence : La date 'Du' est supérieure à la date 'Au'.")
+            start_date = end_date = None  # Réinitialisation en cas d'erreur
+        else:
+            queryset = queryset.filter(date_emission__range=[start_date, end_date])
+    elif start_date:
+        queryset = queryset.filter(date_emission__gte=start_date)
+    elif end_date:
+        queryset = queryset.filter(date_emission__lte=end_date)
+
+    # 4. Filtre par type et recherche par nom/numéro
+    if type_cmd:
+        queryset = queryset.filter(commande__type_commande=type_cmd)
+    
+    if search_name:
+        queryset = queryset.filter(
+            Q(commande__nom_client__icontains=search_name) | 
+            Q(numero_document__icontains=search_name)
+        )
+
+    # 5. Calcul du montant total filtré (Le "coût" pour le client sur la période)
+    total_periode = queryset.aggregate(Sum('montant_final_net'))['montant_final_net__sum'] or 0
+    count_factures = queryset.count()
+
+    # 6. Pagination compacte (15 par page)
+    paginator = Paginator(queryset, 10)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+
+    context = {
+        'factures': page_obj,
+        'total_encaisse': total_periode,
+        'nombre_factures': count_factures,
+        'start_date': start_date,
+        'end_date': end_date,
+        'type_cmd': type_cmd,
+        'search_name': search_name,
+        'type_choices': ['CITYPROP', 'CLIMATISEUR', 'TAPISPROP']
+    }
+    return render(request, 'index/dashboard_financier.html', context)
 
 

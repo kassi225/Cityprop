@@ -45,12 +45,14 @@
             <label class="form-label small fw-bold">Statut tapis</label>
             <select name="statut" class="form-select form-select-sm">
                 <option value="">Tous</option>
-                <option value="NON_RESPECTE" {% if statut_filter == "NON_RESPECTE" %}selected{% endif %}>Délai Non respecté</option>
+                <option value="NON_RESPECTE" {% if statut_filter == "NON_RESPECTE" %}selected{% endif %}>En cours</option>
                 <option value="PRET" {% if statut_filter == "PRET" %}selected{% endif %}>En attente</option>
                 <option value="CLIENT_INDISPO" {% if statut_filter == "CLIENT_INDISPO" %}selected{% endif %}>Tapis prêt Client Indisponible</option>
                 <option value="LIVRE-satisfait" {% if statut_filter == "LIVRE-satisfait" %}selected{% endif %}>Livré satisfait</option>
                 <option value="LIVRE-insatisfait" {% if statut_filter == "LIVRE-insatisfait" %}selected{% endif %}>Livré insatisfait</option>
-                <option value="ABANDON" {% if statut_filter == "ABANDON" %}selected{% endif %}>Tapis Abandonné</option>
+                <option value="ABANDON" {% if statut_filter == "ABANDON" %}selected{% endif %}>
+                    Tapis Abandonné
+                </option>
             </select>
         </div>
 
@@ -111,7 +113,7 @@
                     <td>{{ c.date_creation|date:"d/m/Y" }}</td>
                     <td class="text-start">
                         {% if c.type_commande in 'CITYPROP,CLIMATISEUR' and c.cityclimadetails %}
-                            <small><strong>RDV :</strong> {{ c.cityclimadetails.date_intervention|default:"-" }}</small><br>
+                            <small><strong>D.d'intervention :</strong> {{ c.cityclimadetails.date_intervention|default:"-" }}</small><br>
                             <small><strong>Sat. :</strong> {{ c.cityclimadetails.satisfaction|default:"-" }}</small>
                         {% elif c.type_commande == 'TAPISPROP' and c.tapisdetails %}
                             <small><strong>Livraison :</strong> {{ c.tapisdetails.date_livraison|default:"-" }}</small><br>

@@ -161,7 +161,7 @@ class CityClimaDetails(models.Model):
 
 class TapisDetails(models.Model):
     STATUT_CHOICES = (
-        ('NON_RESPECTE', 'Délai non respecté'),
+        ('NON_RESPECTE', 'en cours'),
         ('PRET', 'Tapis prêt'),
         ('CLIENT_INDISPO', 'Tapis prêt mais client indisponible'),
         ('LIVRE-satisfait', 'client satisfait'),

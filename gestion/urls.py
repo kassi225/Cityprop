@@ -39,6 +39,9 @@ urlpatterns = [
     # ... vos autres urls ...
     path('facture/modifier/<int:pk>/', views.modifier_facture, name='modifier_facture'),
     path('facture/supprimer/<int:pk>/', views.supprimer_facture, name='supprimer_facture'),
+    
+    # ... vos autres urls
+    path('finance/dashboard/', views.dashboard_financier, name='dashboard_financier'),
 
 
 ]
