@@ -90,7 +90,7 @@ def supprimer_facture(request, pk):
     # Si on arrive ici sans POST (sécurité), on redirige simplement
     return redirect('detail_fiche', fiche_id=fiche_id)
 
-
+@transaction.atomic
 def modifier_facture(request, pk):
     """ Gère la modification d'une facture existante """
     facture = get_object_or_404(Facture, pk=pk)
@@ -98,6 +98,7 @@ def modifier_facture(request, pk):
 
     if request.method == "POST":
         try:
+            
             # 1. Mise à jour des infos de base
             facture.type_document = request.POST.get('type_document')
             facture.objet = request.POST.get('objet')

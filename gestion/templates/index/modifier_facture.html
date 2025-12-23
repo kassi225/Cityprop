@@ -1,77 +1,79 @@
 {% extends "base.html" %}
+
 {% block content %}
-<div class="container mt-4">
+<div class="container mt-4 mb-5">
     <div class="d-flex align-items-center justify-content-between mb-3">
         <div class="d-flex align-items-center">
-            <a href="{% url 'detail_fiche' fiche_id=commande.id %}" class="btn btn-outline-secondary btn-sm me-3">
+            <a href="{% url 'detail_fiche' fiche_id=commande.id %}" class="btn btn-outline-secondary btn-sm me-3 shadow-sm">
                 <i class="fa-solid fa-arrow-left me-1"></i> Retour
             </a>
             <div>
-                <h4 class="mb-0">Modifier {{ facture.get_type_document_display|upper }}</h4>
-                <small class="text-muted">Document N° {{ facture.numero_document }}</small>
+                <h4 class="mb-0 text-dark fw-bold">Modifier {{ facture.get_type_document_display|upper }}</h4>
+                <small class="text-muted">Document N° <strong>{{ facture.numero_document }}</strong></small>
             </div>
         </div>
         
         <div class="text-end">
-            <div class="badge bg-light text-dark border p-2 shadow-sm">
+            <div class="badge bg-white text-dark border p-2 shadow-sm rounded-3">
                 <i class="fa-solid fa-user-tag me-2 text-primary"></i>
                 <span class="fw-bold">{{ commande.nom_client|upper }}</span> 
-                <span class="mx-2">|</span>
+                <span class="mx-2 text-muted">|</span>
                 <span class="badge bg-primary">{{ commande.get_type_commande_display }}</span>
             </div>
         </div>
     </div>
 
-    <div class="card shadow-sm border-warning">
-        <div class="card-header bg-warning text-dark py-2">
-            <h6 class="mb-0 fw-bold"><i class="fa-solid fa-pen-to-square me-2"></i>Édition des détails</h6>
+    <div class="card shadow border-0 overflow-hidden">
+        <div class="card-header bg-warning py-3">
+            <h6 class="mb-0 fw-bold text-dark"><i class="fa-solid fa-pen-to-square me-2"></i>Édition des détails du document</h6>
         </div>
         
-        <form method="POST">
+        <form method="POST" id="formModifierFacture">
             {% csrf_token %}
-            <div class="card-body">
+            <div class="card-body p-4">
+                
                 <div class="row g-3 mb-4 bg-light p-3 rounded border">
                     <div class="col-md-3">
-                        <label class="form-label small fw-bold">Type de document</label>
-                        <select name="type_document" class="form-select form-select-sm border-warning">
+                        <label class="form-label small fw-bold text-uppercase text-muted">Type de document</label>
+                        <select name="type_document" class="form-select border-warning shadow-sm">
                             <option value="FACTURE" {% if facture.type_document == "FACTURE" %}selected{% endif %}>FACTURE</option>
                             <option value="DEVIS" {% if facture.type_document == "DEVIS" %}selected{% endif %}>DEVIS</option>
                         </select>
                     </div>
                     <div class="col-md-6">
-                        <label class="form-label small fw-bold">Objet / Titre</label>
-                        <input type="text" name="objet" class="form-control form-control-sm" value="{{ facture.objet }}" placeholder="Ex: Nettoyage de bureaux - Décembre">
+                        <label class="form-label small fw-bold text-uppercase text-muted">Objet / Titre</label>
+                        <input type="text" name="objet" class="form-control shadow-sm" value="{{ facture.objet }}" placeholder="Ex: Nettoyage de bureaux - Décembre" required>
                     </div>
                     <div class="col-md-3">
-                        <label class="form-label small fw-bold">Date d'émission</label>
-                        <input type="date" name="date_emission" class="form-control form-control-sm" value="{{ facture.date_emission|date:'Y-m-d' }}">
+                        <label class="form-label small fw-bold text-uppercase text-muted">Date d'émission</label>
+                        <input type="date" name="date_emission" class="form-control shadow-sm" value="{{ facture.date_emission|date:'Y-m-d' }}">
                     </div>
                 </div>
 
-                <div class="d-flex justify-content-between align-items-center mb-2 border-bottom pb-2">
-                    <h6 class="mb-0 fw-bold text-secondary text-uppercase" style="font-size: 0.85rem;">Désignation des prestations</h6>
-                    <button type="button" class="btn btn-primary btn-sm" id="ajouterLigne">
+                <div class="d-flex justify-content-between align-items-center mb-3 border-bottom pb-2">
+                    <h6 class="mb-0 fw-bold text-secondary text-uppercase"><i class="fa-solid fa-list me-2"></i>Désignation des prestations</h6>
+                    <button type="button" class="btn btn-primary btn-sm shadow-sm" id="ajouterLigne">
                         <i class="fa-solid fa-plus me-1"></i> Ajouter une ligne
                     </button>
                 </div>
 
                 <div id="lignesFacture" class="mb-3">
                     {% for ligne in facture.lignes.all %}
-                    <div class="row g-2 ligne-facture align-items-center mb-2">
+                    <div class="row g-2 ligne-facture align-items-center mb-2 animate__animated animate__fadeIn">
                         <div class="col-4">
-                            <input type="text" name="designation[]" class="form-control form-control-sm" value="{{ ligne.designation }}" placeholder="Prestation">
+                            <input type="text" name="designation[]" class="form-control form-control-sm border-secondary-subtle" value="{{ ligne.designation }}" placeholder="Prestation" required>
                         </div>
                         <div class="col-1">
-                            <input type="number" name="quantite[]" class="form-control form-control-sm text-end quantite-input" value="{{ ligne.quantite }}">
+                            <input type="number" name="quantite[]" class="form-control form-control-sm text-end quantite-input" value="{{ ligne.quantite }}" min="1">
                         </div>
                         <div class="col-2">
-                            <input type="number" name="prix_unitaire[]" class="form-control form-control-sm text-end prix-unitaire-input" value="{{ ligne.prix_unitaire }}">
+                            <input type="number" name="prix_unitaire[]" class="form-control form-control-sm text-end prix-unitaire-input" value="{{ ligne.prix_unitaire }}" min="0">
                         </div>
                         <div class="col-2">
                             <input type="text" class="form-control form-control-sm text-end total-ligne-display bg-light fw-bold" readonly>
                         </div>
                         <div class="col-2">
-                            <input type="text" name="note_prix[]" class="form-control form-control-sm" value="{{ ligne.note_prix_unitaire }}" placeholder="Note/Obs.">
+                            <input type="text" name="note_prix[]" class="form-control form-control-sm border-secondary-subtle" value="{{ ligne.note_prix_unitaire|default:'' }}" placeholder="Note/Obs.">
                         </div>
                         <div class="col-1 text-center">
                             <button type="button" class="btn btn-outline-danger btn-sm border-0 remove-line" title="Supprimer">
@@ -84,30 +86,30 @@
 
                 <div class="row mt-4 justify-content-end">
                     <div class="col-md-5">
-                        <div class="card bg-light border-0">
+                        <div class="card bg-light border shadow-sm">
                             <div class="card-body p-0">
                                 <table class="table table-sm table-borderless mb-0">
                                     <tr>
-                                        <td class="ps-3 py-2">Total Brut HT</td>
-                                        <td class="text-end pe-3 fw-bold" id="totalHTFacture">0 FCFA</td>
+                                        <td class="ps-3 py-2 fw-semibold text-muted">Total Brut HT</td>
+                                        <td class="text-end pe-3 fw-bold text-dark" id="totalHTFacture">0 FCFA</td>
                                     </tr>
                                     <tr>
-                                        <td class="ps-3 py-2 align-middle">Réduction (%)</td>
+                                        <td class="ps-3 py-2 align-middle fw-semibold text-muted">Réduction (%)</td>
                                         <td class="pe-3">
-                                            <div class="input-group input-group-sm ms-auto" style="width: 120px;">
-                                                <input type="number" id="tauxReductionInput" name="taux_reduction" class="form-control text-end" value="{{ facture.taux_reduction_pourcentage|stringformat:'.2f' }}" step="0.01">
-                                                <span class="input-group-text">%</span>
+                                            <div class="input-group input-group-sm ms-auto" style="width: 130px;">
+                                                <input type="number" id="tauxReductionInput" name="taux_reduction" class="form-control text-end fw-bold" value="{{ facture.taux_reduction_pourcentage|stringformat:'.2f' }}" step="0.01">
+                                                <span class="input-group-text bg-white">%</span>
                                             </div>
                                         </td>
                                     </tr>
                                     <tr class="text-danger">
-                                        <td class="ps-3">Montant réduction</td>
+                                        <td class="ps-3 py-2 fw-semibold">Montant réduction</td>
                                         <td class="text-end pe-3 fw-bold" id="montantReductionDisplay">0 FCFA</td>
                                     </tr>
                                     <tr class="table-dark">
-                                        <th class="ps-3 py-2 rounded-start">NET À PAYER</th>
-                                        <td class="pe-3 py-2 rounded-end">
-                                            <input type="text" id="totalFinalFacture" class="form-control form-control-sm fw-bold text-end bg-transparent text-white border-0 p-0" readonly>
+                                        <th class="ps-3 py-3 rounded-start border-0 align-middle">NET À PAYER</th>
+                                        <td class="pe-3 py-3 rounded-end border-0">
+                                            <input type="text" id="totalFinalFacture" class="form-control form-control-sm fw-bold text-end bg-transparent text-white border-0 p-0 fs-5" readonly>
                                             <input type="hidden" id="montantReductionInput" name="montant_reduction" value="{{ facture.montant_reduction }}">
                                         </td>
                                     </tr>
@@ -118,10 +120,10 @@
                 </div>
             </div>
 
-            <div class="card-footer bg-white text-end py-3">
-                <a href="{% url 'detail_fiche' fiche_id=commande.id %}" class="btn btn-light border me-2">Annuler</a>
-                <button type="submit" class="btn btn-warning fw-bold px-4 shadow-sm">
-                    <i class="fa-solid fa-check me-2"></i>Enregistrer les modifications
+            <div class="card-footer bg-light text-end py-3 border-top">
+                <a href="{% url 'detail_fiche' fiche_id=commande.id %}" class="btn btn-outline-secondary px-4 me-2">Annuler</a>
+                <button type="submit" class="btn btn-warning fw-bold px-5 shadow border-dark-subtle">
+                    <i class="fa-solid fa-floppy-disk me-2"></i>Mettre à jour le document
                 </button>
             </div>
         </form>
@@ -129,8 +131,6 @@
 </div>
 
 <script>
-    // Le script reste le même que précédemment (il est déjà optimisé)
-    // Assurez-vous simplement que les IDs correspondent bien.
     document.addEventListener('DOMContentLoaded', function() {
         const lignesFactureContainer = document.getElementById('lignesFacture');
         const ajouterLigneBtn = document.getElementById('ajouterLigne');
@@ -140,10 +140,18 @@
         const montantReductionInput = document.getElementById('montantReductionInput');
         const totalFinalFacture = document.getElementById('totalFinalFacture');
 
+        // Formater les nombres avec espace pour les milliers
         const formatNumber = (num) => {
             return Math.round(num).toString().replace(/\B(?=(\d{3})+(?!\d))/g, "\u00A0");
         };
-        
+
+        // Extraire le nombre d'une chaîne formattée
+        const parseLocaleNumber = (string) => {
+            if (!string) return 0;
+            return parseFloat(string.toString().replace(/\s/g, '').replace(/\u00A0/g, '').replace('FCFA', '')) || 0;
+        };
+
+        // Calcul du total par ligne
         const calculateLineTotal = (lineElement) => {
             const quantite = parseFloat(lineElement.querySelector('.quantite-input').value) || 0;
             const prixUnitaire = parseFloat(lineElement.querySelector('.prix-unitaire-input').value) || 0;
@@ -152,6 +160,7 @@
             return total;
         };
 
+        // Mise à jour globale
         const updateGeneralTotals = () => {
             let generalTotal = 0;
             document.querySelectorAll('.ligne-facture').forEach(lineElement => {
@@ -159,7 +168,7 @@
             });
             totalHTFacture.textContent = formatNumber(generalTotal) + " FCFA";
             
-            // Recalcul de la réduction en fonction du pourcentage actuel
+            // Calcul de la réduction basée sur le pourcentage
             let taux = parseFloat(tauxReductionInput.value) || 0;
             const reductionMontant = (generalTotal * taux) / 100;
             montantReductionInput.value = Math.round(reductionMontant);
@@ -167,27 +176,28 @@
             updateFinalTotal(); 
         };
 
-       const updateFinalTotal = () => {
-    const totalBase = parseFloat(totalHTFacture.textContent.replace(/\s/g, '').replace(/\u00A0/g, '')) || 0;
-    let reduction = parseFloat(montantReductionInput.value) || 0;
+        // Calcul final avec règle d'arrondi à 5 FCFA
+        const updateFinalTotal = () => {
+            const totalBase = parseLocaleNumber(totalHTFacture.textContent);
+            let reduction = parseFloat(montantReductionInput.value) || 0;
 
-    // --- APPLICATION DE VOTRE RÈGLE EN JS ---
-    let valeur = Math.round(reduction);
-    let dernierChiffre = valeur % 10;
-    let base = Math.floor(valeur / 10) * 10;
-    
-    if (dernierChiffre < 5) {
-        reduction = base;
-    } else {
-        reduction = base + 5;
-    }
-    // ---------------------------------------
+            // --- APPLICATION DE L'ARRONDI À 5 FCFA ---
+            let valeur = Math.round(reduction);
+            let dernierChiffre = valeur % 10;
+            let base = Math.floor(valeur / 10) * 10;
+            
+            if (dernierChiffre < 5) {
+                reduction = base; // Ex: 104 -> 100
+            } else {
+                reduction = base + 5; // Ex: 106 -> 105
+            }
 
-    const totalFinal = totalBase - reduction;
-    montantReductionDisplay.textContent = "-" + formatNumber(reduction) + " FCFA";
-    totalFinalFacture.value = formatNumber(totalFinal) + " FCFA";
-};
+            const totalFinal = totalBase - reduction;
+            montantReductionDisplay.textContent = "-" + formatNumber(reduction) + " FCFA";
+            totalFinalFacture.value = formatNumber(totalFinal) + " FCFA";
+        };
 
+        // Initialisation des écouteurs sur une ligne
         const setupInputListeners = (lineElement) => {
             const inputs = lineElement.querySelectorAll('.quantite-input, .prix-unitaire-input');
             const removeBtn = lineElement.querySelector('.remove-line');
@@ -196,6 +206,8 @@
                 if (document.querySelectorAll('.ligne-facture').length > 1) {
                     lineElement.remove();
                     updateGeneralTotals(); 
+                } else {
+                    alert("Le document doit avoir au moins une prestation.");
                 }
             });
             
@@ -205,16 +217,15 @@
             calculateLineTotal(lineElement); 
         };
 
-        document.querySelectorAll('.ligne-facture').forEach(setupInputListeners);
-
+        // Ajouter une nouvelle ligne dynamiquement
         ajouterLigneBtn.addEventListener('click', function(){
             const newLigneHTML = `
-                <div class="row g-2 ligne-facture align-items-center mb-2">
-                    <div class="col-4"><input type="text" name="designation[]" class="form-control form-control-sm" placeholder="Désignation"></div>
+                <div class="row g-2 ligne-facture align-items-center mb-2 animate__animated animate__fadeIn">
+                    <div class="col-4"><input type="text" name="designation[]" class="form-control form-control-sm border-secondary-subtle" placeholder="Désignation" required></div>
                     <div class="col-1"><input type="number" name="quantite[]" class="form-control form-control-sm text-end quantite-input" value="1" min="1"></div>
                     <div class="col-2"><input type="number" name="prix_unitaire[]" class="form-control form-control-sm text-end prix-unitaire-input" placeholder="0"></div>
                     <div class="col-2"><input type="text" class="form-control form-control-sm text-end total-ligne-display bg-light fw-bold" readonly></div>
-                    <div class="col-2"><input type="text" name="note_prix[]" class="form-control form-control-sm" placeholder="Note"></div>
+                    <div class="col-2"><input type="text" name="note_prix[]" class="form-control form-control-sm border-secondary-subtle" placeholder="Note"></div>
                     <div class="col-1 text-center"><button type="button" class="btn btn-outline-danger btn-sm border-0 remove-line"><i class="fa-solid fa-trash-can"></i></button></div>
                 </div>`;
             lignesFactureContainer.insertAdjacentHTML('beforeend', newLigneHTML);
@@ -222,8 +233,11 @@
             updateGeneralTotals();
         });
 
+        // Ecouteur sur le taux de réduction
         tauxReductionInput.addEventListener('input', updateGeneralTotals);
 
+        // Initialisation au chargement de la page
+        document.querySelectorAll('.ligne-facture').forEach(setupInputListeners);
         updateGeneralTotals(); 
     });
 </script>

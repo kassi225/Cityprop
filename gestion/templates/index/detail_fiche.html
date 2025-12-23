@@ -37,7 +37,7 @@ input, select, textarea { font-size: 0.85rem; padding: 0.5rem 0.75rem; border-ra
             
             <div class="card mb-4 border-primary">
                 <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
-                    <i class="fa-solid fa-info-circle me-1"></i> Infos client & commande
+                    <span><i class="fa-solid fa-info-circle me-1"></i> Infos client & commande</span>
                     <button class="btn btn-sm btn-light p-1" type="button" data-bs-toggle="collapse" data-bs-target="#infosGen">
                         <i class="fa-solid fa-chevron-down fa-fw"></i>
                     </button>
@@ -64,13 +64,14 @@ input, select, textarea { font-size: 0.85rem; padding: 0.5rem 0.75rem; border-ra
             
             <div class="card mb-4 border-secondary">
                 <div class="card-header bg-secondary text-white d-flex justify-content-between align-items-center">
-                    <i class="fa-solid fa-clipboard-list me-1"></i> Détails {{ commande.get_type_commande_display }}
+                    <span><i class="fa-solid fa-clipboard-list me-1"></i> Détails {{ commande.get_type_commande_display }}</span>
                     <button class="btn btn-sm btn-light p-1" type="button" data-bs-toggle="collapse" data-bs-target="#detailsCard">
                         <i class="fa-solid fa-chevron-down fa-fw"></i>
                     </button>
                 </div>
                 <div class="card-body collapse show" id="detailsCard">
-                    {% if commande.type_commande in 'CITYPROP,CLIMATISEUR' and cityclima %}
+                    {% if commande.type_commande == 'CITYPROP' or commande.type_commande == 'CLIMATISEUR' %}
+                        {% if cityclima %}
                         <div class="row g-2 small">
                             <div class="col-6"><strong><i class="fa-solid fa-calendar-check me-1"></i> Intervention:</strong> {{ cityclima.date_intervention|default:"-"|date:"d/m/Y" }}</div>
                             <div class="col-6">
@@ -81,12 +82,13 @@ input, select, textarea { font-size: 0.85rem; padding: 0.5rem 0.75rem; border-ra
                                 {% else %}<span class="badge bg-secondary">Non défini</span>{% endif %}
                             </div>
                         </div>
+                        {% endif %}
                     {% elif commande.type_commande == 'TAPISPROP' and tapis %}
                         <div class="row g-2 small">
                             <div class="col-6"><strong><i class="fa-solid fa-truck-loading me-1"></i> Ramassage:</strong> {{ tapis.date_ramassage|default:"-"|date:"d/m/Y" }}</div>
                             <div class="col-6"><strong><i class="fa-solid fa-truck-ramp-box me-1"></i> Livraison:</strong> {{ tapis.date_livraison|default:"-"|date:"d/m/Y" }}</div>
-                            <div class="col-6"><strong><i class="fa-solid fa-boxes-stacked me-1"></i> Nb Tapis:</strong> {{ tapis.nombre_tapis|default:"-" }}</div>
-                            <div class="col-6"><strong><i class="fa-solid fa-coins me-1"></i> Coût Estimé:</strong> {{ tapis.cout|default:"-" }} FCFA</div>
+                            <div class="col-6"><strong><i class="fa-solid fa-boxes-stacked me-1"></i> Nb Tapis:</strong> {{ tapis.nombre_tapis|default:"0" }}</div>
+                            <div class="col-6"><strong><i class="fa-solid fa-coins me-1"></i> Coût Estimé:</strong> {{ tapis.cout|default:"0" }} FCFA</div>
                             <div class="col-12 mt-2">
                                 <strong><i class="fa-solid fa-tag me-1"></i> Statut:</strong>
                                 <span class="badge 
@@ -95,7 +97,7 @@ input, select, textarea { font-size: 0.85rem; padding: 0.5rem 0.75rem; border-ra
                                     {% elif tapis.statut == 'CLIENT_INDISPO' %}bg-info text-dark
                                     {% elif tapis.statut == 'LIVRE-satisfait' %}bg-success
                                     {% elif tapis.statut == 'LIVRE-insatisfait' %}bg-danger
-                                     {% elif tapis.statut == 'ABANDON' %}bg-warning
+                                    {% elif tapis.statut == 'ABANDON' %}bg-dark
                                     {% else %}bg-secondary
                                     {% endif %}">{{ tapis.get_statut_display }}
                                 </span>
@@ -103,125 +105,65 @@ input, select, textarea { font-size: 0.85rem; padding: 0.5rem 0.75rem; border-ra
                             <div class="col-12 mt-2"><strong><i class="fa-solid fa-comment me-1"></i> Commentaire:</strong> <br>{{ tapis.commentaire|default:"-" }}</div>
                         </div>
                     {% else %}
-                        <p class="alert alert-info small mb-0">Aucun détail spécifique trouvé pour ce type de commande.</p>
+                        <p class="alert alert-info small mb-0">Aucun détail spécifique trouvé.</p>
                     {% endif %}
                 </div>
             </div>
 
-                    
-        <div class="card border-info">
-            <div class="card-header bg-info text-white d-flex justify-content-between align-items-center">
-                <i class="fa-solid fa-receipt me-1"></i> Factures & Devis Associés ({{ factures|length }})
-                <button class="btn btn-sm btn-light p-1" type="button" data-bs-toggle="collapse" data-bs-target="#facturesCard">
-                    <i class="fa-solid fa-chevron-down fa-fw"></i>
-                </button>
-            </div>
-            <div class="card-body p-0 collapse show" id="facturesCard">
-                {% if factures %}
-                    <ul class="list-group list-group-flush small">
-                        {% for facture in factures %}
-                            <li class="list-group-item d-flex justify-content-between align-items-center">
-                                <span>
-                                    **<span class="text-uppercase text-primary">{{ facture.type_document }}</span>** ({{ facture.date_emission|date:"d/m/Y" }}) - 
-                                    <em class="text-muted">{{ facture.objet }}</em> - 
-                                    <strong class="text-dark">{{ facture.total|default:"0" }} FCFA</strong>
-                                </span>
-                                <div class="btn-group">
-                                    <a href="{% url 'voir_facture' facture.id %}" class="btn btn-sm btn-outline-primary" title="Télécharger PDF">
-                                        <i class="fa-solid fa-file-pdf"></i>
-                                    </a>
-                                    <button type="button" class="btn btn-sm btn-outline-warning btn-edit-facture" 
-                                            data-id="{{ facture.id }}" 
-                                            title="Modifier la facture">
-                                        <i class="fa-solid fa-pen"></i>
-                                    </button>
-                                    <button type="button" class="btn btn-sm btn-outline-danger btn-delete-facture" 
-                                            data-id="{{ facture.id }}" 
-                                            data-numero="{{ facture.numero_document }}"
-                                            title="Supprimer la facture">
-                                        <i class="fa-solid fa-trash"></i>
-                                    </button>
-                                </div>
-                            </li>
-                        {% endfor %}
-                    </ul>
-                {% else %}
-                    <p class="text-muted p-3 mb-0 small">Aucun document créé pour cette commande.</p>
-                {% endif %}
-            </div>
-        </div>
-
-        <div class="modal fade" id="modifierFactureModal" tabindex="-1" aria-hidden="true">
-            <div class="modal-dialog modal-xl">
-                <div class="modal-content border-warning">
-                    <form method="POST" id="formModifierFacture">
-                        {% csrf_token %}
-                        <div class="modal-header bg-warning text-dark">
-                            <h5 class="modal-title"><i class="fa-solid fa-pen-to-square me-2"></i>Modifier <span id="editTitle"></span></h5>
-                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
-                        </div>
-                        <div class="modal-body" id="modifierFactureBody">
-                            <p class="text-center my-4"><i class="fa-solid fa-circle-notch fa-spin me-2"></i>Chargement des données...</p>
-                        </div>
-                        <div class="modal-footer">
-                            <button type="submit" class="btn btn-warning"><i class="fa-solid fa-save me-1"></i> Enregistrer les modifications</button>
-                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
-                        </div>
-                    </form>
-                </div>
-            </div>
-        </div>
-
-        <div class="modal fade" id="deleteFactureModal" tabindex="-1" aria-hidden="true">
-            <div class="modal-dialog modal-sm">
-                <div class="modal-content border-danger">
-                    <form method="POST" id="formSupprimerFacture">
-                        {% csrf_token %}
-                        <div class="modal-header bg-danger text-white p-2">
-                            <h6 class="modal-title">Confirmer la suppression</h6>
-                        </div>
-                        <div class="modal-body text-center small">
-                            <p>Êtes-vous sûr de vouloir supprimer la facture <br><strong id="deleteFactureNum"></strong> ?</p>
-                            <p class="text-danger">Cette action est irréversible.</p>
-                        </div>
-                        <div class="modal-footer p-1 border-0 justify-content-center">
-                            <button type="submit" class="btn btn-danger btn-sm">Supprimer</button>
-                            <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Annuler</button>
-                        </div>
-                    </form>
-                </div>
-            </div>
-         </div>
-
-
-        </div>
-
-        <div class="col-lg-6 col-md-12">
-            
-            <div class="card mb-4 border-success">
-                <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
-                    <i class="fa-solid fa-pen-to-square me-1"></i> Modifier la commande
-                    <button class="btn btn-sm btn-light p-1" type="button" data-bs-toggle="collapse" data-bs-target="#formCard">
+            <div class="card border-info">
+                <div class="card-header bg-info text-white d-flex justify-content-between align-items-center">
+                    <span><i class="fa-solid fa-receipt me-1"></i> Documents ({{ factures|length }})</span>
+                    <button class="btn btn-sm btn-light p-1" type="button" data-bs-toggle="collapse" data-bs-target="#facturesCard">
                         <i class="fa-solid fa-chevron-down fa-fw"></i>
                     </button>
                 </div>
-                <div class="card-body collapse show" id="formCard">
+                <div class="card-body p-0 collapse show" id="facturesCard">
+                    {% if factures %}
+                        <ul class="list-group list-group-flush small">
+                            {% for facture in factures %}
+                                <li class="list-group-item d-flex justify-content-between align-items-center">
+                                    <span>
+                                        <b class="text-uppercase text-primary">{{ facture.type_document }}</b> ({{ facture.date_emission|date:"d/m/Y" }}) - 
+                                        <em class="text-muted">{{ facture.objet|truncatechars:20 }}</em> - 
+                                        <strong class="text-dark">{{ facture.montant_final_net }} FCFA</strong>
+                                    </span>
+                                    <div class="btn-group">
+                                        <a href="{% url 'voir_facture' facture.id %}" class="btn btn-sm btn-outline-primary"><i class="fa-solid fa-file-pdf"></i></a>
+                                        <button type="button" class="btn btn-sm btn-outline-warning btn-edit-facture" data-id="{{ facture.id }}"><i class="fa-solid fa-pen"></i></button>
+                                        <button type="button" class="btn btn-sm btn-outline-danger btn-delete-facture" data-id="{{ facture.id }}" data-numero="{{ facture.numero_document }}"><i class="fa-solid fa-trash"></i></button>
+                                    </div>
+                                </li>
+                            {% endfor %}
+                        </ul>
+                    {% else %}
+                        <p class="text-muted p-3 mb-0 small">Aucun document généré.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-6 col-md-12">
+            <div class="card mb-4 border-success">
+                <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
+                    <span><i class="fa-solid fa-pen-to-square me-1"></i> Modifier la commande</span>
+                </div>
+                <div class="card-body">
                     <form method="POST" class="row g-3">
                         {% csrf_token %}
                         <div class="col-md-6">
-                            <label class="form-label"><i class="fa-solid fa-user me-1"></i>Nom</label>
+                            <label class="form-label small fw-bold">Nom</label>
                             <input type="text" name="nom_client" class="form-control" value="{{ commande.nom_client }}">
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label"><i class="fa-solid fa-phone me-1"></i>Numéro</label>
+                            <label class="form-label small fw-bold">Numéro</label>
                             <input type="text" name="numero_client" class="form-control" value="{{ commande.numero_client }}">
                         </div>
                         <div class="col-md-12">
-                            <label class="form-label"><i class="fa-solid fa-map-marker-alt me-1"></i>Localisation</label>
+                            <label class="form-label small fw-bold">Localisation</label>
                             <input type="text" name="localisation_client" class="form-control" value="{{ commande.localisation_client }}">
                         </div>
                         <div class="col-md-12">
-                            <label class="form-label"><i class="fa-solid fa-list-check me-1"></i>Type commande</label>
+                            <label class="form-label small fw-bold">Type commande</label>
                             <select name="type_commande" class="form-select">
                                 <option value="CITYPROP" {% if commande.type_commande == "CITYPROP" %}selected{% endif %}>Cityprop</option>
                                 <option value="CLIMATISEUR" {% if commande.type_commande == "CLIMATISEUR" %}selected{% endif %}>Climatiseur</option>
@@ -229,16 +171,15 @@ input, select, textarea { font-size: 0.85rem; padding: 0.5rem 0.75rem; border-ra
                             </select>
                         </div>
                         
-                        <div class="col-12 commande-specific-fields">
-                            {% if commande.type_commande in 'CITYPROP,CLIMATISEUR' %}
-                                <p class="small text-info fw-bold mb-2">Champs spécifiques {{ commande.get_type_commande_display }}</p>
-                                <div class="row g-3">
+                        <div class="col-12 mt-3">
+                            {% if commande.type_commande == 'CITYPROP' or commande.type_commande == 'CLIMATISEUR' %}
+                                <div class="row g-3 p-2 bg-light rounded border">
                                     <div class="col-md-6">
-                                        <label class="form-label"><i class="fa-solid fa-calendar-days me-1"></i>Date intervention</label>
-                                        <input type="date" name="date_intervention" class="form-control" value="{{ cityclima.date_intervention|date:"Y-m-d"|default_if_none:'' }}">
+                                        <label class="form-label small">Date intervention</label>
+                                        <input type="date" name="date_intervention" class="form-control" value="{{ cityclima.date_intervention|date:'Y-m-d' }}">
                                     </div>
                                     <div class="col-md-6">
-                                        <label class="form-label"><i class="fa-solid fa-smile me-1"></i>Satisfaction</label>
+                                        <label class="form-label small">Satisfaction</label>
                                         <select name="satisfaction" class="form-select">
                                             <option value="">-- Choisir --</option>
                                             <option value="OK" {% if cityclima.satisfaction == 'OK' %}selected{% endif %}>OK</option>
@@ -248,42 +189,34 @@ input, select, textarea { font-size: 0.85rem; padding: 0.5rem 0.75rem; border-ra
                                     </div>
                                 </div>
                             {% elif commande.type_commande == 'TAPISPROP' %}
-                                <p class="small text-info fw-bold mb-2">Champs spécifiques Tapisprop</p>
-                                <div class="row g-3">
+                                <div class="row g-3 p-2 bg-light rounded border">
                                     <div class="col-md-6">
-                                        <label class="form-label"><i class="fa-solid fa-truck me-1"></i>Date Ramassage</label>
-                                        <input type="date" name="date_ramassage" class="form-control" value="{{ tapis.date_ramassage|date:"Y-m-d"|default_if_none:'' }}">
+                                        <label class="form-label small">Date Ramassage</label>
+                                        <input type="date" name="date_ramassage" class="form-control" value="{{ tapis.date_ramassage|date:'Y-m-d' }}">
                                     </div>
                                     <div class="col-md-6">
-                                        <label class="form-label"><i class="fa-solid fa-truck-fast me-1"></i>Date Livraison</label>
-                                        <input type="date" name="date_livraison" class="form-control" value="{{ tapis.date_livraison|date:"Y-m-d"|default_if_none:'' }}">
+                                        <label class="form-label small">Date Livraison</label>
+                                        <input type="date" name="date_livraison" class="form-control" value="{{ tapis.date_livraison|date:'Y-m-d' }}">
                                     </div>
                                     <div class="col-md-4">
-                                        <label class="form-label"><i class="fa-solid fa-boxes-stacked me-1"></i>Nb Tapis</label>
-                                        <input type="number" name="nombre_tapis" class="form-control" value="{{ tapis.nombre_tapis|default_if_none:'' }}">
+                                        <label class="form-label small">Nb Tapis</label>
+                                        <input type="number" name="nombre_tapis" class="form-control" value="{{ tapis.nombre_tapis }}">
                                     </div>
                                     <div class="col-md-4">
-                                        <label class="form-label"><i class="fa-solid fa-money-bill-wave me-1"></i>Coût Estimé</label>
-                                        <input type="number" name="cout" class="form-control" value="{{ tapis.cout|default_if_none:'' }}">
+                                        <label class="form-label small">Coût Estimé</label>
+                                        <input type="number" name="cout" class="form-control" value="{{ tapis.cout }}">
                                     </div>
                                     <div class="col-md-4">
-                                        <label class="form-label"><i class="fa-solid fa-calendar-check me-1"></i>Fin Traitement</label>
-                                        <input type="date" name="date_traitement" class="form-control" value="{{ tapis.date_traitement|date:"Y-m-d"|default_if_none:'' }}">
-                                    </div>
-                                    <div class="col-md-12">
-                                        <label class="form-label"><i class="fa-solid fa-info me-1"></i>Statut</label>
+                                        <label class="form-label small">Statut</label>
                                         <select name="statut" class="form-select">
-                                            <option value="NON_RESPECTE" {% if tapis.statut == 'NON_RESPECTE' %}selected{% endif %}>En cours</option>
-                                            <option value="PRET" {% if tapis.statut == 'PRET' %}selected{% endif %}>En attente</option>
-                                            <option value="CLIENT_INDISPO" {% if tapis.statut == 'CLIENT_INDISPO' %}selected{% endif %}>Tapis prêt Client indisponible</option>
-                                            <option value="LIVRE-satisfait" {% if tapis.statut == 'LIVRE-satisfait' %}selected{% endif %}>Livré satisfait</option>
-                                            <option value="LIVRE-insatisfait" {% if tapis.statut == 'LIVRE-insatisfait' %}selected{% endif %}>Livré insatisfait</option>
-                                            <option value="ABANDON" {% if tapis.statut == 'ABANDON' %}selected{% endif %}>Tapis Abandonné/option>
+                                            {% for code, label in tapis.STATUS_CHOICES %}
+                                                <option value="{{ code }}" {% if tapis.statut == code %}selected{% endif %}>{{ label }}</option>
+                                            {% endfor %}
                                         </select>
                                     </div>
                                     <div class="col-12">
-                                        <label class="form-label"><i class="fa-solid fa-comment-dots me-1"></i>Commentaire</label>
-                                        <textarea name="commentaire" class="form-control">{{ tapis.commentaire|default_if_none:'' }}</textarea>
+                                        <label class="form-label small">Commentaire</label>
+                                        <textarea name="commentaire" class="form-control" rows="2">{{ tapis.commentaire }}</textarea>
                                     </div>
                                 </div>
                             {% endif %}
@@ -291,152 +224,151 @@ input, select, textarea { font-size: 0.85rem; padding: 0.5rem 0.75rem; border-ra
 
                         <div class="col-12 mt-4 d-flex justify-content-between">
                             <button type="submit" class="btn btn-success"><i class="fa-solid fa-floppy-disk me-1"></i> Mettre à jour</button>
-                            <a href="{% url 'liste_fiches' %}" class="btn btn-secondary"><i class="fa-solid fa-arrow-left me-1"></i> Retour à la liste</a>
+                            <a href="{% url 'liste_fiches' %}" class="btn btn-secondary">Retour</a>
                         </div>
                     </form>
                 </div>
             </div>
 
             <div class="d-grid mt-4">
-                <button class="btn btn-primary btn-lg shadow-lg" data-bs-toggle="modal" data-bs-target="#factureModal">
+                <button class="btn btn-primary btn-lg shadow" data-bs-toggle="modal" data-bs-target="#factureModal">
                     <i class="fa-solid fa-file-invoice-dollar me-1"></i> **GÉNÉRER FACTURE / DEVIS**
                 </button>
             </div>
-            
         </div>
     </div>
 </div>
 
-<div class="modal fade" id="factureModal" tabindex="-1" aria-labelledby="factureModalLabel" aria-hidden="true">
+<div class="modal fade" id="factureModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-xl">
         <div class="modal-content">
             <form method="POST" action="{% url 'creer_facture' fiche_id=commande.id %}">
                 {% csrf_token %}
                 <div class="modal-header bg-primary text-white">
-                    <h5 class="modal-title" id="factureModalLabel"><i class="fa-solid fa-plus me-2"></i>Créer Facture/Devis pour **{{ commande.nom_client }}**</h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Fermer"></button>
+                    <h5 class="modal-title"><i class="fa-solid fa-plus me-2"></i>Nouveau Document pour {{ commande.nom_client }}</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
                     <div class="row g-3 mb-4">
                         <div class="col-md-3">
-                            <label class="form-label small">Type de document</label>
+                            <label class="form-label small fw-bold">Type</label>
                             <select name="type_document" class="form-select form-select-sm">
                                 <option value="DEVIS">DEVIS</option>
                                 <option value="FACTURE">FACTURE</option>
                             </select>
                         </div>
                         <div class="col-md-5">
-                            <label class="form-label small">Objet du document</label>
-                            <input type="text" name="objet" class="form-control form-control-sm" placeholder="Ex: Nettoyage canapés / Prestation Clim">
+                            <label class="form-label small fw-bold">Objet</label>
+                            <input type="text" name="objet" class="form-control form-control-sm" placeholder="Ex: Nettoyage complet">
                         </div>
                         <div class="col-md-2">
-                            <label class="form-label small">Lieu d'émission</label>
+                            <label class="form-label small fw-bold">Lieu</label>
                             <input type="text" name="lieu_emission" class="form-control form-control-sm" value="Abidjan">
                         </div>
                         <div class="col-md-2">
-                            <label class="form-label small">Signature (Rôle)</label>
-                            <input type="text" name="signature" class="form-control form-control-sm" placeholder="Ex: LA COMPTABILITÉ" value="LA COMPTABILITÉ">
+                            <label class="form-label small fw-bold">Signature</label>
+                            <input type="text" name="signature" class="form-control form-control-sm" value="LA COMPTABILITÉ">
                         </div>
                     </div>
 
-                    <h6 class="mb-2 text-primary"><i class="fa-solid fa-list-ol me-1"></i>Lignes de Prestation</h6>
-                    <hr class="mt-0">
-
-                    <div class="row g-2 small text-muted mb-1 fw-bold align-items-center">
-                        <div class="col-4">Désignation</div>
-                        <div class="col-1 text-end">Qté</div>
-                        <div class="col-2 text-end">Prix Unitaire</div>
-                        <div class="col-2 text-end">Total Ligne</div> 
-                        <div class="col-2">Note Prix</div>
-                        <div class="col-1"></div>
-                    </div>
+                    <h6 class="text-primary border-bottom pb-2"><i class="fa-solid fa-list me-2"></i>Lignes de Prestation</h6>
                     
-                    <div id="lignesFacture">
+                    <div id="lignesFacture" class="mt-3">
                         <div class="row g-2 ligne-facture align-items-center mb-2">
                             <div class="col-4">
-                                <input type="text" name="designation[]" class="form-control form-control-sm" placeholder="Désignation de la prestation">
+                                <input type="text" name="designation[]" class="form-control form-control-sm" placeholder="Désignation" required>
                             </div>
                             <div class="col-1">
-                                <input type="number" name="quantite[]" class="form-control form-control-sm text-end quantite-input" placeholder="Qté" value="1" min="1">
+                                <input type="number" name="quantite[]" class="form-control form-control-sm text-end quantite-input" value="1" min="1">
                             </div>
                             <div class="col-2">
-                                <input type="number" name="prix_unitaire[]" class="form-control form-control-sm text-end prix-unitaire-input" placeholder="Prix Unitaire" min="0">
+                                <input type="number" name="prix_unitaire[]" class="form-control form-control-sm text-end prix-unitaire-input" placeholder="Prix Unit." required>
                             </div>
                             <div class="col-2">
                                 <input type="text" class="form-control form-control-sm text-end total-ligne-display" value="0" readonly>
                             </div>
                             <div class="col-2">
-                                <input type="text" name="note_prix[]" class="form-control form-control-sm" placeholder="Ex: lot de 7, HT">
+                                <input type="text" name="note_prix[]" class="form-control form-control-sm" placeholder="Note (ex: HT)">
                             </div>
-                            <div class="col-1">
-                                <button type="button" class="btn btn-outline-danger btn-sm w-100 remove-line" title="Supprimer cette ligne">
-                                    <i class="fa-solid fa-trash-alt"></i>
-                                </button>
+                            <div class="col-1 text-center">
+                                <button type="button" class="btn btn-outline-danger btn-sm remove-line"><i class="fa-solid fa-trash"></i></button>
                             </div>
                         </div>
                     </div>
 
-                    <button type="button" class="btn btn-sm btn-outline-secondary mt-2" id="ajouterLigne">
-                        <i class="fa-solid fa-plus me-1"></i> Ajouter une ligne de prestation
+                    <button type="button" class="btn btn-sm btn-outline-secondary" id="ajouterLigne">
+                        <i class="fa-solid fa-plus me-1"></i> Ajouter une prestation
                     </button>
 
-                    <hr class="my-4">
-                    
-                    <div class="row g-3 align-items-end">
+                    <div class="row mt-4 pt-3 border-top g-3">
                         <div class="col-md-4">
-                            <h6 class="text-muted"><i class="fa-solid fa-calculator me-1"></i> Total Global</h6>
-                            <div class="p-3 border rounded bg-light">
-                                <div class="d-flex justify-content-between mb-2">
-                                    <span class="small fw-bold">Total HT / TTC :</span>
+                            <div class="p-3 bg-light rounded">
+                                <div class="d-flex justify-content-between">
+                                    <span class="small fw-bold">Total Brut HT:</span>
                                     <span id="totalHTFacture" class="text-primary fw-bold">0 FCFA</span>
                                 </div>
-                                <div class="d-flex justify-content-between pt-2 border-top">
-                                    <span class="fw-bold text-danger">Réduction appliquée :</span>
-                                    <span id="montantReductionDisplay" class="fw-bold text-danger">0 FCFA</span>
+                                <div class="d-flex justify-content-between mt-2 text-danger">
+                                    <span class="small fw-bold">Réduction:</span>
+                                    <span id="montantReductionDisplay" class="fw-bold">0 FCFA</span>
                                 </div>
                             </div>
                         </div>
-
                         <div class="col-md-5">
-                            <h6 class="text-muted"><i class="fa-solid fa-percent me-1"></i> Gestion de la Réduction</h6>
                             <div class="row g-2">
-                                <div class="col-md-6">
-                                    <label class="form-label small">Taux de Réduction (%)</label>
-                                    <input type="number" step="any" name="taux_reduction_pourcentage" id="tauxReductionInput" class="form-control form-control-sm" placeholder="0 - 100" min="0" max="100" value="{{ current_facture.taux_reduction_pourcentage|default_if_none:'' }}">
+                                <div class="col-6">
+                                    <label class="form-label small fw-bold">Taux Réduction (%)</label>
+                                    <input type="number" id="tauxReductionInput" name="taux_reduction" class="form-control" step="0.001" min="0" max="100">
                                 </div>
-                                <div class="col-md-6">
-                                    <label class="form-label small">Montant de Réduction (FCFA)</label>
-                                    <input type="number" name="montant_reduction" id="montantReductionInput" class="form-control form-control-sm" placeholder="Montant" value="{{ current_facture.montant_reduction|default_if_none:'' }}">
+                                <div class="col-6">
+                                    <label class="form-label small fw-bold">Ou Montant Fixe</label>
+                                    <input type="number" id="montantReductionInput" class="form-control form-control-sm" placeholder="Ex: 2000">
                                 </div>
                             </div>
                         </div>
-
                         <div class="col-md-3">
-                            <h6 class="text-muted"><i class="fa-solid fa-check me-1"></i> Total Final</h6>
-                            <label class="form-label small text-success">Montant Net à Payer</label>
+                            <label class="form-label small fw-bold text-success">NET À PAYER (Arrondi 5 FCFA)</label>
                             <div class="input-group">
-                                <input type="text" id="totalFinalFacture" class="form-control text-end" value="0" readonly>
-                                <span class="input-group-text small">FCFA</span>
+                                <input type="text" id="totalFinalFacture" class="form-control form-control-lg text-end fw-bold text-success" value="0" readonly>
+                                <span class="input-group-text bg-success text-white">FCFA</span>
                             </div>
                         </div>
                     </div>
-
                 </div>
-                
-                <div class="modal-footer justify-content-end">
-                    <button type="submit" class="btn btn-success btn-lg">
-                        <i class="fa-solid fa-file-invoice-dollar me-1"></i> Générer et Télécharger
-                    </button>
-                    <button type="button" class="btn btn-secondary btn-lg" data-bs-dismiss="modal">Fermer</button>
+                <div class="modal-footer">
+                    <button type="submit" class="btn btn-success btn-lg px-5">Générer le document</button>
                 </div>
             </form>
         </div>
     </div>
 </div>
 
+<div class="modal fade" id="deleteFactureModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title"><i class="fa-solid fa-triangle-exclamation me-2"></i>Confirmer la suppression</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Êtes-vous sûr de vouloir supprimer définitivement le document <strong id="deleteFactureNum"></strong> ?</p>
+                <p class="text-danger small"><i class="fa-solid fa-info-circle me-1"></i> Cette action est irréversible.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                <form id="formSupprimerFacture" method="POST">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-danger">Supprimer le document</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+
 <script>
     document.addEventListener('DOMContentLoaded', function() {
         // === ELEMENTS EXISTANTS ===
+        const formFacture = document.getElementById('formModifierFacture') || document.querySelector('form');
         const lignesFactureContainer = document.getElementById('lignesFacture');
         const ajouterLigneBtn = document.getElementById('ajouterLigne');
         const totalHTFacture = document.getElementById('totalHTFacture');
@@ -445,18 +377,21 @@ input, select, textarea { font-size: 0.85rem; padding: 0.5rem 0.75rem; border-ra
         const montantReductionInput = document.getElementById('montantReductionInput');
         const totalFinalFacture = document.getElementById('totalFinalFacture');
 
-        // === NOUVEAUX ELEMENTS (MODIFS/SUPPR) ===
-        const modifierFactureModal = new bootstrap.Modal(document.getElementById('modifierFactureModal'));
-        const deleteFactureModal = new bootstrap.Modal(document.getElementById('deleteFactureModal'));
-        const formModifierFacture = document.getElementById('formModifierFacture');
+        // === ELEMENTS MODALS ===
+        const deleteFactureModalElement = document.getElementById('deleteFactureModal');
+        const deleteFactureModal = deleteFactureModalElement ? new bootstrap.Modal(deleteFactureModalElement) : null;
         const formSupprimerFacture = document.getElementById('formSupprimerFacture');
 
-        // --- FONCTIONS DE CALCUL (VOTRE LOGIQUE) ---
-
+        // --- FONCTIONS DE FORMATAGE ET CALCUL ---
         const formatNumber = (num) => {
             return Math.round(num).toString().replace(/\B(?=(\d{3})+(?!\d))/g, "\u00A0");
         };
-        
+
+        const parseLocaleNumber = (string) => {
+            if (!string) return 0;
+            return parseFloat(string.toString().replace(/\s/g, '').replace(/\u00A0/g, '').replace('FCFA', '')) || 0;
+        };
+
         const calculateLineTotal = (lineElement) => {
             const quantite = parseFloat(lineElement.querySelector('.quantite-input').value) || 0;
             const prixUnitaire = parseFloat(lineElement.querySelector('.prix-unitaire-input').value) || 0;
@@ -476,31 +411,29 @@ input, select, textarea { font-size: 0.85rem; padding: 0.5rem 0.75rem; border-ra
         };
 
         const updateFinalTotal = () => {
-    const totalBase = parseFloat(totalHTFacture.textContent.replace(/\s/g, '').replace(/\u00A0/g, '')) || 0;
-    let reduction = parseFloat(montantReductionInput.value) || 0;
+            const totalBase = parseLocaleNumber(totalHTFacture.textContent);
+            let reduction = parseFloat(montantReductionInput.value) || 0;
 
-    // --- APPLICATION DE VOTRE RÈGLE EN JS ---
-    let valeur = Math.round(reduction);
-    let dernierChiffre = valeur % 10;
-    let base = Math.floor(valeur / 10) * 10;
-    
-    if (dernierChiffre < 5) {
-        reduction = base;
-    } else {
-        reduction = base + 5;
-    }
-    // ---------------------------------------
+            let valeur = Math.round(reduction);
+            let dernierChiffre = valeur % 10;
+            let base = Math.floor(valeur / 10) * 10;
+            
+            if (dernierChiffre < 3) { 
+                reduction = base;
+            } else if (dernierChiffre < 8) { 
+                reduction = base + 5;
+            } else { 
+                reduction = base + 10;
+            }
 
-    const totalFinal = totalBase - reduction;
-    montantReductionDisplay.textContent = "-" + formatNumber(reduction) + " FCFA";
-    totalFinalFacture.value = formatNumber(totalFinal) + " FCFA";
-};
+            const totalFinal = totalBase - reduction;
+            montantReductionDisplay.textContent = "-" + formatNumber(reduction) + " FCFA";
+            totalFinalFacture.value = formatNumber(totalFinal) + " FCFA";
+        };
 
-        // --- GESTION DES INPUTS ET LIGNES ---
-
+        // --- GESTION DES LIGNES ---
         const setupInputListeners = (lineElement) => {
-            const quantiteInput = lineElement.querySelector('.quantite-input');
-            const prixUnitaireInput = lineElement.querySelector('.prix-unitaire-input');
+            const inputs = lineElement.querySelectorAll('.quantite-input, .prix-unitaire-input');
             const removeBtn = lineElement.querySelector('.remove-line');
 
             removeBtn.addEventListener('click', function() {
@@ -508,30 +441,25 @@ input, select, textarea { font-size: 0.85rem; padding: 0.5rem 0.75rem; border-ra
                     lineElement.remove();
                     updateGeneralTotals(); 
                 } else {
-                    alert("Vous devez conserver au moins une ligne de prestation.");
+                    alert("Une facture doit comporter au moins une ligne.");
                 }
             });
             
-            [quantiteInput, prixUnitaireInput].forEach(input => {
+            inputs.forEach(input => {
                 input.addEventListener('input', () => updateGeneralTotals());
             });
-            calculateLineTotal(lineElement); 
         };
 
-        // Initialisation lignes existantes
-        document.querySelectorAll('.ligne-facture').forEach(setupInputListeners);
-
-        // Ajout ligne
         if(ajouterLigneBtn){
             ajouterLigneBtn.addEventListener('click', function(){
                 const newLigneHTML = `
                     <div class="row g-2 ligne-facture align-items-center mb-2">
-                        <div class="col-4"><input type="text" name="designation[]" class="form-control form-control-sm" placeholder="Désignation"></div>
+                        <div class="col-4"><input type="text" name="designation[]" class="form-control form-control-sm" placeholder="Désignation" required></div>
                         <div class="col-1"><input type="number" name="quantite[]" class="form-control form-control-sm text-end quantite-input" value="1" min="1"></div>
-                        <div class="col-2"><input type="number" name="prix_unitaire[]" class="form-control form-control-sm text-end prix-unitaire-input" min="0"></div>
+                        <div class="col-2"><input type="number" name="prix_unitaire[]" class="form-control form-control-sm text-end prix-unitaire-input" min="0" required></div>
                         <div class="col-2"><input type="text" class="form-control form-control-sm text-end total-ligne-display" value="0" readonly></div>
                         <div class="col-2"><input type="text" name="note_prix[]" class="form-control form-control-sm" placeholder="Note"></div>
-                        <div class="col-1"><button type="button" class="btn btn-outline-danger btn-sm w-100 remove-line"><i class="fa-solid fa-trash-alt"></i></button></div>
+                        <div class="col-1 text-center"><button type="button" class="btn btn-outline-danger btn-sm remove-line"><i class="fa-solid fa-trash"></i></button></div>
                     </div>`;
                 lignesFactureContainer.insertAdjacentHTML('beforeend', newLigneHTML);
                 setupInputListeners(lignesFactureContainer.lastElementChild);
@@ -540,49 +468,62 @@ input, select, textarea { font-size: 0.85rem; padding: 0.5rem 0.75rem; border-ra
         }
 
         // --- LOGIQUE RÉDUCTION ---
-
         tauxReductionInput.addEventListener('input', function() {
             let taux = parseFloat(this.value) || 0;
-            taux = Math.max(0, Math.min(100, taux));
-            const totalBase = parseFloat(totalHTFacture.textContent.replace(/\s/g, '').replace(/\u00A0/g, '')) || 0;
+            if (taux < 0) taux = 0;
+            if (taux > 100) taux = 100;
+            const totalBase = parseLocaleNumber(totalHTFacture.textContent);
             const reductionMontant = (totalBase * taux) / 100;
-            montantReductionInput.value = Math.round(reductionMontant).toFixed(0);
+            montantReductionInput.value = Math.round(reductionMontant);
             updateFinalTotal();
         });
 
         montantReductionInput.addEventListener('input', function() {
-            let reductionMontant = parseFloat(this.value) || 0;
-            const totalBase = parseFloat(totalHTFacture.textContent.replace(/\s/g, '').replace(/\u00A0/g, '')) || 0;
-            let taux = totalBase > 0 ? (reductionMontant / totalBase) * 100 : 0;
-            tauxReductionInput.value = taux.toFixed(2);
+            const reductionMontant = parseFloat(this.value) || 0;
+            const totalBase = parseLocaleNumber(totalHTFacture.textContent);
+            if (totalBase > 0) {
+                let taux = (reductionMontant / totalBase) * 100;
+                tauxReductionInput.value = taux.toFixed(3);
+            } else {
+                tauxReductionInput.value = 0;
+            }
             updateFinalTotal();
         });
 
-        // --- NOUVEAU : GESTION DES ACTIONS (MODIFIER / SUPPRIMER) ---
+        // --- NETTOYAGE AVANT ENVOI (SUBMIT) ---
+        if (formFacture) {
+            formFacture.addEventListener('submit', function() {
+                totalFinalFacture.value = parseLocaleNumber(totalFinalFacture.value);
+                document.querySelectorAll('.total-ligne-display').forEach(input => {
+                    input.value = parseLocaleNumber(input.value);
+                });
+            });
+        }
 
-        // 1. Ouvrir le modal de suppression
+        // --- ACTIONS MODALS ---
         document.querySelectorAll('.btn-delete-facture').forEach(btn => {
             btn.addEventListener('click', function() {
                 const id = this.dataset.id;
                 const numero = this.dataset.numero;
-                document.getElementById('deleteFactureNum').textContent = numero;
-                formSupprimerFacture.action = `/facture/supprimer/${id}/`; // L'URL sera créée à l'étape 3
-                deleteFactureModal.show();
+                if (document.getElementById('deleteFactureNum')) {
+                    document.getElementById('deleteFactureNum').textContent = numero;
+                    formSupprimerFacture.action = `/facture/supprimer/${id}/`;
+                    deleteFactureModal.show();
+                }
             });
         });
 
-        // 2. Ouvrir le modal de modification (Redirection vers une page dédiée ou chargement AJAX)
         document.querySelectorAll('.btn-edit-facture').forEach(btn => {
             btn.addEventListener('click', function() {
-                const id = this.dataset.id;
-                // Pour la simplicité, on redirige vers une vue de modification 
-                // ou on peut charger un formulaire. Ici, on prépare l'URL :
-                window.location.href = `/facture/modifier/${id}/`;
+                window.location.href = `/facture/modifier/${this.dataset.id}/`;
             });
         });
 
-        // Initialisation au chargement
+        // Initialisation
+        document.querySelectorAll('.ligne-facture').forEach(setupInputListeners);
         updateGeneralTotals(); 
     });
 </script>
+
+
 {% endblock %}

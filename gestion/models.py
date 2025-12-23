@@ -16,12 +16,13 @@ class Facture(models.Model):
     date_emission = models.DateField(default=timezone.now)
     lieu_emission = models.CharField(max_length=255, default="Abidjan")
     objet = models.CharField(max_length=255, blank=True)
-    signature = models.CharField(max_length=255, blank=True)
+    signature = models.CharField(max_length=255, default="LA COMPTABILITÉ")
     
+    # Précision augmentée à 3 chiffres après la virgule
     taux_reduction_pourcentage = models.DecimalField(
-        max_digits=5, 
-        decimal_places=2, 
-        default=0.00,
+        max_digits=7, 
+        decimal_places=3, 
+        default=0.000,
         verbose_name="Réduction (%)"
     )
     
@@ -34,71 +35,65 @@ class Facture(models.Model):
         # 1. Génération du numéro de document
         if not self.numero_document:
             date_str = timezone.now().strftime("%Y%m%d")
-            # Utilisation d'un placeholder temporaire si l'ID n'existe pas encore
             temp_id = self.id if self.id else "NEW"
             self.numero_document = f"{date_str}-{temp_id}-ABJ" 
         
-        # 2. On sauvegarde une première fois pour s'assurer que les lignes sont accessibles
+        # 2. Premier enregistrement pour accéder aux lignes
         super().save(*args, **kwargs)
         
-        # 3. Mise à jour automatique du montant final net après calcul
-        # Note: On appelle update_final_amount puis on resauvegarde uniquement ce champ
+        # 3. Calcul du montant final et mise à jour
         self.update_final_amount()
         super().save(update_fields=['montant_final_net'])
         
     @property
     def total_ht_lignes(self):
-        """Calcule le montant total des lignes (Total HT avant réduction)."""
+        """Somme de toutes les lignes avant réduction."""
         return sum(ligne.prix_total for ligne in self.lignes.all())
 
     @property
     def montant_reduction(self):
         """
-        Calcule la réduction avec la règle commerciale :
-        Dernier chiffre 0-4 -> devient 0 | 5-9 -> devient 5
+        Calcule la différence entre le HT et le Net arrondi.
+        Garantit que HT - Réduction = Net (Multiple de 5).
         """
-        taux = Decimal(str(self.taux_reduction_pourcentage))
-        if taux > 0:
-            total_ht = Decimal(str(self.total_ht_lignes))
-            # Calcul mathématique de base
-            reduction_brute = (total_ht * taux / Decimal('100'))
-            valeur = int(reduction_brute.quantize(Decimal('1'), rounding=ROUND_HALF_UP))
-            
-            # Application de votre règle d'arrondi (0/5)
-            dernier_chiffre = valeur % 10
-            base_dizaine = (valeur // 10) * 10
-            
-            if dernier_chiffre < 5:
-                return base_dizaine  # ex: 1001 -> 1000
-            else:
-                return base_dizaine + 5  # ex: 1007 -> 1005
-        return 0
+        total_ht = Decimal(str(self.total_ht_lignes))
+        return int(total_ht) - self.montant_final_net
         
     @property
     def total(self):
-        """Retourne le montant final NET à payer."""
+        """Alias pour le montant net final."""
         return self.montant_final_net
 
     @property
     def total_lettres(self):
-        """Convertit le total final (net) en lettres."""
+        """Conversion du montant net en toutes lettres."""
         try:
             return num2words(self.total, lang='fr').upper() + " FRANC CFA"
         except:
             return "ZERO FRANC CFA"
 
     def update_final_amount(self):
-        """Calcule et met à jour le montant final net en tenant compte de la réduction arrondie."""
+        """
+        Calcule le net avec le taux à 3 décimales et arrondit 
+        le résultat final à la pièce de 5 FCFA la plus proche.
+        """
         total_ht = Decimal(str(self.total_ht_lignes))
-        # Le montant_reduction ici utilise déjà votre règle (0 ou 5)
-        net = total_ht - Decimal(str(self.montant_reduction))
+        taux = Decimal(str(self.taux_reduction_pourcentage))
         
-        self.montant_final_net = int(net)
+        if taux > 0:
+            reduction_theorique = (total_ht * taux / Decimal('100'))
+            net_theorique = float(total_ht - reduction_theorique)
+            
+            # Règle d'arrondi monétaire (Multiple de 5)
+            # Ex: 120 003 -> 120 005 | 120 002 -> 120 000
+            self.montant_final_net = int(round(net_theorique / 5.0) * 5)
+        else:
+            self.montant_final_net = int(total_ht)
+            
         return self.montant_final_net
 
     def __str__(self):
-        return f"{self.type_document} #{self.numero_document} - {self.commande.nom_client}"
-
+        return f"{self.type_document} #{self.numero_document}"
 
 class FactureLigne(models.Model):
     facture = models.ForeignKey(
@@ -113,13 +108,7 @@ class FactureLigne(models.Model):
     
     @property
     def prix_total(self):
-        """Calcule le total pour une seule ligne : Quantité * Prix Unitaire."""
-        try:
-            # Les champs PositiveIntegerField garantissent que les valeurs sont des entiers non négatifs
-            return self.quantite * self.prix_unitaire
-        except TypeError:
-            return 0
-         
+        return self.quantite * self.prix_unitaire       
     
 class Commande(models.Model):
     TYPE_CHOICES = (
