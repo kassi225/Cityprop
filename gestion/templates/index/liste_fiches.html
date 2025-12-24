@@ -13,7 +13,6 @@
     .form-control-sm, .form-select-sm { font-size: 12px; border-radius: 4px; }
     .badge-status { font-size: 10px; padding: 3px 7px; border-radius: 12px; font-weight: 600; }
     
-    /* Boutons d'action compacts et visibles */
     .btn-icon { width: 30px; height: 30px; padding: 0; display: inline-flex; align-items: center; justify-content: center; border-radius: 4px; transition: all 0.2s; }
     .btn-edit { border: 1px solid #0d6efd; color: #0d6efd; background: white; }
     .btn-edit:hover { background: #0d6efd; color: white; }
@@ -21,6 +20,10 @@
     .search-container { position: relative; }
     .search-container i { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: #b2bec3; }
     .search-container input { padding-left: 30px; }
+
+    /* Ajustement spécifique pour les dates et le filtre fidélité */
+    .date-range-group { display: flex; gap: 4px; }
+    .date-range-group input { flex: 1; min-width: 100px; }
 </style>
 
 <div class="container-fluid mt-2 px-3">
@@ -63,12 +66,14 @@
                     <option value="LIVRE-satisfait" {% if statut_filter == "LIVRE-satisfait" %}selected{% endif %}>Livré satisfait</option>
                     <option value="LIVRE-insatisfait" {% if statut_filter == "LIVRE-insatisfait" %}selected{% endif %}>Livré insatisfait</option>
                     <option value="ABANDON" {% if statut_filter == "ABANDON" %}selected{% endif %}>Tapis Abandonné</option>
-
                 </select>
             </div>
-            <div class="col-md-2 d-flex gap-1">
-                <input type="date" name="date_debut" value="{{ date_debut }}" class="form-control form-control-sm">
-                <input type="date" name="date_fin" value="{{ date_fin }}" class="form-control form-control-sm">
+
+            <div class="col-md-3">
+                <div class="date-range-group">
+                    <input type="date" name="date_debut" value="{{ date_debut }}" class="form-control form-control-sm" title="Date de début">
+                    <input type="date" name="date_fin" value="{{ date_fin }}" class="form-control form-control-sm" title="Date de fin">
+                </div>
             </div>
             <div class="col-md-1">
                 <select name="fidelise" class="form-select form-select-sm">
@@ -125,7 +130,6 @@
                     </td>
                     <td>
                         {% if c.cityclimadetails.fidelise or c.tapisdetails.fidelise %}
-                            {# On récupère l'ID du détail existant (soit cityclima, soit tapis) #}
                             {% with d_id=c.cityclimadetails.id|default:c.tapisdetails.id %}
                                 <a href="{% url 'detail_fidelisation' d_id %}" class="text-decoration-none fidelite-link">
                                     <span class="badge bg-soft-success text-success border border-success px-2" 
@@ -181,7 +185,6 @@
 </div>
 
 <script>
-    // Recherche rapide instantanée
     document.getElementById("quickSearch").addEventListener("keyup", function () {
         let value = this.value.toLowerCase();
         document.querySelectorAll("tbody tr").forEach(row => {
@@ -191,7 +194,6 @@
         });
     });
 
-    // Alertes de suppression SweetAlert2
     document.querySelectorAll('.btn-delete-trigger').forEach(btn => {
         btn.addEventListener('click', function(e) {
             const form = this.closest('.delete-form');
