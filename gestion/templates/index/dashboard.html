@@ -135,25 +135,41 @@
                         </div>
                     </div>
                 </div>
+                
+                 
                 <div class="col-md-6">
-                    <div class="card section-card p-4 h-100 border-start border-danger border-4">
-                        <div class="section-title text-danger"><i class="fa-solid fa-triangle-exclamation"></i> Alertes Critiques</div>
-                        <div class="list-group list-group-flush mt-2">
-                            <div class="list-group-item border-0 d-flex justify-content-between px-0">
-                                <span><i class="fa-solid fa-building me-2"></i> CityProp</span>
-                                <span class="badge bg-soft-danger badge-soft">{{ alertes_city }}</span>
+                    <div class="card section-card p-4 h-100 border-start border-danger border-4 shadow-sm">
+                        <div class="section-title text-danger fw-bold mb-3">
+                            <i class="fa-solid fa-triangle-exclamation me-2"></i> Alertes Critiques
+                        </div>
+
+                        <div class="list-group list-group-flush">
+                            <div class="list-group-item border-0 d-flex justify-content-between align-items-center px-0 py-2">
+                                <span class="text-secondary"><i class="fa-solid fa-building me-2"></i> CityProp</span>
+                                <span class="badge rounded-pill" style="background-color: #fce4e4; color: #dc3545; font-size: 0.9rem; min-width: 30px;">
+                                    {{ alertes_city|default:"0" }}
+                                </span>
                             </div>
-                            <div class="list-group-item border-0 d-flex justify-content-between px-0">
-                                <span><i class="fa-solid fa-snowflake me-2"></i> Climatiseur</span>
-                                <span class="badge bg-soft-danger badge-soft">{{ alertes_clima }}</span>
+
+                            <div class="list-group-item border-0 d-flex justify-content-between align-items-center px-0 py-2">
+                                <span class="text-secondary"><i class="fa-solid fa-snowflake me-2"></i> Climatiseur</span>
+                                <span class="badge rounded-pill" style="background-color: #fce4e4; color: #dc3545; font-size: 0.9rem; min-width: 30px;">
+                                    {{ alertes_clima|default:"0" }}
+                                </span>
                             </div>
-                            <div class="list-group-item border-0 d-flex justify-content-between px-0">
-                                <span><i class="fa-solid fa-rug me-2"></i> TapisProp</span>
-                                <span class="badge bg-soft-danger badge-soft">{{ alertes_tapis }}</span>
+
+                            <div class="list-group-item border-0 d-flex justify-content-between align-items-center px-0 py-2">
+                                <span class="text-secondary"><i class="fa-solid fa-rug me-2"></i> TapisProp</span>
+                                <span class="badge rounded-pill" style="background-color: #fce4e4; color: #dc3545; font-size: 0.9rem; min-width: 30px;">
+                                    {{ alertes_tapis|default:"0" }}
+                                </span>
                             </div>
                         </div>
                     </div>
                 </div>
+
+
+
             </div>
 
             <div class="card section-card p-0 overflow-hidden mb-4">
