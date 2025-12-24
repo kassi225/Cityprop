@@ -9,12 +9,12 @@
     /* SECTION FIGÉE (STICKY) */
     .sticky-header {
         position: sticky;
-        top: 65px; /* Aligné sous la topbar */
+        top: 65px;
         z-index: 5;
-        background: #F5F7FA; /* Même couleur que le fond pour la fusion */
+        background: #F5F7FA;
         padding-top: 15px;
         padding-bottom: 10px;
-        margin-left: -15px; /* Pour compenser le padding du container */
+        margin-left: -15px;
         margin-right: -15px;
         padding-left: 15px;
         padding-right: 15px;
@@ -44,7 +44,21 @@
     }
     
     .table-sm-custom td { vertical-align: middle; }
-    .hover-link:hover { color: var(--cityprop-green) !important; }
+    
+    /* Lien interactif sur le nom du client */
+    .hover-link {
+        transition: all 0.2s;
+        border-bottom: 1px solid transparent;
+    }
+    .hover-link:hover { 
+        color: var(--cityprop-green) !important; 
+        border-bottom: 1px solid var(--cityprop-green);
+    }
+
+    /* Custom Badges for Services */
+    .badge-city { background: rgba(21, 115, 71, 0.1); color: #157347; border: 1px solid rgba(21, 115, 71, 0.2); }
+    .badge-clim { background: rgba(13, 110, 253, 0.1); color: #0d6efd; border: 1px solid rgba(13, 110, 253, 0.2); }
+    .badge-tapis { background: rgba(255, 193, 7, 0.1); color: #856404; border: 1px solid rgba(255, 193, 7, 0.2); }
 </style>
 
 <div class="container-fluid">
@@ -52,7 +66,7 @@
         <div class="d-flex justify-content-between align-items-center mb-3">
             <div>
                 <h3 class="fw-bold mb-0"><i class="fas fa-chart-line text-success me-2"></i>Analyse Financière</h3>
-                <p class="text-muted small mb-0">Suivi de l'activité commerciale</p>
+                <p class="text-muted small mb-0">Suivi de l'activité commerciale et du chiffre d'affaires</p>
             </div>
         </div>
 
@@ -64,7 +78,7 @@
                             <i class="fas fa-coins"></i>
                         </div>
                         <div>
-                            <div class="kpi-label">Chiffre d'Affaires</div>
+                            <div class="kpi-label">Chiffre d'Affaires Filtré</div>
                             <div class="kpi-value text-success">{{ total_encaisse }} FCFA</div>
                         </div>
                     </div>
@@ -78,7 +92,7 @@
                             <i class="fas fa-file-invoice"></i>
                         </div>
                         <div>
-                            <div class="kpi-label">Factures Émises</div>
+                            <div class="kpi-label">Nombre de Factures</div>
                             <div class="kpi-value">{{ nombre_factures }}</div>
                         </div>
                     </div>
@@ -88,35 +102,51 @@
 
         <div class="filter-section mb-2">
             <form method="GET" id="filterForm" class="row g-2 align-items-end">
-                <div class="col-md-4">
-                    <label class="form-label small fw-bold"><i class="fas fa-search me-1"></i>Recherche</label>
-                    <input type="text" name="search_name" placeholder="Client ou N°..." value="{{ search_name|default:'' }}" class="form-control form-control-sm shadow-sm">
-                </div>
                 <div class="col-md-3">
+                    <label class="form-label small fw-bold"><i class="fas fa-search me-1"></i>Recherche</label>
+                    <input type="text" name="search_name" placeholder="Client ou N° Facture..." value="{{ search_name|default:'' }}" class="form-control form-control-sm shadow-sm">
+                </div>
+                
+                <div class="col-md-2">
+                    <label class="form-label small fw-bold"><i class="fas fa-filter me-1"></i>Service</label>
+                    <select name="type_commande" class="form-select form-select-sm shadow-sm">
+                        <option value="">Tous les services</option>
+                        <option value="CITYPROP" {% if type_cmd == 'CITYPROP' %}selected{% endif %}>Cityprop</option>
+                        <option value="CLIMATISEUR" {% if type_cmd == 'CLIMATISEUR' %}selected{% endif %}>Climatiseur</option>
+                        <option value="TAPISPROP" {% if type_cmd == 'TAPISPROP' %}selected{% endif %}>Tapisprop</option>
+                    </select>
+                </div>
+
+                <div class="col-md-2">
                     <label class="form-label small fw-bold text-success">Du</label>
                     <input type="date" id="start_date" name="start_date" value="{{ start_date }}" class="form-control form-control-sm shadow-sm">
                 </div>
-                <div class="col-md-3">
+                <div class="col-md-2">
                     <label class="form-label small fw-bold text-danger">Au</label>
                     <input type="date" id="end_date" name="end_date" value="{{ end_date }}" class="form-control form-control-sm shadow-sm">
                 </div>
-                <div class="col-md-2 d-flex gap-1">
-                    <button type="submit" class="btn btn-success btn-sm w-100 shadow-sm"><i class="fas fa-filter"></i></button>
-                    <a href="{% url 'dashboard_financier' %}" class="btn btn-outline-secondary btn-sm shadow-sm"><i class="fas fa-undo"></i></a>
+                <div class="col-md-3 d-flex gap-1">
+                    <button type="submit" class="btn btn-success btn-sm w-100 shadow-sm fw-bold">
+                        <i class="fas fa-check-circle me-1"></i>Appliquer
+                    </button>
+                    <a href="{% url 'dashboard_financier' %}" class="btn btn-outline-secondary btn-sm shadow-sm" title="Réinitialiser">
+                        <i class="fas fa-undo"></i>
+                    </a>
                 </div>
             </form>
         </div>
     </div>
+
     <div class="card border-0 shadow-sm mt-3" style="border-radius: 16px; overflow: hidden;">
         <div class="table-responsive">
             <table class="table table-hover mb-0 align-middle" style="font-size: 0.9rem;">
                 <thead class="bg-light">
                     <tr>
-                        <th class="ps-4 py-3">TYPE</th>
+                        <th class="ps-4 py-3">SERVICE</th>
                         <th>RÉFÉRENCE</th>
                         <th>CLIENT</th>
-                        <th>ÉMISSION</th>
-                        <th class="text-end pe-4">NET À PAYER</th>
+                        <th>DATE ÉMISSION</th>
+                        <th class="text-end pe-4">MONTANT NET</th>
                         <th class="text-center">ACTIONS</th>
                     </tr>
                 </thead>
@@ -124,45 +154,72 @@
                     {% for doc in factures %}
                     <tr>
                         <td class="ps-4">
-                            {% if doc.type_document == 'FACTURE' %}
-                                <span class="badge rounded-pill bg-success bg-opacity-10 text-success border border-success border-opacity-25 px-3">FACTURE</span>
+                            {% if doc.commande.type_commande == 'CITYPROP' %}
+                                <span class="badge rounded-pill badge-city px-3">CITYPROP</span>
+                            {% elif doc.commande.type_commande == 'CLIMATISEUR' %}
+                                <span class="badge rounded-pill badge-clim px-3">CLIM</span>
                             {% else %}
-                                <span class="badge rounded-pill bg-warning bg-opacity-10 text-warning border border-warning border-opacity-25 px-3">DEVIS</span>
+                                <span class="badge rounded-pill badge-tapis px-3">TAPIS</span>
                             {% endif %}
                         </td>
-                        <td><span class="fw-bold">{{ doc.numero_document }}</span></td>
+                        <td><span class="fw-bold text-secondary">{{ doc.numero_document }}</span></td>
                         <td>
                             <a href="{% url 'detail_fiche' doc.commande.id %}" class="text-decoration-none fw-bold text-dark hover-link">
-                                {{ doc.commande.nom_client|upper }}
+                                <i class="fas fa-user-circle me-1 opacity-50"></i>{{ doc.commande.nom_client|upper }}
                             </a>
                         </td>
                         <td class="text-muted">{{ doc.date_emission|date:"d M Y" }}</td>
-                        <td class="text-end fw-bold pe-4">{{ doc.montant_final_net }} FCFA</td>
+                        <td class="text-end fw-bold pe-4 text-dark">{{ doc.montant_final_net }} FCFA</td>
                         <td class="text-center">
                             <div class="btn-group shadow-sm">
-                                <a href="{% url 'voir_facture' doc.id %}" class="btn btn-sm btn-white border"><i class="fas fa-eye text-primary"></i></a>
-                                <a href="{% url 'telecharger_devis_pdf' doc.id %}" class="btn btn-sm btn-white border"><i class="fas fa-file-pdf text-danger"></i></a>
+                                <a href="{% url 'voir_facture' doc.id %}" class="btn btn-sm btn-white border" title="Voir Facture">
+                                    <i class="fas fa-eye text-primary"></i>
+                                </a>
+                                <a href="{% url 'telecharger_devis_pdf' doc.id %}" class="btn btn-sm btn-white border" title="PDF">
+                                    <i class="fas fa-file-pdf text-danger"></i>
+                                </a>
                             </div>
                         </td>
                     </tr>
                     {% empty %}
                     <tr>
-                        <td colspan="6" class="text-center py-5 text-muted">Aucune transaction trouvée.</td>
+                        <td colspan="6" class="text-center py-5 text-muted">
+                            <i class="fas fa-search-minus fa-3x mb-3 opacity-20"></i>
+                            <p>Aucune transaction ne correspond à vos filtres.</p>
+                        </td>
                     </tr>
                     {% endfor %}
                 </tbody>
             </table>
         </div>
     </div>
+
+    {% if factures.has_other_pages %}
+    <nav class="mt-4 pb-4">
+        <ul class="pagination justify-content-center">
+            {% if factures.has_previous %}
+                <li class="page-item"><a class="page-link shadow-sm" href="?page={{ factures.previous_page_number }}&search_name={{ search_name }}&type_commande={{ type_cmd }}&start_date={{ start_date }}&end_date={{ end_date }}">Précédent</a></li>
+            {% endif %}
+            
+            <li class="page-item active"><span class="page-link shadow-sm">{{ factures.number }}</span></li>
+            
+            {% if factures.has_next %}
+                <li class="page-item"><a class="page-link shadow-sm" href="?page={{ factures.next_page_number }}&search_name={{ search_name }}&type_commande={{ type_cmd }}&start_date={{ start_date }}&end_date={{ end_date }}">Suivant</a></li>
+            {% endif %}
+        </ul>
+    </nav>
+    {% endif %}
 </div>
 
 <script>
     const startDateInput = document.getElementById('start_date');
     const endDateInput = document.getElementById('end_date');
+    
     function updateDateConstraints() {
         if (startDateInput.value) endDateInput.min = startDateInput.value;
         if (endDateInput.value) startDateInput.max = endDateInput.value;
     }
+    
     startDateInput.addEventListener('change', updateDateConstraints);
     endDateInput.addEventListener('change', updateDateConstraints);
     window.onload = updateDateConstraints;

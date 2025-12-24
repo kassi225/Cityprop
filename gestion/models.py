@@ -149,15 +149,16 @@ class CityClimaDetails(models.Model):
 
 
 class TapisDetails(models.Model):
+
     STATUT_CHOICES = (
-        ('NON_RESPECTE', 'en cours'),
+        ('NON_RESPECTE', 'En cours'),
         ('PRET', 'Tapis prêt'),
-        ('CLIENT_INDISPO', 'Tapis prêt mais client indisponible'),
-        ('LIVRE-satisfait', 'client satisfait'),
-        ('LIVRE-insatisfait', 'client insatisfait'),
+        ('CLIENT_INDISPO', 'Client indisponible'),
+        ('LIVRE_SATISFAIT', 'Livré - Client satisfait'),
+        ('LIVRE_INSATISFAIT', 'Livré - Client insatisfait'),
         ('ABANDON', 'Tapis abandonné'),
     )
-    
+
     commande = models.OneToOneField(Commande, on_delete=models.CASCADE)
     fidelise = models.BooleanField(default=False)
 
@@ -167,11 +168,15 @@ class TapisDetails(models.Model):
     date_traitement = models.DateField(blank=True, null=True)
     date_livraison = models.DateField(blank=True, null=True)
     commentaire = models.TextField(blank=True, null=True)
-    statut = models.CharField(max_length=30, choices=STATUT_CHOICES, default='NON_RESPECTE')
+
+    statut = models.CharField(
+        max_length=30,
+        choices=STATUT_CHOICES,
+        default='NON_RESPECTE'
+    )
 
     def __str__(self):
         return f"Tapis - {self.commande}"
-
 
 class FidelisationNote(models.Model):
     detail_city_clima = models.ForeignKey(CityClimaDetails, null=True, blank=True, on_delete=models.CASCADE)

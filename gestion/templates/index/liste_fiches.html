@@ -62,6 +62,8 @@
                     <option value="CLIENT_INDISPO" {% if statut_filter == "CLIENT_INDISPO" %}selected{% endif %}>Prêt / Indispo</option>
                     <option value="LIVRE-satisfait" {% if statut_filter == "LIVRE-satisfait" %}selected{% endif %}>Livré satisfait</option>
                     <option value="LIVRE-insatisfait" {% if statut_filter == "LIVRE-insatisfait" %}selected{% endif %}>Livré insatisfait</option>
+                    <option value="ABANDON" {% if statut_filter == "ABANDON" %}selected{% endif %}>Tapis Abandonné</option>
+
                 </select>
             </div>
             <div class="col-md-2 d-flex gap-1">
@@ -123,9 +125,17 @@
                     </td>
                     <td>
                         {% if c.cityclimadetails.fidelise or c.tapisdetails.fidelise %}
-                            <span class="badge bg-soft-success text-success border border-success px-2" style="font-size: 9px;">
-                                <i class="fa-solid fa-star me-1"></i>OUI
-                            </span>
+                            {# On récupère l'ID du détail existant (soit cityclima, soit tapis) #}
+                            {% with d_id=c.cityclimadetails.id|default:c.tapisdetails.id %}
+                                <a href="{% url 'detail_fidelisation' d_id %}" class="text-decoration-none fidelite-link">
+                                    <span class="badge bg-soft-success text-success border border-success px-2" 
+                                        style="font-size: 9px; transition: transform 0.2s; display: inline-block;"
+                                        onmouseover="this.style.transform='scale(1.1)'" 
+                                        onmouseout="this.style.transform='scale(1)'">
+                                        <i class="fa-solid fa-star me-1"></i>OUI
+                                    </span>
+                                </a>
+                            {% endwith %}
                         {% else %}
                             <span class="text-muted opacity-50" style="font-size: 9px;">NON</span>
                         {% endif %}

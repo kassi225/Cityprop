@@ -106,8 +106,25 @@
             <li><a href="{% url 'dashboard' %}" class="{% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}"><i class="fa-solid fa-gauge-high"></i> Dashboard</a></li>
             <li><a href="{% url 'nouvelle_commande' %}" class="{% if request.resolver_match.url_name == 'nouvelle_commande' %}active{% endif %}"><i class="fa-solid fa-cart-plus"></i> Créer une commande</a></li>
             <li><a href="{% url 'liste_fiches' %}" class="{% if request.resolver_match.url_name == 'liste_fiches' %}active{% endif %}"><i class="fa-solid fa-clipboard-list"></i> Liste des commandes</a></li>
-            <li><a href="{% url 'alertes_fidelisation' %}"><i class="fa-solid fa-heart-circle-bolt"></i> Fidélisation {% if alertes_city|add:alertes_clima > 0 %}<span class="badge bg-danger">{{ alertes_city|add:alertes_clima }}</span>{% endif %}</a></li>
-            <li><a href="{% url 'alertes_tapis_retard' %}" class="{% if request.resolver_match.url_name == 'alertes_tapis_retard' %}active{% endif %}"><i class="fa-solid fa-bell"></i> Alertes tapis {% if alertes_tapis > 0 %}<span class="badge bg-danger">{{ alertes_tapis }}</span>{% endif %}</a></li>
+            
+            <li>
+                <a href="{% url 'alertes_fidelisation' %}" class="{% if request.resolver_match.url_name == 'alertes_fidelisation' %}active{% endif %}">
+                    <i class="fa-solid fa-heart-circle-bolt"></i> Fidélisation 
+                    {% if total_fidelisation > 0 %}
+                        <span class="badge bg-warning text-dark">{{ total_fidelisation }}</span>
+                    {% endif %}
+                </a>
+            </li>
+
+            <li>
+                <a href="{% url 'alertes_tapis_retard' %}" class="{% if request.resolver_match.url_name == 'alertes_tapis_retard' %}active{% endif %}">
+                    <i class="fa-solid fa-bell"></i> Alertes tapis 
+                    {% if alertes_tapis_retard > 0 %}
+                        <span class="badge bg-danger">{{ alertes_tapis_retard }}</span>
+                    {% endif %}
+                </a>
+            </li>
+
             <li><a href="{% url 'listes_tapis_abandon' %}" class="{% if request.resolver_match.url_name == 'listes_tapis_abandon' %}active{% endif %}"><i class="fa-solid fa-box-open"></i> Tapis abandonnés</a></li>
             
             {% if request.user.is_superuser or request.user.groups.all.0.name == "ADMIN" or request.user.groups.all.0.name == "SUPERUSER" %}
@@ -141,7 +158,6 @@
             showConfirmButton: false,
             timer: 4500,
             timerProgressBar: true,
-            // Animations d'entrée et de sortie stylées
             showClass: { popup: 'animate__animated animate__fadeInRight' },
             hideClass: { popup: 'animate__animated animate__fadeOutRight' },
             didOpen: (toast) => {

@@ -570,86 +570,83 @@ def voir_facture(request, facture_id):
 @login_required
 def alertes_fidelisation(request):
     now = timezone.now().date()
-    
-    # Récupération des paramètres de filtre/recherche
     search_query = request.GET.get('search', '')
     page_number = request.GET.get('page', 1)
     
-    # --- 1. Requêtes de base pour les alertes (filtrées par temps écoulé) ---
-    
-    # Création d'un filtre Q pour la recherche sur Nom ou Numéro de client
+    # Construction du filtre de recherche
     search_filter = Q()
     if search_query:
-        search_filter = Q(commande__nom_client__icontains=search_query) | \
-                        Q(commande__numero_client__icontains=search_query)
+        search_filter = (Q(commande__nom_client__icontains=search_query) | 
+                         Q(commande__numero_client__icontains=search_query))
                         
-    # 1. CITYPROP (intervention > 6 mois)
+    # 1. Récupération CITYPROP (> 180 jours)
     city_qs = CityClimaDetails.objects.filter(
-        search_filter, # Application de la recherche
+        search_filter, 
         fidelise=False,
         commande__type_commande='CITYPROP',
-        date_intervention__isnull=False,
         date_intervention__lte=now - timedelta(days=180)
     ).select_related('commande')
 
-    # 2. CLIMATISEUR (intervention > 3 mois)
+    # 2. Récupération CLIMATISEUR (> 90 jours)
     clima_qs = CityClimaDetails.objects.filter(
-        search_filter, # Application de la recherche
+        search_filter, 
         fidelise=False,
         commande__type_commande='CLIMATISEUR',
-        date_intervention__isnull=False,
         date_intervention__lte=now - timedelta(days=90)
     ).select_related('commande')
 
-    # 3. TAPISPROP (livraison > 6 mois)
+    # 3. Récupération TAPIS (> 180 jours après LIVRAISON)
     tapis_qs = TapisDetails.objects.filter(
-        search_filter, # Application de la recherche
+        search_filter, 
         fidelise=False,
-        date_livraison__isnull=False,
-        date_livraison__lte=now - timedelta(days=180),
-        # Le statut 'LIVRE-satisfait' est la seule fin qui nécessite une fidélisation
-        statut__in=['LIVRE-satisfait', 'LIVRE-insatisfait'] 
+        statut__in=['LIVRE_SATISFAIT', 'LIVRE_INSATISFAIT'],
+        date_livraison__lte=now - timedelta(days=180)
     ).select_related('commande')
 
-    # --- 2. Unification et normalisation des données ---
     alertes_list = []
     
-    # Normalisation des alertes Cityprop/Climatiseur
-    for obj in list(city_qs) + list(clima_qs):
+    # Normalisation pour l'affichage unique dans le tableau
+    for obj in city_qs:
         alertes_list.append({
             'id': obj.id,
-            'type': obj.commande.get_type_commande_display(),
+            'type': "CITYPROP",
             'nom_client': obj.commande.nom_client,
             'numero_client': obj.commande.numero_client,
             'date_cle': obj.date_intervention,
-            'url_detail': obj.id, # ID pour le lien fidelisation
-            'url_commande': obj.commande.id, # ID pour le lien commande
+            'url_commande': obj.commande.id,
         })
-        
-    # Normalisation des alertes Tapisprop
-    for obj in tapis_qs:
+
+    for obj in clima_qs:
         alertes_list.append({
             'id': obj.id,
-            'type': obj.commande.get_type_commande_display(),
+            'type': "CLIMATISEUR",
             'nom_client': obj.commande.nom_client,
             'numero_client': obj.commande.numero_client,
-            'date_cle': obj.date_livraison, # Date clé est la date de livraison pour Tapisprop
-            'url_detail': obj.id,
+            'date_cle': obj.date_intervention,
             'url_commande': obj.commande.id,
         })
         
-    # Tri de la liste unifiée par la date clé (la plus ancienne d'abord)
-    alertes_list.sort(key=lambda x: x['date_cle'])
+    for obj in tapis_qs:
+        alertes_list.append({
+            'id': obj.id,
+            'type': "TAPISPROP",
+            'nom_client': obj.commande.nom_client,
+            'numero_client': obj.commande.numero_client,
+            'date_cle': obj.date_livraison, 
+            'url_commande': obj.commande.id,
+        })
+        
+    # Tri par date (la plus ancienne en haut)
+    alertes_list.sort(key=lambda x: x['date_cle'] if x['date_cle'] else now)
     
-    # --- 3. Pagination ---
-    paginator = Paginator(alertes_list, 20) # 20 éléments par page
+    # Pagination
+    paginator = Paginator(alertes_list, 20)
     page_obj = paginator.get_page(page_number)
 
     context = {
         "page_obj": page_obj,
-        "alertes_list": page_obj.object_list, # La liste pour le template
-        "total_alertes": len(alertes_list), # Le total non paginé
-        "search_query": search_query, # Pour conserver le filtre dans le template
+        "total_alertes": len(alertes_list),
+        "search_query": search_query,
     }
     return render(request, "index/fidelisation.html", context)
 
@@ -782,8 +779,8 @@ def alertes_tapis_retard(request):
 
     # Statuts qui stoppent l'alerte
     STATUTS_FINAUX = [
-        'LIVRE-satisfait',
-        'LIVRE-insatisfait',
+       'LIVRE_SATISFAIT',
+        'LIVRE_INSATISFAIT',
         'ABANDON'
     ]
 
@@ -1030,14 +1027,31 @@ def export_commandes_excel(request):
 
 
 def alertes_counts(request):
-    alertes_city = CityClimaDetails.objects.filter(fidelise=False).count()
-    alertes_tapis = TapisDetails.objects.filter(retard=True).count()
+    today = timezone.now().date()
+    
+    # 1. Alertes Fidélisation (Global : City, Clima et Tapis livrés depuis longtemps)
+    count_city = CityClimaDetails.objects.filter(
+        fidelise=False, commande__type_commande='CITYPROP', 
+        date_intervention__lte=today - timedelta(days=180)).count()
+    
+    count_clima = CityClimaDetails.objects.filter(
+        fidelise=False, commande__type_commande='CLIMATISEUR', 
+        date_intervention__lte=today - timedelta(days=90)).count()
+        
+    count_tapis_fid = TapisDetails.objects.filter(
+        fidelise=False, statut__in=['LIVRE_SATISFAIT', 'LIVRE_INSATISFAIT'],
+        date_livraison__lte=today - timedelta(days=180)).count()
+
+    # 2. Alertes Retard Tapis (Tapis ramassés mais non livrés après 7 jours)
+    alertes_tapis_retard = TapisDetails.objects.filter(
+        date_ramassage__isnull=False,
+        date_ramassage__lte=today - timedelta(days=7)
+    ).exclude(statut__in=['LIVRE_SATISFAIT', 'LIVRE_INSATISFAIT', 'ABANDON']).count()
+
     return {
-        'alertes_city': alertes_city,
-        'alertes_tapis': alertes_tapis,
+        'total_fidelisation': count_city + count_clima + count_tapis_fid,
+        'alertes_tapis_retard': alertes_tapis_retard,
     }
-
-
 
 @login_required
 def creer_facture(request, fiche_id):
