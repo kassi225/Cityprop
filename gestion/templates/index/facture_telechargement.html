@@ -6,244 +6,116 @@
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
-<title>{{ facture.type_document }} {{ facture.numero_document }}</title>
-
 <style>
-/* ... (Le style CSS reste inchangé) ... */
-/* ================= PAGE A4 ================= */
-@page {
-    size: A4;
-    margin: 1.6cm;
-
-    @frame footer_frame {
-        -pdf-frame-content: footerContent;
-        bottom: 0cm;
-        margin-left: 1.6cm;
-        margin-right: 1.6cm;
-        height: 2.2cm;
-    }
-}
-
-body {
-    font-family: Helvetica, Arial, sans-serif;
-    font-size: 9.8pt;
-    color: #1f2937;
-    line-height: 1.45;
-}
-
-/* ================= HEADER ================= */
-.header {
-    border-bottom: 2px solid #1e3a8a;
-    padding-bottom: 10px;
-    margin-bottom: 5px;
-}
-
-
-
-.header-table {
-    width: 100%;
-}
-
-.logo {
-    width: 80px; /* 🔥 LOGO MIS EN VALEUR */
-    margin-bottom: 4px;
-}
-
-.company-name {
-    font-size: 14.5pt;
-    font-weight: bold;
-    color: #1e3a8a;
-}
-
-.company-tagline {
-    font-size: 8.5pt;
-    color: #555;
-}
-
-.doc-box {
-    text-align: right;
-}
-
-.doc-title {
-    font-size: 15pt;
-    font-weight: bold;
-}
-
-.doc-number {
-    font-size: 9pt;
-    color: #444;
-}
-
-/* ================= INFO CLIENT ================= */
-.info-table {
-    width: 100%;
-    margin-bottom: 14px;
-}
-
-.client-box {
-    border: 1px solid #cbd5e1;
-    padding: 8px;
-    font-size: 9pt;
-    line-height: 1.4;
-}
-
-.client-box strong {
-    color: #1e3a8a;
-}
-
-/* ================= TABLE FACTURE ================= */
-.items-table {
-    width: 100%;
-    border-collapse: collapse;
-    margin-top: 10px;
-}
-
-.items-table th {
-    background: #f1f5f9;
-    font-size: 9pt;
-    padding: 6px;
-    border: 1px solid #000;
-    text-align: center;
-}
-
-.items-table td {
-    border: 1px solid #000;
-    padding: 6px;
-    font-size: 9pt;
-}
-
-.text-right { text-align: right; }
-.text-center { text-align: center; }
-
-/* ================= TOTALS ================= */
-.total-row {
-    background: #e5e7eb;
-    font-weight: bold;
-}
-
-.reduction-row {
-    background: #fee2e2;
-    color: #991b1b;
-    font-weight: bold;
-}
-
-.net-row {
-    background: #1e3a8a;
-    color: #fff;
-    font-size: 10.5pt;
-    font-weight: bold;
-}
-
-/* ================= SIGNATURE ================= */
-.signature {
-    margin-top: 20px;
-    text-align: right;
-    font-weight: bold;
-    font-size: 9.5pt;
-}
-.logo {
-    width: 80px;
-}
+    @page {
+        size: A4; margin: 1.5cm;
+        @frame footer_frame {
+            -pdf-frame-content: footerContent;
+            bottom: 0cm; margin-left: 1.5cm; margin-right: 1.5cm; height: 2cm;
+        }
+    }
+    body { font-family: Helvetica, Arial, sans-serif; font-size: 10pt; color: #1f2937; line-height: 1.5; }
+    .header { border-bottom: 2px solid #1e3a8a; padding-bottom: 10px; margin-bottom: 20px; }
+    .logo { width: 70px; }
+    .company-name { font-size: 16pt; font-weight: bold; color: #1e3a8a; }
+    .items-table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+    .items-table th { background: #f1f5f9; padding: 8px; border: 1px solid #000; text-align: center; }
+    .items-table td { border: 1px solid #000; padding: 8px; }
+    .client-box { border: 1px solid #cbd5e1; padding: 10px; background-color: #fdfdfd; }
+    .text-right { text-align: right; }
+    .text-center { text-align: center; }
+    .net-row { background: #1e3a8a; color: #ffffff; font-weight: bold; }
 </style>
 </head>
-
 <body>
 
 <div class="header">
-<table class="header-table">
-<tr>
-<td>
-   <img src="{{ 'images/cityprop_logo.png'|pdf_static }}" class="logo"><br>
-    <span class="company-name">CITY PROP</span><br>
-    <span class="company-tagline">Nettoyage industriel & assainissement</span>
-</td>
-<td class="doc-box">
-    <div class="doc-title">{{ facture.type_document|upper }}</div>
-    <div class="doc-number">N° {{ facture.numero_document }}</div>
-    <div class="doc-number">Émise le {{ facture.date_emission|date:"d/m/Y" }}</div>
-</td>
-</tr>
-</table>
+    <table style="width: 100%;">
+        <tr>
+            <td style="width: 50%;">
+                <img src="{{ 'images/cityprop_logo.png'|pdf_static }}" class="logo"><br>
+                <span class="company-name">CITY PROP</span><br>
+                <span style="font-size: 9pt; color: #555;">Nettoyage industriel & assainissement</span>
+            </td>
+            <td style="width: 50%; text-align: right; vertical-align: top;">
+                <div style="font-size: 16pt; font-weight: bold;">{{ facture.type_document|upper }}</div>
+                <div style="font-size: 10pt;">N° {{ facture.numero_document }}</div>
+                <div style="font-size: 10pt;">Le {{ facture.date_emission|date:"d/m/Y" }}</div>
+            </td>
+        </tr>
+    </table>
 </div>
 
-<table class="info-table">
-<tr>
-<td style="width:60%; vertical-align: top;">
-    <strong>Objet :</strong><br>
-    {{ facture.objet|default:"Prestations professionnelles de nettoyage" }}
-</td>
-<td style="width:40%; vertical-align: top;">
-    <div class="client-box">
-        <strong>CLIENT :</strong> {{ facture.commande.nom_client|upper }}<br>
-        <strong>LIEU :</strong> {{ facture.commande.localisation_client }}<br>
-        <strong>TÉL :</strong> {{ facture.commande.numero_client }}
-    </div>
-</td>
-</tr>
+<table style="width: 100%; margin-bottom: 20px;">
+    <tr>
+        <td style="width: 55%; vertical-align: top;">
+            <strong>Objet :</strong><br>
+            {{ facture.objet|default:"Prestations professionnelles de nettoyage" }}
+        </td>
+        <td style="width: 45%; vertical-align: top;">
+            <div class="client-box">
+                <strong>CLIENT :</strong> {{ facture.commande.nom_client|upper }}<br>
+                <strong>LIEU :</strong> {{ facture.commande.localisation_client }}<br>
+                <strong>TÉL :</strong> {{ facture.commande.numero_client }}
+            </div>
+        </td>
+    </tr>
 </table>
 
 <table class="items-table">
-<thead>
-<tr>
-    <th>Désignation</th>
-    <th>Qté</th>
-    <th>Prix unitaire (FCFA)</th>
-    <th>Total (FCFA)</th>
-</tr>
-</thead>
-<tbody>
-{% for ligne in facture.lignes.all %}
-<tr>
-    <td>
-        {{ ligne.designation }}
-        {% if ligne.note_prix_unitaire %}
-            <br><small style="color:#555;">{{ ligne.note_prix_unitaire }}</small>
-        {% endif %}
-    </td>
-    <td class="text-center">{{ ligne.quantite }}</td>
-    <td class="text-right">{{ ligne.prix_unitaire|intcomma }}</td>
-    <td class="text-right">{{ ligne.prix_total|intcomma }}</td>
-</tr>
-{% endfor %}
-
-<tr class="total-row">
-    <td colspan="3" class="text-right">TOTAL HT DES LIGNES</td>
-    <td class="text-right">{{ facture.total_ht_lignes|intcomma }}</td>
-</tr>
-
-{% if facture.montant_reduction > 0 %}
-<tr class="reduction-row">
-    <td colspan="3" class="text-right">
-        RÉDUCTION
-        {% if facture.taux_reduction_pourcentage %}
-            ({{ facture.taux_reduction_pourcentage|intcomma }} %)
-        {% endif %}
-    </td>
-    <td class="text-right">- {{ facture.montant_reduction|intcomma }}</td>
-</tr>
-{% endif %}
-
-<tr class="net-row">
-    <td colspan="3" class="text-right">MONTANT NET À PAYER</td>
-    <td class="text-right">{{ facture.montant_final_net|intcomma }}</td>
-</tr>
-</tbody>
+    <thead>
+        <tr>
+            <th>Désignation</th>
+            <th style="width: 10%;">Qté</th>
+            <th style="width: 20%;">P.U (FCFA)</th>
+            <th style="width: 20%;">Total (FCFA)</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for ligne in facture.lignes.all %}
+        <tr>
+            <td>
+                <strong>{{ ligne.designation }}</strong>
+                {% if ligne.note_prix_unitaire %}
+                    <br><span style="font-size: 8pt; color: #555; font-style: italic;">Note : {{ ligne.note_prix_unitaire }}</span>
+                {% endif %}
+            </td>
+            <td class="text-center">{{ ligne.quantite }}</td>
+            <td class="text-right">{{ ligne.prix_unitaire|intcomma }}</td>
+            <td class="text-right">{{ ligne.prix_total|intcomma }}</td>
+        </tr>
+        {% endfor %}
+        <tr>
+            <td colspan="3" class="text-right">TOTAL HT</td>
+            <td class="text-right">{{ facture.total_ht_lignes|intcomma }}</td>
+        </tr>
+        {% if facture.montant_reduction > 0 %}
+        <tr style="color: #b91c1c;">
+            <td colspan="3" class="text-right">RÉDUCTION ({{ facture.taux_reduction_pourcentage|floatformat:2 }}%)</td>
+            <td class="text-right">- {{ facture.montant_reduction|intcomma }}</td>
+        </tr>
+        {% endif %}
+        <tr class="net-row">
+            <td colspan="3" class="text-right">MONTANT NET À PAYER</td>
+            <td class="text-right">{{ facture.montant_final_net|intcomma }} FCFA</td>
+        </tr>
+    </tbody>
 </table>
 
-<p style="margin-top:10px; font-size:9.5pt;">
-Arrêtée la présente facture à la somme de :
-<strong>{{ facture.total_lettres }}</strong>
+<p style="margin-top: 25px;">
+    Arrêtée la présente facture à la somme de :<br>
+    <strong>{{ facture.total_lettres }}</strong>
 </p>
 
-<div class="signature">
-{{ facture.lieu_emission|default:"Abidjan" }}, le {{ facture.date_emission|date:"d/m/Y" }}<br><br>
-{{ facture.signature|default:"LA COMPTABILITÉ"|upper }}
+<div style="margin-top: 40px; text-align: right;">
+    {{ facture.lieu_emission|default:"Abidjan" }}, le {{ facture.date_emission|date:"d/m/Y" }}<br><br><br>
+    <span style="font-weight: bold; text-decoration: underline;">{{ facture.signature|upper }}</span>
 </div>
 
-<div id="footerContent" style="font-size:8pt; text-align:center; color:#444;">
-CITY PROP SARL – Capital 1 000 000 FCFA – Cocody Abatta, Abidjan<br>
-Tél : (+225) 0747355400 / 0778176097 – citypropre@gmail.com<br>
-RCCM CI-ABJ-03-2022-B13-11314
+<div id="footerContent">
+    CITY PROP SARL – Capital 1 000 000 FCFA – Cocody Abatta, Abidjan<br>
+    Tél : (+225) 0747355400 / 0778176097 – citypropre@gmail.com<br>
+    RCCM CI-ABJ-03-2022-B13-11314
 </div>
 
 </body>

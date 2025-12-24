@@ -2,93 +2,152 @@
 
 {% block content %}
 <style>
-    .finance-card { border: 1px solid #dee2e6; border-radius: 6px; background: #fff; }
-    .table-sm-custom { font-size: 0.82rem; }
-    .table-sm-custom th { background: #f8f9fa; color: #495057; font-weight: 700; text-transform: uppercase; font-size: 0.75rem; }
-    .kpi-value { font-size: 1.4rem; font-weight: 800; color: #157347; }
-    .badge-devis { background-color: #ffc107; color: #000; font-size: 0.7rem; }
-    .badge-facture { background-color: #198754; color: #fff; font-size: 0.7rem; }
+    :root {
+        --cityprop-green: #157347;
+    }
+
+    /* SECTION FIGÉE (STICKY) */
+    .sticky-header {
+        position: sticky;
+        top: 65px; /* Aligné sous la topbar */
+        z-index: 5;
+        background: #F5F7FA; /* Même couleur que le fond pour la fusion */
+        padding-top: 15px;
+        padding-bottom: 10px;
+        margin-left: -15px; /* Pour compenser le padding du container */
+        margin-right: -15px;
+        padding-left: 15px;
+        padding-right: 15px;
+    }
+
+    /* KPI CARDS */
+    .kpi-card {
+        border: none;
+        border-radius: 16px;
+        background: #fff;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+    }
+    .kpi-icon {
+        width: 48px; height: 48px; border-radius: 12px;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 1.5rem;
+    }
+    .kpi-value { font-size: 1.6rem; font-weight: 800; color: #2d3436; margin-bottom: 0; }
+    .kpi-label { font-size: 0.85rem; color: #636e72; font-weight: 600; text-transform: uppercase; }
+
+    /* FILTERS */
+    .filter-section { 
+        background: #fff; 
+        border-radius: 16px; 
+        padding: 15px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+    }
+    
+    .table-sm-custom td { vertical-align: middle; }
+    .hover-link:hover { color: var(--cityprop-green) !important; }
 </style>
 
-<div class="container-fluid py-3">
-    <div class="row align-items-center mb-3">
-        <div class="col-md-6">
-            <h4 class="mb-0"><i class="fas fa-wallet text-primary me-2"></i>Dashboard Financier</h4>
-        </div>
-        <div class="col-md-3">
-            <div class="finance-card p-2 shadow-sm text-center">
-                <div class="small text-muted text-uppercase">Chiffre d'Affaires</div>
-                <div class="kpi-value">{{ total_encaisse }} FCFA</div>
+<div class="container-fluid">
+    <div class="sticky-header">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <div>
+                <h3 class="fw-bold mb-0"><i class="fas fa-chart-line text-success me-2"></i>Analyse Financière</h3>
+                <p class="text-muted small mb-0">Suivi de l'activité commerciale</p>
             </div>
         </div>
-        <div class="col-md-3">
-            <div class="finance-card p-2 shadow-sm text-center">
-                <div class="small text-muted text-uppercase">Total Documents</div>
-                <div class="kpi-value text-dark">{{ nombre_factures }}</div>
+
+        <div class="row g-3 mb-3">
+            <div class="col-md-6">
+                <div class="card kpi-card p-3">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="kpi-icon bg-success bg-opacity-10 text-success">
+                            <i class="fas fa-coins"></i>
+                        </div>
+                        <div>
+                            <div class="kpi-label">Chiffre d'Affaires</div>
+                            <div class="kpi-value text-success">{{ total_encaisse }} FCFA</div>
+                        </div>
+                    </div>
+                </div>
             </div>
+
+            <div class="col-md-6">
+                <div class="card kpi-card p-3">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="kpi-icon bg-primary bg-opacity-10 text-primary">
+                            <i class="fas fa-file-invoice"></i>
+                        </div>
+                        <div>
+                            <div class="kpi-label">Factures Émises</div>
+                            <div class="kpi-value">{{ nombre_factures }}</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="filter-section mb-2">
+            <form method="GET" id="filterForm" class="row g-2 align-items-end">
+                <div class="col-md-4">
+                    <label class="form-label small fw-bold"><i class="fas fa-search me-1"></i>Recherche</label>
+                    <input type="text" name="search_name" placeholder="Client ou N°..." value="{{ search_name|default:'' }}" class="form-control form-control-sm shadow-sm">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label small fw-bold text-success">Du</label>
+                    <input type="date" id="start_date" name="start_date" value="{{ start_date }}" class="form-control form-control-sm shadow-sm">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label small fw-bold text-danger">Au</label>
+                    <input type="date" id="end_date" name="end_date" value="{{ end_date }}" class="form-control form-control-sm shadow-sm">
+                </div>
+                <div class="col-md-2 d-flex gap-1">
+                    <button type="submit" class="btn btn-success btn-sm w-100 shadow-sm"><i class="fas fa-filter"></i></button>
+                    <a href="{% url 'dashboard_financier' %}" class="btn btn-outline-secondary btn-sm shadow-sm"><i class="fas fa-undo"></i></a>
+                </div>
+            </form>
         </div>
     </div>
-
-    <div class="card p-3 mb-3 shadow-sm border-0 bg-light">
-        <form method="GET" id="filterForm" class="row g-2 align-items-end">
-            <div class="col-md-3">
-                <label class="small fw-bold">Recherche Client / N°</label>
-                <input type="text" name="search_name" value="{{ search_name|default:'' }}" class="form-control form-control-sm">
-            </div>
-            <div class="col-md-2">
-                <label class="small fw-bold text-success">Du (Début)</label>
-                <input type="date" id="start_date" name="start_date" value="{{ start_date }}" class="form-control form-control-sm border-success">
-            </div>
-            <div class="col-md-2">
-                <label class="small fw-bold text-danger">Au (Fin)</label>
-                <input type="date" id="end_date" name="end_date" value="{{ end_date }}" class="form-control form-control-sm border-danger">
-            </div>
-            <div class="col-md-5 d-flex gap-1">
-                <button type="submit" class="btn btn-sm btn-primary w-100">Filtrer</button>
-                <a href="{% url 'dashboard_financier' %}" class="btn btn-sm btn-secondary">Réinitialiser</a>
-            </div>
-        </form>
-    </div>
-
-    <div class="card shadow-sm border-0">
+    <div class="card border-0 shadow-sm mt-3" style="border-radius: 16px; overflow: hidden;">
         <div class="table-responsive">
-            <table class="table table-hover table-sm-custom mb-0 align-middle">
-                <thead>
+            <table class="table table-hover mb-0 align-middle" style="font-size: 0.9rem;">
+                <thead class="bg-light">
                     <tr>
-                        <th class="ps-3">Type</th>
-                        <th>Date</th>
-                        <th>Référence</th>
-                        <th>Client</th>
-                        <th class="text-end">Montant</th>
-                        <th class="text-center">Actions</th>
+                        <th class="ps-4 py-3">TYPE</th>
+                        <th>RÉFÉRENCE</th>
+                        <th>CLIENT</th>
+                        <th>ÉMISSION</th>
+                        <th class="text-end pe-4">NET À PAYER</th>
+                        <th class="text-center">ACTIONS</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for doc in factures %}
                     <tr>
-                        <td class="ps-3">
+                        <td class="ps-4">
                             {% if doc.type_document == 'FACTURE' %}
-                                <span class="badge badge-facture">FACTURE</span>
+                                <span class="badge rounded-pill bg-success bg-opacity-10 text-success border border-success border-opacity-25 px-3">FACTURE</span>
                             {% else %}
-                                <span class="badge badge-devis">DEVIS</span>
+                                <span class="badge rounded-pill bg-warning bg-opacity-10 text-warning border border-warning border-opacity-25 px-3">DEVIS</span>
                             {% endif %}
                         </td>
-                        <td class="text-muted">{{ doc.date_emission|date:"d/m/Y" }}</td>
-                        <td class="fw-bold">{{ doc.numero_document }}</td>
+                        <td><span class="fw-bold">{{ doc.numero_document }}</span></td>
                         <td>
-                            <a href="{% url 'detail_fiche' doc.commande.id %}" class="text-decoration-none fw-bold text-dark">
-                                <i class="fas fa-user-circle text-primary me-1"></i> {{ doc.commande.nom_client }}
+                            <a href="{% url 'detail_fiche' doc.commande.id %}" class="text-decoration-none fw-bold text-dark hover-link">
+                                {{ doc.commande.nom_client|upper }}
                             </a>
                         </td>
-                        <td class="text-end fw-bold">{{ doc.montant_final_net }} F</td>
+                        <td class="text-muted">{{ doc.date_emission|date:"d M Y" }}</td>
+                        <td class="text-end fw-bold pe-4">{{ doc.montant_final_net }} FCFA</td>
                         <td class="text-center">
-                            <a href="{% url 'voir_facture' doc.id %}" class="btn btn-sm btn-light border"><i class="fas fa-eye"></i></a>
-                            <a href="{% url 'telecharger_devis_pdf' doc.id %}" class="btn btn-sm btn-success text-white"><i class="fas fa-file-pdf"></i></a>
+                            <div class="btn-group shadow-sm">
+                                <a href="{% url 'voir_facture' doc.id %}" class="btn btn-sm btn-white border"><i class="fas fa-eye text-primary"></i></a>
+                                <a href="{% url 'telecharger_devis_pdf' doc.id %}" class="btn btn-sm btn-white border"><i class="fas fa-file-pdf text-danger"></i></a>
+                            </div>
                         </td>
                     </tr>
                     {% empty %}
                     <tr>
-                        <td colspan="6" class="text-center py-4">Aucun document trouvé.</td>
+                        <td colspan="6" class="text-center py-5 text-muted">Aucune transaction trouvée.</td>
                     </tr>
                     {% endfor %}
                 </tbody>
@@ -100,31 +159,12 @@
 <script>
     const startDateInput = document.getElementById('start_date');
     const endDateInput = document.getElementById('end_date');
-
     function updateDateConstraints() {
-        const startVal = startDateInput.value;
-        const endVal = endDateInput.value;
-
-        // Si une date de début est choisie, on grise tout ce qui est avant dans "Date Fin"
-        if (startVal) {
-            endDateInput.min = startVal;
-        } else {
-            endDateInput.removeAttribute('min');
-        }
-
-        // Si une date de fin est choisie, on grise tout ce qui est après dans "Date Début"
-        if (endVal) {
-            startDateInput.max = endVal;
-        } else {
-            startDateInput.removeAttribute('max');
-        }
+        if (startDateInput.value) endDateInput.min = startDateInput.value;
+        if (endDateInput.value) startDateInput.max = endDateInput.value;
     }
-
-    // Écouter les changements sur les deux champs
     startDateInput.addEventListener('change', updateDateConstraints);
     endDateInput.addEventListener('change', updateDateConstraints);
-
-    // Exécuter au chargement de la page pour les dates déjà remplies
     window.onload = updateDateConstraints;
 </script>
 {% endblock %}

@@ -1,156 +1,230 @@
 {% extends "base.html" %}
-{% block title %}Dashboard{% endblock %}
+{% block title %}Dashboard | CityProp{% endblock %}
 
 {% block content %}
-
-
 <style>
-    .kpi-card {
-        border-radius: 12px;
-        transition: transform .2s, box-shadow .2s;
-        cursor: pointer;
+    /* VARIABLES & FONTS */
+    :root {
+        --primary-soft: #eef2ff;
+        --success-soft: #ecfdf5;
+        --warning-soft: #fffbeb;
+        --danger-soft: #fef2f2;
     }
-    .kpi-card:hover { transform: translateY(-4px); box-shadow: 0 12px 24px rgba(0,0,0,.12); }
-    .kpi-icon { font-size: 1.8rem; }
-    .kpi-value { font-size: 1.9rem; font-weight: 700; }
-    .section-title { font-weight: 600; display: flex; align-items: center; gap: 8px; margin-bottom: 15px; }
-    .badge-status { font-size: .8rem; padding: 5px 10px; border-radius: 25px; }
-    .table-hover tbody tr:hover { background-color: #f1f8f4; }
+
+    /* CARDS KPI */
+    .kpi-card {
+        border: none;
+        border-radius: 16px;
+        transition: all 0.3s ease;
+        background: #ffffff;
+        box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+    }
+    .kpi-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1);
+    }
+    .kpi-icon-wrapper {
+        width: 50px; height: 50px;
+        border-radius: 12px;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 1.4rem;
+        margin-bottom: 1rem;
+    }
+    .kpi-value { font-size: 1.8rem; font-weight: 800; line-height: 1; margin-bottom: 4px; }
+    .kpi-label { font-size: 0.85rem; color: #64748b; font-weight: 600; text-transform: uppercase; }
+
+    /* SECTIONS */
+    .section-card {
+        border: none;
+        border-radius: 16px;
+        background: #ffffff;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+    .section-title {
+        font-size: 1.1rem; font-weight: 700; color: #1e293b;
+        display: flex; align-items: center; gap: 10px; padding-bottom: 15px;
+        border-bottom: 1px solid #f1f5f9; margin-bottom: 20px;
+    }
+
+    /* BADGES STATUS */
+    .badge-soft {
+        padding: 6px 12px; border-radius: 8px; font-weight: 600; font-size: 0.75rem;
+    }
+    .bg-soft-danger { background: var(--danger-soft); color: #dc2626; }
+    .bg-soft-warning { background: var(--warning-soft); color: #d97706; }
+    .bg-soft-success { background: var(--success-soft); color: #059669; }
+    .bg-soft-info { background: var(--primary-soft); color: #2563eb; }
+
+    /* TABLE */
+    .table thead th {
+        background: #f8fafc; border: none; color: #64748b;
+        font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em;
+    }
+    .table td { vertical-align: middle; border-top: 1px solid #f1f5f9; padding: 12px 8px; }
 </style>
 
-<div class="container mt-4">
+<div class="container-fluid py-4" style="background-color: #f8fafc; min-height: 100vh;">
+    
+    <div class="d-flex justify-content-between align-items-center mb-4 px-2">
+        <div>
+            <h2 class="fw-bold text-dark mb-0">Tableau de Bord</h2>
+            <p class="text-muted mb-0 small">Bienvenue sur votre espace de gestion CityProp</p>
+        </div>
+        <div class="text-muted small fw-bold">
+            <i class="far fa-calendar-alt me-1"></i> {% now "d F Y" %}
+        </div>
+    </div>
 
-    <h2 class="mb-4"><i class="fa-solid fa-chart-line"></i> Dashboard</h2>
-
-    <!-- ================= KPIs ================= -->
     <div class="row g-3 mb-4">
-        <div class="col-md-3">
-            <div class="card kpi-card text-center p-3 bg-light" onclick="window.location.href='{% url 'liste_fiches' %}'">
-                <div class="kpi-icon text-primary"><i class="fa-solid fa-boxes-stacked"></i></div>
-                <div class="kpi-value text-primary">{{ total_commandes }}</div>
-                <small>Total commandes</small>
+        <div class="col-md-3 col-6">
+            <div class="card kpi-card p-3" onclick="window.location.href='{% url 'liste_fiches' %}'" style="cursor: pointer;">
+                <div class="kpi-icon-wrapper bg-primary text-white">
+                    <i class="fa-solid fa-boxes-stacked"></i>
+                </div>
+                <div class="kpi-value">{{ total_commandes }}</div>
+                <div class="kpi-label">Commandes</div>
             </div>
         </div>
-        <div class="col-md-3">
-            <div class="card kpi-card text-center p-3 bg-light" onclick="window.location.href='{% url 'liste_fiches' %}?type_commande=CITYPROP'">
-                <div class="kpi-icon text-success"><i class="fa-solid fa-building"></i></div>
-                <div class="kpi-value text-success">{{ total_cityprop }}</div>
-                <small>CityProp</small>
+        <div class="col-md-3 col-6">
+            <div class="card kpi-card p-3" onclick="window.location.href='{% url 'liste_fiches' %}?type_commande=CITYPROP'" style="cursor: pointer;">
+                <div class="kpi-icon-wrapper bg-success text-white">
+                    <i class="fa-solid fa-building"></i>
+                </div>
+                <div class="kpi-value">{{ total_cityprop }}</div>
+                <div class="kpi-label">CityProp</div>
             </div>
         </div>
-        <div class="col-md-3">
-            <div class="card kpi-card text-center p-3 bg-light" onclick="window.location.href='{% url 'liste_fiches' %}?type_commande=CLIMATISEUR'">
-                <div class="kpi-icon text-info"><i class="fa-solid fa-snowflake"></i></div>
-                <div class="kpi-value text-info">{{ total_clim }}</div>
-                <small>Climatiseur</small>
+        <div class="col-md-3 col-6">
+            <div class="card kpi-card p-3" onclick="window.location.href='{% url 'liste_fiches' %}?type_commande=CLIMATISEUR'" style="cursor: pointer;">
+                <div class="kpi-icon-wrapper bg-info text-white">
+                    <i class="fa-solid fa-snowflake"></i>
+                </div>
+                <div class="kpi-value">{{ total_clim }}</div>
+                <div class="kpi-label">Climatiseurs</div>
             </div>
         </div>
-        <div class="col-md-3">
-            <div class="card kpi-card text-center p-3 bg-light" onclick="window.location.href='{% url 'liste_fiches' %}?type_commande=TAPISPROP'">
-                <div class="kpi-icon text-warning"><i class="fa-solid fa-rug"></i></div>
-                <div class="kpi-value text-warning">{{ total_tapis }}</div>
-                <small>TapisProp</small>
-            </div>
-        </div>
-    </div>
-
-    <!-- ================= FIDELISATION ================= -->
-    <div class="row g-3 mb-4">
-        <div class="col-md-6">
-            <div class="card shadow-sm p-3 h-100">
-                <div class="section-title"><i class="fa-solid fa-handshake"></i> Fidélisation</div>
-                <p><i class="fa-solid fa-check-circle text-success"></i> Clients fidélisés : <strong>{{ fidelises }}</strong></p>
-                <p><i class="fa-solid fa-circle-xmark text-danger"></i> À fidéliser : <strong>{{ non_fidelises }}</strong></p>
-                <p><i class="fa-solid fa-calendar-days text-info"></i> Ce mois-ci : <strong>{{ fidelisations_mois }}</strong></p>
-                <a href="{% url 'alertes_fidelisation' %}" class="btn btn-success btn-sm mt-2"><i class="fa-solid fa-bell"></i> Voir les rappels</a>
-            </div>
-        </div>
-        <div class="col-md-6">
-            <div class="card shadow-sm p-3 h-100">
-                <div class="section-title"><i class="fa-solid fa-triangle-exclamation"></i> Alertes fidélisation</div>
-                <p><i class="fa-solid fa-building text-danger"></i> CityProp : <strong>{{ alertes_city }}</strong></p>
-                <p><i class="fa-solid fa-snowflake text-danger"></i> Climatiseur : <strong>{{ alertes_clima }}</strong></p>
-                <p><i class="fa-solid fa-rug text-danger"></i> TapisProp : <strong>{{ alertes_tapis }}</strong></p>
+        <div class="col-md-3 col-6">
+            <div class="card kpi-card p-3" onclick="window.location.href='{% url 'liste_fiches' %}?type_commande=TAPISPROP'" style="cursor: pointer;">
+                <div class="kpi-icon-wrapper bg-warning text-white">
+                    <i class="fa-solid fa-rug"></i>
+                </div>
+                <div class="kpi-value">{{ total_tapis }}</div>
+                <div class="kpi-label">TapisProp</div>
             </div>
         </div>
     </div>
 
-    <!-- ================= TAPIS ALERTES ================= -->
-    <div class="card shadow-sm p-3 mb-4">
-        <div class="section-title"><i class="fa-solid fa-clock"></i> Alertes Tapis</div>
-        <p><i class="fa-solid fa-triangle-exclamation text-danger"></i> En retard (+7 jours) : <strong>{{ alertes_tapis_7j }}</strong></p>
-        <p><i class="fa-solid fa-check text-info"></i> Traité ce mois : <strong>{{ tapis_traite_mois }}</strong></p>
-        <a href="{% url 'alertes_tapis_retard' %}" class="btn btn-warning btn-sm"><i class="fa-solid fa-rug"></i> Gérer les alertes tapis</a>
-    </div>
+    <div class="row g-4">
+        <div class="col-lg-8">
+            <div class="row g-3 mb-4">
+                <div class="col-md-6">
+                    <div class="card section-card p-4 h-100">
+                        <div class="section-title text-success"><i class="fa-solid fa-handshake"></i> Fidélisation</div>
+                        <div class="d-flex flex-column gap-3">
+                            <div class="d-flex justify-content-between align-items-center p-2 rounded bg-light">
+                                <span><i class="fa-solid fa-check-circle text-success me-2"></i> Clients fidélisés</span>
+                                <span class="fw-bold h5 mb-0">{{ fidelises }}</span>
+                            </div>
+                            <div class="d-flex justify-content-between align-items-center p-2 rounded bg-light">
+                                <span><i class="fa-solid fa-circle-xmark text-danger me-2"></i> À fidéliser</span>
+                                <span class="fw-bold h5 mb-0 text-danger">{{ non_fidelises }}</span>
+                            </div>
+                            <a href="{% url 'alertes_fidelisation' %}" class="btn btn-dark w-100 mt-2 rounded-pill shadow-sm">
+                                <i class="fa-solid fa-bell me-2"></i> Gérer les rappels
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="card section-card p-4 h-100 border-start border-danger border-4">
+                        <div class="section-title text-danger"><i class="fa-solid fa-triangle-exclamation"></i> Alertes Critiques</div>
+                        <div class="list-group list-group-flush mt-2">
+                            <div class="list-group-item border-0 d-flex justify-content-between px-0">
+                                <span><i class="fa-solid fa-building me-2"></i> CityProp</span>
+                                <span class="badge bg-soft-danger badge-soft">{{ alertes_city }}</span>
+                            </div>
+                            <div class="list-group-item border-0 d-flex justify-content-between px-0">
+                                <span><i class="fa-solid fa-snowflake me-2"></i> Climatiseur</span>
+                                <span class="badge bg-soft-danger badge-soft">{{ alertes_clima }}</span>
+                            </div>
+                            <div class="list-group-item border-0 d-flex justify-content-between px-0">
+                                <span><i class="fa-solid fa-rug me-2"></i> TapisProp</span>
+                                <span class="badge bg-soft-danger badge-soft">{{ alertes_tapis }}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
 
-    <!-- ================= STATUT TAPIS ================= -->
-    <div class="card shadow-sm p-3 mb-4">
-        <div class="section-title"><i class="fa-solid fa-box"></i> Statuts TapisProp</div>
-        <div class="row text-center g-2">
-            <div class="col-md">
-                <span class="badge bg-danger badge-status">Non respecté</span>
-                <h5>{{ tapis_non_respecte }}</h5>
+            <div class="card section-card p-0 overflow-hidden mb-4">
+                <div class="p-4 section-title mb-0 border-0">
+                    <i class="fa-solid fa-history"></i> Dernières Commandes
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead>
+                            <tr>
+                                <th class="ps-4">Client</th>
+                                <th>Type</th>
+                                <th>Date d'entrée</th>
+                                <th class="text-end pe-4">Statut</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for c in commandes_recents %}
+                            <tr>
+                                <td class="ps-4">
+                                    <div class="fw-bold text-dark">{{ c.nom_client }}</div>
+                                    <div class="small text-muted">{{ c.numero_client }}</div>
+                                </td>
+                                <td>
+                                    <span class="badge bg-light text-dark border">{{ c.type_commande }}</span>
+                                </td>
+                                <td class="text-muted">{{ c.date_creation|date:"d/m/Y H:i" }}</td>
+                                <td class="text-end pe-4">
+                                    <span class="badge bg-soft-success badge-soft">Enregistré</span>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr><td colspan="4" class="text-center py-4">Aucune commande récente</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
             </div>
-            <div class="col-md">
-                <span class="badge bg-warning text-dark badge-status">En attente</span>
-                <h5>{{ tapis_pret }}</h5>
+        </div>
+
+        <div class="col-lg-4">
+            <div class="card section-card p-4 mb-4 border-top border-warning border-4 shadow-sm">
+                <div class="section-title text-warning"><i class="fa-solid fa-clock"></i> Focus Tapis</div>
+                <div class="text-center mb-3 py-3 bg-soft-warning rounded-3">
+                    <div class="h2 fw-bold text-warning mb-0">{{ alertes_tapis_7j }}</div>
+                    <div class="small fw-bold">Tapis en retard (+7j)</div>
+                </div>
+                <a href="{% url 'alertes_tapis_retard' %}" class="btn btn-warning w-100 rounded-pill fw-bold">
+                    Gérer les retards
+                </a>
             </div>
-            <div class="col-md">
-                <span class="badge bg-info text-dark badge-status">Tapis PRET Client indispo</span>
-                <h5>{{ tapis_client_indispo }}</h5>
-            </div>
-            <div class="col-md">
-                <span class="badge bg-success badge-status">Livré satisfait</span>
-                <h5>{{ tapis_livre_satisfait }}</h5>
-            </div>
-            <div class="col-md">
-                <span class="badge bg-dark badge-status">Livré insatisfait</span>
-                <h5>{{ tapis_livre_insatisfait }}</h5>
+
+            <div class="card section-card p-4 shadow-sm">
+                <div class="section-title"><i class="fa-solid fa-crown text-warning"></i> Top Clients</div>
+                <div class="list-group list-group-flush">
+                    {% for client in top_clients %}
+                    <div class="list-group-item d-flex justify-content-between align-items-center border-0 px-0 py-3" 
+                         onclick="window.location.href='{% url 'liste_fiches' %}?nom_client={{ client.nom_client }}'"
+                         style="cursor:pointer">
+                        <div class="d-flex align-items-center">
+                            <div class="rounded-circle bg-soft-success p-2 me-3 text-success fw-bold" style="width:35px;height:35px;display:flex;align-items:center;justify-content:center;">
+                                {{ forloop.counter }}
+                            </div>
+                            <span class="fw-bold">{{ client.nom_client }}</span>
+                        </div>
+                        <span class="badge bg-dark rounded-pill">{{ client.total }} fiches</span>
+                    </div>
+                    {% endfor %}
+                </div>
             </div>
         </div>
     </div>
-
-    <!-- ================= COMMANDES ================= -->
-    <div class="card shadow-sm p-3 mb-4">
-        <div class="section-title"><i class="fa-solid fa-clock-rotate-left"></i> Dernières commandes</div>
-        <table class="table table-hover table-sm">
-            <thead class="table-success">
-                <tr>
-                    <th>Client</th>
-                    <th>Numéro</th>
-                    <th>Type</th>
-                    <th>Date</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for c in commandes_recents %}
-                <tr>
-                    <td>{{ c.nom_client }}</td>
-                    <td>{{ c.numero_client }}</td>
-                    <td>{{ c.type_commande }}</td>
-                    <td>{{ c.date_creation|date:"d/m/Y H:i" }}</td>
-                </tr>
-                {% empty %}
-                <tr><td colspan="4">Aucune commande</td></tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
-
-    <!-- ================= TOP CLIENTS ================= -->
-    <div class="card shadow-sm p-3 mb-4">
-        <div class="section-title"><i class="fa-solid fa-crown"></i> Top clients</div>
-        <ul class="list-group list-group-flush">
-            {% for client in top_clients %}
-            <li class="list-group-item d-flex justify-content-between align-items-center"
-                onclick="window.location.href='{% url 'liste_fiches' %}?nom_client={{ client.nom_client }}'"
-                style="cursor:pointer">
-                {{ client.nom_client }}
-                <span class="badge bg-success">{{ client.total }}</span>
-            </li>
-            {% endfor %}
-        </ul>
-    </div>
-
 </div>
 {% endblock %}

@@ -1041,71 +1041,58 @@ def alertes_counts(request):
 
 @login_required
 def creer_facture(request, fiche_id):
-    # Récupération de l'objet Commande nécessaire quelle que soit la méthode
     commande = get_object_or_404(Commande, id=fiche_id)
     
     if request.method == 'POST':
-        # --- 2. Récupération du champ de réduction (Clé du changement) ---
-        # Récupère la valeur 'taux_reduction_pourcentage' envoyée par le formulaire HTML
-        taux_reduction_str = request.POST.get('taux_reduction_pourcentage', '0.00')
+        # 1. Récupération sécurisée du taux de réduction
+        taux_reduction_str = request.POST.get('taux_reduction', '0.00') # Vérifiez le 'name' dans votre HTML
         try:
-            # Convertit la chaîne en nombre décimal
-            taux_reduction = float(taux_reduction_str)
+            taux_reduction = float(taux_reduction_str.replace(',', '.'))
         except ValueError:
-            # Sécurité en cas d'erreur de saisie
             taux_reduction = 0.00
             
-        # --- 3. Création de l'objet Facture ---
+        # 2. Création de l'objet Facture
         facture = Facture.objects.create(
             commande=commande,
-            type_document=request.POST['type_document'],
-            objet=request.POST['objet'],
+            type_document=request.POST.get('type_document'),
+            objet=request.POST.get('objet'),
             lieu_emission=request.POST.get('lieu_emission', 'Abidjan'),
             signature=request.POST.get('signature', 'LA COMPTABILITÉ'),
-            taux_reduction_pourcentage=taux_reduction, # <-- Enregistre le taux paramétrable
+            taux_reduction_pourcentage=taux_reduction,
         )
         
-        # --- 4. Traitement des lignes de prestation ---
+        # 3. Traitement des lignes de prestation (Inclusion de la NOTE)
         designations = request.POST.getlist('designation[]')
         quantites = request.POST.getlist('quantite[]')
         prix_unitaires = request.POST.getlist('prix_unitaire[]')
-        
-        # Parcourt toutes les lignes envoyées
-        for designation, quantite_str, prix_unitaire_str in zip(designations, quantites, prix_unitaires):
-            # Nettoyage et conversion des entrées (gestion des virgules ou points)
-            try:
-                # Remplace la virgule par un point pour la conversion en float
-                quantite = float(quantite_str.replace(',', '.'))
-                prix_unitaire = float(prix_unitaire_str.replace(',', '.'))
-            except ValueError:
-                continue # Ignore la ligne si les valeurs ne sont pas valides
+        notes = request.POST.getlist('note_prix[]') # <--- RÉCUPÉRATION DES NOTES
 
-            # Création de l'objet FactureLigne
-            FactureLigne.objects.create(
-                facture=facture,
-                designation=designation,
-                quantite=quantite,
-                prix_unitaire=prix_unitaire,
-            )
+        # On utilise zip pour parcourir toutes les listes en même temps
+        for desig, qty_str, pu_str, note in zip(designations, quantites, prix_unitaires, notes):
+            if desig.strip(): # On n'enregistre que si la désignation n'est pas vide
+                try:
+                    qty = float(qty_str.replace(',', '.'))
+                    pu = float(pu_str.replace(',', '.'))
+                    
+                    FactureLigne.objects.create(
+                        facture=facture,
+                        designation=desig,
+                        quantite=qty,
+                        prix_unitaire=pu,
+                        note_prix_unitaire=note # <--- ENREGISTREMENT DE LA NOTE
+                    )
+                except ValueError:
+                    continue 
 
-        # --- 5. Calculer et mettre à jour le montant final NET ---
-        # La méthode update_final_amount() utilise total_ht_lignes et taux_reduction_pourcentage
-        # pour calculer montant_final_net.
+        # 4. Calcul final et sauvegarde
         facture.update_final_amount() 
-        facture.save() # Sauvegarde nécessaire pour persister montant_final_net dans la BDD
+        facture.save()
 
-        # Redirection vers la vue de détail de la facture nouvellement créée
-        return redirect('voir_facture', facture_id=facture.pk) # ASSUREZ-VOUS QUE 'detail_facture' EST LE BON NOM D'URL
+        return redirect('voir_facture', facture_id=facture.pk)
         
     else:
-        # Si la méthode est GET, affiche le formulaire de création/détail de la commande
-        context = {
-            'commande': commande,
-            # Ajoutez ici d'autres données nécessaires à votre template (ex: listes de services)
-        }
-        # REMPLACEZ 'votre_template_creation_facture.html' par le nom réel de votre template
-        return render(request, 'votre_template_creation_facture.html', context)
-    
+        # Pour le GET, on redirige généralement vers la fiche client qui contient le modal
+        return redirect('detail_fiche', fiche_id=fiche_id) 
     
 @login_required
 
