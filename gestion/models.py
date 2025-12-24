@@ -152,8 +152,8 @@ class TapisDetails(models.Model):
 
     STATUT_CHOICES = (
         ('NON_RESPECTE', 'En cours'),
-        ('PRET', 'Tapis prêt'),
-        ('CLIENT_INDISPO', 'Client indisponible'),
+        ('PRET', 'En attente'),
+        ('CLIENT_INDISPO', 'Tapis prêt Client indisponible'),
         ('LIVRE_SATISFAIT', 'Livré - Client satisfait'),
         ('LIVRE_INSATISFAIT', 'Livré - Client insatisfait'),
         ('ABANDON', 'Tapis abandonné'),

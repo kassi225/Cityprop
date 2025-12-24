@@ -36,9 +36,9 @@ input, select, textarea { font-size: 0.85rem; padding: 0.5rem 0.75rem; border-ra
             <i class="fa-solid fa-file-invoice fs-4 text-primary"></i>
         </div>
         <div>
-            <h5 class="mb-0 fw-bold text-dark text-uppercase" style="letter-spacing: 0.5px;">
+            <h4 class="mb-0 fw-bold text-dark text-uppercase" style="letter-spacing: 0.5px;">
                 {{ commande.nom_client }}
-            </h5>
+            </h4>
             <span class="badge bg-light text-secondary border fw-normal">ID #{{ commande.id }}</span>
         </div>
     </div>
@@ -118,25 +118,55 @@ input, select, textarea { font-size: 0.85rem; padding: 0.5rem 0.75rem; border-ra
                         <i class="fa-solid fa-chevron-down fa-fw"></i>
                     </button>
                 </div>
-                <div class="card-body p-0 collapse show" id="facturesCard">
-                    {% if factures %}
-                        <ul class="list-group list-group-flush small">
-                            {% for facture in factures %}
-                                <li class="list-group-item d-flex justify-content-between align-items-center">
-                                    <span>
-                                        <b class="text-uppercase text-primary">{{ facture.type_document }}</b> ({{ facture.date_emission|date:"d/m/Y" }}) - 
-                                        <strong>{{ facture.montant_final_net }} FCFA</strong>
-                                    </span>
-                                    <a href="{% url 'voir_facture' facture.id %}" class="btn btn-sm btn-outline-primary">PDF</a>
-                                </li>
-                            {% endfor %}
-                        </ul>
-                    {% else %}
-                        <p class="p-3 mb-0 text-muted small">Aucun document généré.</p>
-                    {% endif %}
-                </div>
                 
-                
+
+
+
+                <ul class="list-group list-group-flush small">
+    {% for f in factures %}
+        <li class="list-group-item d-flex justify-content-between align-items-center py-2">
+            <span>
+                <b class="text-uppercase text-primary">{{ f.type_document }}</b> 
+                <span class="text-muted">({{ f.date_emission|date:"d/m/Y" }})</span><br>
+                <strong class="text-dark">{{ f.montant_final_net|default:"0" }} FCFA</strong>
+            </span>
+            
+            <div class="btn-group shadow-sm">
+                {% if f.id %}
+                    <a href="{% url 'voir_facture' f.id %}" class="btn btn-sm btn-outline-primary" title="Voir PDF">
+                        <i class="fa-solid fa-eye"></i>
+                    </a>
+                {% endif %}
+
+                <button type="button" 
+                        class="btn btn-sm btn-outline-warning btn-edit-facture" 
+                        data-id="{{ f.id }}" 
+                        title="Modifier">
+                    <i class="fa-solid fa-pen"></i>
+                </button>
+
+                {% if request.user.is_superuser or request.user.groups.all.0.name == "ADMIN" %}
+                    <button type="button" 
+                            class="btn btn-sm btn-outline-danger btn-delete-facture" 
+                            data-id="{{ f.id }}" 
+                            data-numero="{{ f.type_document }} N°{{ f.id }}"
+                            title="Supprimer">
+                        <i class="fa-solid fa-trash"></i>
+                    </button>
+                {% endif %}
+            </div>
+        </li>
+    {% empty %}
+        <li class="list-group-item text-center p-3 text-muted">
+            Aucun document généré.
+        </li>
+    {% endfor %}
+</ul>
+
+
+
+
+
             </div>
 
              <div class="d-grid mt-4">
