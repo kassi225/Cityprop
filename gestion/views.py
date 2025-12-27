@@ -3,8 +3,14 @@ import datetime
 from io import BytesIO
 from datetime import timedelta
 from django.db.models import Sum
-from .models import Facture
+from django.forms import modelformset_factory
+from django.urls import reverse
+from .models import Facture, OperationCaisse
 from datetime import datetime
+from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
+from openpyxl.utils import get_column_letter # Import nécessaire pour la correction
+from openpyxl.utils import get_column_letter # Import nécessaire pour la correction
+
 
 # 2. Django Core (Raccourcis, Auth, Base)
 from django.shortcuts import render, get_object_or_404, redirect
@@ -1221,4 +1227,257 @@ def dashboard_financier(request):
     }
     return render(request, 'index/dashboard_financier.html', context)
 
+@login_required
+@user_passes_test(lambda u: u.is_staff) # Remplacez par votre test is_admin
+def gestion_caisse(request):
+    # 1. Gestion des dates
+    maintenant = timezone.now()
+    mois_id = int(request.GET.get('mois', maintenant.month))
+    annee_id = int(request.GET.get('annee', maintenant.year))
 
+    mois_noms = {
+        1: "Janvier", 2: "Février", 3: "Mars", 4: "Avril", 5: "Mai", 6: "Juin",
+        7: "Juillet", 8: "Août", 9: "Septembre", 10: "Octobre", 11: "Novembre", 12: "Décembre"
+    }
+
+    # 2. Calcul du Report (Solde des mois précédents)
+    date_debut_mois = maintenant.replace(year=annee_id, month=mois_id, day=1, hour=0, minute=0, second=0, microsecond=0)
+    mouvements_passes = OperationCaisse.objects.filter(date__lt=date_debut_mois)
+    entrees_total = mouvements_passes.filter(type_mouvement='ENTREE').aggregate(Sum('montant'))['montant__sum'] or 0
+    sorties_total = mouvements_passes.filter(type_mouvement='SORTIE').aggregate(Sum('montant'))['montant__sum'] or 0
+    report_solde = entrees_total - sorties_total
+
+    # 3. Préparer le Queryset filtré
+    queryset_filtre = OperationCaisse.objects.filter(
+        date__month=mois_id, 
+        date__year=annee_id
+    ).order_by('date', 'id')
+
+    # Configuration du FormSet (extra=0 pour éviter les lignes vides fantômes)
+    CaisseFormSet = modelformset_factory(
+        OperationCaisse, 
+        fields=('date', 'equipe', 'libelle', 'type_mouvement', 'montant'), 
+        extra=0, 
+        can_delete=True
+    )
+    
+    # 4. Traitement du formulaire
+    if request.method == 'POST':
+        formset = CaisseFormSet(request.POST, queryset=queryset_filtre) 
+        if formset.is_valid():
+            formset.save() 
+            messages.success(request, f"Brouillard de {mois_noms[mois_id]} mis à jour avec succès !")
+            # Redirection indispensable pour éviter le message de renvoi de formulaire au rafraîchissement
+            return redirect(f'/caisse/?mois={mois_id}&annee={annee_id}')
+        else:
+            messages.error(request, "Erreur de validation. Vérifiez que tous les champs obligatoires sont remplis.")
+    else:
+        formset = CaisseFormSet(queryset=queryset_filtre)
+        
+    context = {
+        'formset': formset,
+        'report_solde': report_solde,
+        'mois_actuel_nom': mois_noms[mois_id],
+        'mois_actuel_id': mois_id,
+        'annee_actuelle': annee_id,
+        'liste_mois': mois_noms,
+    }
+    return render(request, 'index/gestion_caisse.html', context)
+# --- GENERATION EXCEL ---
+
+from openpyxl.utils import get_column_letter
+from openpyxl.styles import Alignment, Font, PatternFill, Border, Side
+
+@login_required
+@user_passes_test(is_admin)
+def export_caisse_excel(request, mois, annee):
+    mouvements = OperationCaisse.objects.filter(date__month=mois, date__year=annee).order_by('date', 'id')
+    nom_mois = dict(LISTE_MOIS).get(int(mois))
+
+    # Calcul du report
+    date_debut_mois = timezone.now().replace(year=int(annee), month=int(mois), day=1, hour=0, minute=0)
+    mouvements_passes = OperationCaisse.objects.filter(date__lt=date_debut_mois)
+    entrees_p = mouvements_passes.filter(type_mouvement='ENTREE').aggregate(Sum('montant'))['montant__sum'] or 0
+    sorties_p = mouvements_passes.filter(type_mouvement='SORTIE').aggregate(Sum('montant'))['montant__sum'] or 0
+    report_solde = entrees_p - sorties_p
+
+    wb = Workbook()
+    ws = wb.active
+    ws.title = f"Brouillard {mois}-{annee}"
+
+    # Styles
+    yellow_fill = PatternFill(start_color="FFFF00", end_color="FFFF00", fill_type="solid")
+    orange_fill = PatternFill(start_color="C65911", end_color="C65911", fill_type="solid") # Orange foncé comme image
+    thin_border = Border(left=Side(style='thin'), right=Side(style='thin'), top=Side(style='thin'), bottom=Side(style='thin'))
+    font_white = Font(color="FFFFFF", italic=True)
+
+    # --- BLOC EN-TÊTE ADMINISTRATIF (Lignes 1 à 3) ---
+    ws.merge_cells('A1:B1'); ws['A1'] = "Entreprise"
+    ws.merge_cells('C1:F1'); ws['C1'] = "CITY PROP ENTRETIEN FAUTEUILLE ET TAPIS"; ws['C1'].fill = yellow_fill; ws['C1'].font = Font(bold=True)
+    ws['G1'] = "N° Folio"; ws['H1'] = "Contrepartie"
+    
+    ws.merge_cells('A2:B2'); ws['A2'] = "Période"
+    ws.merge_cells('C2:F2'); ws['C2'] = f"{nom_mois}"; ws['C2'].alignment = Alignment(horizontal="center")
+    ws.merge_cells('G2:H2'); ws['G2'] = "EXERCICE COMPTABLE"
+    
+    ws.merge_cells('A3:B3'); ws['A3'] = "Brouillard"
+    ws.merge_cells('C3:F3'); ws['C3'] = "CAISSE"; ws['C3'].alignment = Alignment(horizontal="center")
+    ws.merge_cells('G3:H3'); ws['G3'] = f"{annee}"; ws['G3'].alignment = Alignment(horizontal="center")
+
+    # Appliquer bordures au bloc d'en-tête
+    for row in ws.iter_rows(min_row=1, max_row=3, max_col=8):
+        for cell in row: cell.border = thin_border
+
+    # --- EN-TÊTES DE COLONNES (Ligne 5) ---
+    headers = ['N°', 'DATE', 'Nom de chaque Equipe', 'Libellé', 'Ref', 'MONTANT ENTREE', 'MONTANT SORTIE', 'SOLDE']
+    ws.append([]) # Ligne vide de séparation (Ligne 4)
+    ws.append(headers) # Ligne 5
+    for cell in ws[5]:
+        cell.font = Font(bold=True, size=10)
+        cell.alignment = Alignment(horizontal="center", vertical="center")
+        cell.border = thin_border
+
+    # --- LIGNE DE REPORT (Ligne 6) ---
+    ws.append(['', '', '', 'Report', '', '', '', report_solde])
+    for cell in ws[6]:
+        cell.fill = orange_fill
+        cell.border = thin_border
+        if cell.column == 4: cell.font = font_white
+        if cell.column == 8: cell.font = Font(bold=True)
+
+    # --- DONNÉES ---
+    solde_courant = report_solde
+    for i, m in enumerate(mouvements, 1):
+        entree = m.montant if m.type_mouvement == 'ENTREE' else 0
+        sortie = m.montant if m.type_mouvement == 'SORTIE' else 0
+        solde_courant += (entree - sortie)
+
+        ws.append([
+            i,
+            m.date.strftime("%d-%m-%y"),
+            m.equipe.upper(),
+            m.libelle,
+            "",
+            entree if entree > 0 else "",
+            sortie if sortie > 0 else "",
+            solde_courant
+        ])
+        for cell in ws[ws.max_row]: cell.border = thin_border
+
+    # Ajustement colonnes
+    column_widths = [5, 12, 30, 40, 10, 18, 18, 18]
+    for i, width in enumerate(column_widths, 1):
+        ws.column_dimensions[get_column_letter(i)].width = width
+
+    response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    response['Content-Disposition'] = f'attachment; filename=Brouillard_{nom_mois}_{annee}.xlsx'
+    wb.save(response)
+    return response
+
+
+
+# --- GENERATION PDF ---
+@login_required
+@user_passes_test(is_admin)
+def export_caisse_pdf(request, mois, annee):
+    # 1. Récupération des mouvements du mois
+    mouvements = OperationCaisse.objects.filter(
+        date__month=mois, 
+        date__year=annee
+    ).order_by('date', 'id')
+    
+    # 2. Calcul du report initial (Cumul des mois précédents)
+    date_debut_mois = timezone.now().replace(year=int(annee), month=int(mois), day=1, hour=0, minute=0)
+    prev = OperationCaisse.objects.filter(date__lt=date_debut_mois)
+    entrees_p = prev.filter(type_mouvement='ENTREE').aggregate(Sum('montant'))['montant__sum'] or 0
+    sorties_p = prev.filter(type_mouvement='SORTIE').aggregate(Sum('montant'))['montant__sum'] or 0
+    report_solde = float(entrees_p - sorties_p)
+
+    # 3. Calcul du solde progressif par ligne
+    solde_courant = report_solde
+    for m in mouvements:
+        montant = float(m.montant) if m.montant else 0.0
+        if m.type_mouvement == 'ENTREE':
+            solde_courant += montant
+        else:
+            solde_courant -= montant
+        m.solde_prog = solde_courant
+
+    # 4. Contexte pour le template
+    context = {
+        'mouvements': mouvements,
+        'mois_nom': dict(LISTE_MOIS).get(int(mois), "Inconnu"),
+        'annee': annee,
+        'report_solde': report_solde,
+    }
+    
+    # 5. Rendu du PDF
+    template = get_template('index/pdf_template.html')
+    html = template.render(context)
+    result = BytesIO()
+    
+    # xhtml2pdf génère le PDF à partir du HTML encodé
+    pdf = pisa.pisaDocument(BytesIO(html.encode("UTF-8")), result)
+    
+    if not pdf.err:
+        response = HttpResponse(result.getvalue(), content_type='application/pdf')
+        response['Content-Disposition'] = f'attachment; filename="Brouillard_{mois}_{annee}.pdf"'
+        return response
+    
+    return HttpResponse("Erreur technique lors de la génération du PDF", status=500)
+
+LISTE_MOIS = [
+    (1, 'JAN'), (2, 'FÉV'), (3, 'MAR'), (4, 'AVR'),
+    (5, 'MAI'), (6, 'JUN'), (7, 'JUL'), (8, 'AOÛ'),
+    (9, 'SEP'), (10, 'OCT'), (11, 'NOV'), (12, 'DÉC')
+]
+@login_required
+@user_passes_test(is_admin)
+
+
+def gestion_caisse(request):
+    try:
+        mois_id = int(request.GET.get('mois', timezone.now().month))
+        annee = int(request.GET.get('annee', timezone.now().year))
+    except (ValueError, TypeError):
+        mois_id = timezone.now().month
+        annee = timezone.now().year
+
+    queryset = OperationCaisse.objects.filter(
+        date__month=mois_id, date__year=annee
+    ).order_by('date', 'id')
+
+    stats_annee = OperationCaisse.objects.filter(date__year=annee).aggregate(
+        total_in=Sum('montant', filter=Q(type_mouvement='ENTREE')),
+        total_out=Sum('montant', filter=Q(type_mouvement='SORTIE'))
+    )
+    
+    solde_annuel = (stats_annee['total_in'] or 0) - (stats_annee['total_out'] or 0)
+
+    CaisseFormSet = modelformset_factory(
+        OperationCaisse,
+        fields=('date', 'equipe', 'libelle', 'type_mouvement', 'montant'),
+        extra=0, can_delete=True
+    )
+
+    if request.method == 'POST':
+        formset = CaisseFormSet(request.POST, queryset=queryset)
+        if formset.is_valid():
+            instances = formset.save(commit=False)
+            for obj in formset.deleted_objects:
+                obj.delete()
+            for instance in instances:
+                if instance.date.month == mois_id and instance.date.year == annee:
+                    instance.save()
+            messages.success(request, "Enregistrement réussi.")
+            return redirect(f"{reverse('gestion_caisse')}?mois={mois_id}&annee={annee}")
+
+    formset = CaisseFormSet(queryset=queryset)
+    
+    return render(request, 'index/gestion_caisse.html', {
+        'formset': formset,
+        'mois_actuel_id': mois_id,
+        'annee_actuelle': annee,
+        'liste_mois': dict(LISTE_MOIS),
+        'solde_annuel': solde_annuel,
+    })

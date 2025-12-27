@@ -42,6 +42,10 @@ urlpatterns = [
     
     # ... vos autres urls
     path('finance/dashboard/', views.dashboard_financier, name='dashboard_financier'),
+    
+    path('caisse/excel/<int:mois>/<int:annee>/', views.export_caisse_excel, name='export_excel'),
+    path('caisse/pdf/<int:mois>/<int:annee>/', views.export_caisse_pdf, name='export_pdf'),
+    path('caisse/', views.gestion_caisse, name='gestion_caisse'),
 
 
 ]

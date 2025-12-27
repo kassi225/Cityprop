@@ -206,3 +206,45 @@ class TapisAlerteCommentaire(models.Model):
 
     def __str__(self):
         return f"Alerte Tapis #{self.tapis.id} - {self.date}"
+    
+    
+
+class OperationCaisse(models.Model):
+    TYPE_CHOICES = [
+        ('ENTREE', 'Entrée (Recette)'),
+        ('SORTIE', 'Sortie (Dépense)'),
+    ]
+
+    date = models.DateField()
+    equipe = models.CharField(max_length=100, verbose_name="Équipe / Bénéficiaire")
+    libelle = models.CharField(max_length=255, verbose_name="Libellé de l'opération")
+    type_mouvement = models.CharField(max_length=10, choices=TYPE_CHOICES)
+    
+    # Correction : Utilisation de decimal_places au lieu de decimal_digits
+    montant = models.DecimalField(
+        max_digits=12, 
+        decimal_places=2, 
+        default=0.00
+    )
+    
+    # Correction : Utilisation de decimal_places et ajout de default
+    solde_historique = models.DecimalField(
+        max_digits=12, 
+        decimal_places=2, 
+        editable=False, 
+        default=0.00
+    )
+
+    def __str__(self):
+        return f"{self.date} - {self.libelle} ({self.montant} FCFA)"
+
+    class Meta:
+        verbose_name = "Opération de Caisse"
+        verbose_name_plural = "Opérations de Caisse"
+        ordering = ['date', 'id'] # Chronologique : du plus ancien au plus récent
+        
+    @property
+    def montant_signe(self):
+        if self.type_mouvement == 'SORTIE':
+            return -self.montant
+        return self.montant

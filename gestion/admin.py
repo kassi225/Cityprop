@@ -7,8 +7,10 @@ from .models import (
     CityClimaDetails,
     TapisDetails,
     FidelisationNote,
-    TapisAlerteCommentaire
+    TapisAlerteCommentaire,
+    OperationCaisse
 )
+
 
 # =================================================================
 #  PERSONNALISATION DE L'INTERFACE (Logo et Titres CityProp)
@@ -107,3 +109,48 @@ class TapisAlerteCommentaireAdmin(admin.ModelAdmin):
     search_fields = ("texte", "tapis__commande__nom_client")
     list_filter = ("date",)
     readonly_fields = ("date",)
+    
+    
+
+
+@admin.register(OperationCaisse)
+class OperationCaisseAdmin(admin.ModelAdmin):
+    # Colonnes affichées dans la liste
+    list_display = ('date', 'equipe', 'libelle', 'get_type_mouvement', 'get_montant_formatte')
+    
+    # Filtres latéraux
+    list_filter = ('type_mouvement', 'date', 'equipe')
+    
+    # Barre de recherche
+    search_fields = ('libelle', 'equipe', 'montant')
+    
+    # Tri par défaut (plus récent en haut)
+    ordering = ('-date', '-id')
+
+    def get_type_mouvement(self, obj):
+        """ Ajoute une pastille de couleur pour le flux """
+        color = "#198754" if obj.type_mouvement == 'ENTREE' else "#dc3545"
+        return format_html(
+            '<span style="background-color: {}; color: white; padding: 3px 10px; border-radius: 10px; font-weight: bold; font-size: 11px;">{}</span>',
+            color,
+            obj.type_mouvement
+        )
+    get_type_mouvement.short_description = "Flux"
+
+    def get_montant_formatte(self, obj):
+        """ Formate le montant avec séparateur de milliers """
+        return format_html(
+            '<span style="font-weight: bold;">{:,.2f} FCFA</span>', 
+            obj.montant
+        ).replace(',', ' ')
+    def get_montant_formatte(self, obj):
+        """ Formate le montant avec séparateur de milliers avant de sécuriser le HTML """
+        # On formate d'abord le nombre en texte avec Python
+        montant_texte = "{:,.2f}".format(obj.montant).replace(',', ' ')
+        
+        # On injecte ensuite le texte déjà formaté dans le HTML
+        return format_html(
+            '<span style="font-weight: bold;">{} FCFA</span>', 
+            montant_texte
+        )
+    get_montant_formatte.short_description = "Montant"

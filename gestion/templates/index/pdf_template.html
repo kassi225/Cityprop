@@ -1,0 +1,203 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container-fluid animate__animated animate__fadeIn">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="h4 fw-bold"><i class="fa-solid fa-cash-register text-success me-2"></i>Brouillard de Caisse</h2>
+        <div class="bg-white p-2 rounded shadow-sm border d-flex gap-1">
+            {% for id, nom in liste_mois.items %}
+                <a href="?mois={{ id }}&annee={{ annee_actuelle }}" 
+                   class="btn btn-sm {% if id == mois_actuel_id %}btn-success{% else %}btn-outline-secondary border-0{% endif %}">
+                    {{ nom|slice:":3"|upper }}
+                </a>
+            {% endfor %}
+        </div>
+    </div>
+
+    <form method="post" id="caisse-form">
+        {% csrf_token %}
+        {{ formset.management_form }}
+
+        <div class="card shadow-sm mb-4 sticky-top bg-white" style="top: 80px; z-index: 1000;">
+            <div class="card-body py-3 d-flex justify-content-between align-items-center">
+                <div class="d-flex gap-4">
+                    <div>
+                        <small class="text-muted fw-bold text-uppercase" style="font-size: 0.7rem;">Solde {{ mois_actuel_nom }}</small>
+                        <div id="solde-final" class="h5 mb-0 fw-bold text-primary">0,00 FCFA</div>
+                    </div>
+                    <div class="border-start ps-4">
+                        <small class="text-muted fw-bold text-uppercase" style="font-size: 0.7rem;">Entrées Annuelles</small>
+                        <div class="h5 mb-0 fw-bold text-success">{{ total_entrees_annee|floatformat:0 }} FCFA</div>
+                    </div>
+                    <div class="border-start ps-4">
+                        <small class="text-muted fw-bold text-uppercase" style="font-size: 0.7rem;">Sorties Annuelles</small>
+                        <div class="h5 mb-0 fw-bold text-danger">{{ total_sorties_annee|floatformat:0 }} FCFA</div>
+                    </div>
+                </div>
+                <div>
+                    <button type="button" id="add-row" class="btn btn-primary btn-sm rounded-pill px-3"><i class="fa-solid fa-plus me-1"></i> Ligne</button>
+                    <button type="submit" class="btn btn-success btn-sm rounded-pill px-3"><i class="fa-solid fa-save me-1"></i> Enregistrer</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="card border-0 shadow-sm">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="bg-light text-muted small">
+                        <tr>
+                            <th class="ps-4">Statut</th>
+                            <th width="150">Date</th>
+                            <th>Équipe</th>
+                            <th>Libellé</th>
+                            <th width="130">Flux</th>
+                            <th width="150" class="text-end">Montant</th>
+                            <th width="150" class="text-end pe-4">Cumul Mois</th>
+                            <th width="50"></th>
+                        </tr>
+                    </thead>
+                    <tbody id="formset-container">
+                        {% for form in formset %}
+                        <tr class="caisse-row {% if form.instance.pk %}is-saved{% endif %}">
+                            <td class="ps-4 text-center">
+                                {{ form.id }}
+                                {% if form.instance.pk %}
+                                    <button type="button" class="btn btn-sm btn-light text-warning btn-unlock shadow-sm"><i class="fa-solid fa-lock"></i></button>
+                                {% else %}
+                                    <span class="text-primary"><i class="fa-solid fa-circle-plus"></i></span>
+                                {% endif %}
+                            </td>
+                            <td><input type="date" name="{{ form.date.html_name }}" class="form-control form-control-sm border-0 bg-transparent" value="{{ form.date.value|date:'Y-m-d' }}" {% if form.instance.pk %}readonly{% endif %} required></td>
+                            <td><input type="text" name="{{ form.equipe.html_name }}" class="form-control form-control-sm border-0 bg-transparent" value="{{ form.equipe.value|default:'' }}" {% if form.instance.pk %}readonly{% endif %} required></td>
+                            <td><input type="text" name="{{ form.libelle.html_name }}" class="form-control form-control-sm border-0 bg-transparent" value="{{ form.libelle.value|default:'' }}" {% if form.instance.pk %}readonly{% endif %} required></td>
+                            <td>
+                                <select name="{{ form.type_mouvement.html_name }}" class="form-select form-select-sm border-0 bg-transparent fw-bold" {% if form.instance.pk %}disabled{% endif %} required>
+                                    <option value="ENTREE" {% if form.type_mouvement.value == "ENTREE" %}selected{% endif %}>🟢 Entrée</option>
+                                    <option value="SORTIE" {% if form.type_mouvement.value == "SORTIE" %}selected{% endif %}>🔴 Sortie</option>
+                                </select>
+                            </td>
+                            <td>
+                                <input type="number" step="0.01" name="{{ form.montant.html_name }}" 
+                                       class="form-control form-control-sm border-0 text-end fw-bold input-montant bg-transparent" 
+                                       value="{{ form.montant.value|stringformat:'.2f'|default:'0.00' }}" 
+                                       {% if form.instance.pk %}readonly{% endif %} required>
+                            </td>
+                            <td class="text-end pe-4 fw-bold bg-light-subtle"><span class="row-solde">0.00</span></td>
+                            <td class="text-center">
+                                <div class="d-none">{{ form.DELETE }}</div>
+                                <button type="button" class="btn btn-sm text-danger btn-delete-row"><i class="fa-solid fa-trash-can"></i></button>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </form>
+</div>
+
+<table class="d-none">
+    <tr id="empty-row-model" class="caisse-row">
+        <td></td>
+        <td><input type="date" name="form-__prefix__-date" class="form-control form-control-sm" required></td>
+        <td><input type="text" name="form-__prefix__-equipe" class="form-control form-control-sm" required></td>
+        <td><input type="text" name="form-__prefix__-libelle" class="form-control form-control-sm" required></td>
+        <td>
+            <select name="form-__prefix__-type_mouvement" class="form-select form-select-sm fw-bold">
+                <option value="ENTREE">🟢 Entrée</option>
+                <option value="SORTIE" selected>🔴 Sortie</option>
+            </select>
+        </td>
+        <td><input type="number" step="0.01" name="form-__prefix__-montant" class="form-control form-control-sm text-end input-montant fw-bold" value="0.00"></td>
+        <td class="text-end pe-4 fw-bold"><span class="row-solde">0.00</span></td>
+        <td><button type="button" class="btn btn-sm text-danger btn-delete-row"><i class="fa-solid fa-trash-can"></i></button></td>
+    </tr>
+</table>
+
+<script>
+// CALCUL DU CUMUL (ZÉRO PAR MOIS)
+function calculerSolde() {
+    let soldeCumule = 0;
+    document.querySelectorAll('.caisse-row:not(.deleted-row)').forEach(row => {
+        const montantInput = row.querySelector('.input-montant');
+        const typeSelect = row.querySelector('select');
+        const soldeSpan = row.querySelector('.row-solde');
+        
+        if (montantInput && typeSelect) {
+            const m = parseFloat(montantInput.value) || 0;
+            const type = typeSelect.value;
+            
+            if (type === 'ENTREE') soldeCumule += m;
+            else if (type === 'SORTIE') soldeCumule -= m;
+            
+            if (soldeSpan) {
+                soldeSpan.innerText = soldeCumule.toLocaleString('fr-FR', {minimumFractionDigits: 2});
+                soldeSpan.style.color = soldeCumule >= 0 ? '#1D9A6C' : '#dc3545';
+            }
+        }
+    });
+    document.getElementById('solde-final').innerText = soldeCumule.toLocaleString('fr-FR', {minimumFractionDigits: 2}) + ' FCFA';
+}
+
+// AJOUT DE LIGNE
+document.getElementById('add-row').addEventListener('click', function() {
+    const totalForms = document.getElementById('id_form-TOTAL_FORMS');
+    const count = parseInt(totalForms.value);
+    const newRow = document.getElementById('empty-row-model').cloneNode(true);
+    newRow.id = "";
+    newRow.innerHTML = newRow.innerHTML.replace(/__prefix__/g, count);
+    newRow.querySelector('input[type="date"]').value = new Date().toISOString().split('T')[0];
+    document.getElementById('formset-container').appendChild(newRow);
+    totalForms.value = count + 1;
+    calculerSolde();
+});
+
+// GESTION CLICS (UNLOCK & DELETE)
+document.addEventListener('click', function(e) {
+    if (e.target.closest('.btn-unlock')) {
+        const row = e.target.closest('.caisse-row');
+        row.classList.toggle('is-saved');
+        const isSaved = row.classList.contains('is-saved');
+        row.querySelectorAll('input, select').forEach(el => {
+            el.readOnly = isSaved;
+            if(el.tagName === 'SELECT') el.disabled = isSaved;
+            if(!isSaved) el.classList.remove('bg-transparent');
+            else el.classList.add('bg-transparent');
+        });
+        e.target.closest('.btn-unlock').innerHTML = isSaved ? '<i class="fa-solid fa-lock"></i>' : '<i class="fa-solid fa-lock-open"></i>';
+    }
+
+    if (e.target.closest('.btn-delete-row')) {
+        const row = e.target.closest('.caisse-row');
+        const idInput = row.querySelector('input[name*="-id"]');
+        
+        Swal.fire({
+            title: 'Confirmer la suppression ?',
+            text: 'Cette action sera immédiate et enregistrée en base de données.',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#dc3545'
+        }).then(res => {
+            if (res.isConfirmed) {
+                if (idInput && idInput.value !== "") {
+                    row.querySelector('input[name$="-DELETE"]').checked = true;
+                    document.getElementById('caisse-form').submit(); // Suppression immédiate
+                } else {
+                    row.remove(); calculerSolde();
+                }
+            }
+        });
+    }
+});
+
+// Écouteur sur les montants (Calcul en temps réel)
+document.addEventListener('input', e => { 
+    if (e.target.classList.contains('input-montant') || e.target.tagName === 'SELECT') {
+        calculerSolde();
+    } 
+});
+
+document.addEventListener('DOMContentLoaded', calculerSolde);
+</script>
+{% endblock %}

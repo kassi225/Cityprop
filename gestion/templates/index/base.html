@@ -8,6 +8,8 @@
 
     <link rel="icon" type="image/x-icon" href="{% static 'images/favicons/favicon.ico' %}">
     <link rel="icon" type="image/png" sizes="96x96" href="{% static 'images/favicons/favicon-96x96.png' %}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
+     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <link rel="icon" type="image/svg+xml" href="{% static 'images/favicons/favicon.svg' %}">
     <link rel="apple-touch-icon" href="{% static 'images/favicons/apple-touch-icon.png' %}">
     <link rel="manifest" href="{% static 'images/favicons/site.webmanifest' %}">
@@ -135,6 +137,11 @@
             {% if request.user.is_superuser or request.user.groups.all.0.name == "ADMIN" or request.user.groups.all.0.name == "SUPERUSER" %}
             <hr class="my-2 text-muted">
             <li><a href="{% url 'dashboard_financier' %}" class="{% if request.resolver_match.url_name == 'dashboard_financier' %}active{% endif %}" style="color: #157347;"><i class="fa-solid fa-file-invoice-dollar"></i> Suivi Financier</a></li>
+            <li>
+                <a href="{% url 'gestion_caisse' %}" class="{% if request.resolver_match.url_name == 'gestion_caisse' %}active{% endif %}" style="color: #1D9A6C; font-weight: 700;">
+                    <i class="fa-solid fa-calculator"></i> Brouillard de Caisse
+                </a>
+            </li>
             <li><a href="/admin/" target="_blank" style="color: #dc3545;"><i class="fa-solid fa-user-shield"></i> Administration</a></li>
             {% endif %}
         </ul>
