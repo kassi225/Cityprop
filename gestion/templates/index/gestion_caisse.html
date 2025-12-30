@@ -5,28 +5,31 @@
 {% block content %}
 <style>
     :root { 
-        --in-color: #00d2ff; 
-        --out-color: #ff4b2b; 
+        --in-color: #0ea5e9; 
+        --out-color: #ef4444; 
         --accent-grad: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         --bg-app: #f4f7f9; 
     }
     
-    /* +2px sur la taille de base (0.8rem -> 0.95rem environ) */
     body { background-color: var(--bg-app); font-family: 'Inter', sans-serif; font-size: 0.95rem; }
 
     @keyframes slideIn {
-        from { opacity: 0; transform: translateX(-10px); }
-        to { opacity: 1; transform: translateX(0); }
+        from { opacity: 0; transform: translateY(5px); }
+        to { opacity: 1; transform: translateY(0); }
     }
-    .animate-row { animation: slideIn 0.3s ease-out forwards; }
+    .animate-row { animation: slideIn 0.2s ease-out forwards; }
 
+    /* Stats Cards */
     .stat-card { 
         background: white; border-radius: 12px; padding: 10px 18px; 
         box-shadow: 0 4px 6px rgba(0,0,0,0.02); border: 1px solid rgba(0,0,0,0.05);
+        transition: transform 0.2s;
     }
+    .stat-card:hover { transform: translateY(-2px); }
     .stat-label { font-size: 0.75rem; color: #94a3b8; text-transform: uppercase; font-weight: 800; display: block; line-height: 1; }
-    .stat-value { font-size: 1.25rem; font-weight: 900; }
+    .stat-value { font-size: 1.3rem; font-weight: 900; }
 
+    /* Navigation */
     .nav-scroller { 
         display: flex; gap: 6px; padding: 5px; 
         background: #fff; border-radius: 50px; border: 1px solid #e2e8f0;
@@ -37,63 +40,83 @@
     }
     .nav-pill.active { background: #3b82f6; color: white; box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3); }
 
+    /* Table Design */
     .table-container { 
         background: white; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); 
-        overflow: hidden; margin-top: 10px;
+        overflow: hidden; margin-top: 10px; border: 1px solid #e2e8f0;
     }
     .table thead th { 
         background: #f8fafc; font-size: 0.75rem; letter-spacing: 0.5px; 
-        color: #64748b; padding: 10px; border: none;
+        color: #64748b; padding: 12px 10px; border: none; text-transform: uppercase;
     }
     
+    /* Indicateurs dynamiques par ligne */
+    .caisse-row { border-left: 4px solid transparent; transition: all 0.2s; }
+    .caisse-row:hover { background-color: #f8fafc !important; }
+    .row-in { border-left-color: var(--in-color); }
+    .row-out { border-left-color: var(--out-color); }
+
     .input-flat { 
         border: 1px solid transparent !important; background: transparent; 
-        border-radius: 4px; padding: 4px 8px; font-weight: 600; font-size: 0.9rem;
+        border-radius: 6px; padding: 6px 8px; font-weight: 600; font-size: 0.9rem;
+        transition: all 0.2s;
     }
-    .input-flat:focus { background: white !important; border-color: #3b82f6 !important; outline: none; }
+    .input-flat:focus { 
+        background: white !important; 
+        border-color: #3b82f6 !important; 
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        outline: none; 
+    }
+
+    /* Style sélecteur Type avec couleurs sémantiques */
+    .row-type { padding: 4px 8px; border-radius: 6px; font-size: 0.75rem; text-align: center; }
+    .type-in { background: #e0f2fe !important; color: #0369a1 !important; }
+    .type-out { background: #fee2e2 !important; color: #b91c1c !important; }
 
     .btn-sm-custom { 
-        font-size: 0.85rem; font-weight: 800; padding: 7px 15px; border-radius: 8px; 
-        transition: all 0.2s; border: none;
+        font-size: 0.85rem; font-weight: 800; padding: 8px 16px; border-radius: 10px; 
+        transition: all 0.2s; border: none; display: flex; align-items: center; gap: 8px;
     }
     .btn-save { background: var(--accent-grad); color: white; box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3); }
+    .btn-save:hover { transform: scale(1.02); color: white; opacity: 0.9; }
 
     .filter-input, .filter-select { 
-        border-radius: 6px; border: 1px solid #e2e8f0; padding: 4px 8px; 
-        font-size: 0.8rem; width: 100%;
+        border-radius: 8px; border: 1px solid #e2e8f0; padding: 5px 10px; 
+        font-size: 0.8rem; width: 100%; background: #fff;
     }
 
-    .sticky-actions { position: sticky; top: 5px; z-index: 1000; }
+    .sticky-actions { position: sticky; top: 10px; z-index: 1000; }
     .cumul-text { 
-        font-weight: 800; color: #1e293b; background: #f8fafc; 
-        padding: 4px 10px; border-radius: 4px; font-size: 0.9rem;
+        font-weight: 800; color: #1e293b; background: #f1f5f9; 
+        padding: 5px 12px; border-radius: 8px; font-size: 0.9rem;
     }
 
-    /* Largeur Equipe augmentée de 1cm (~38px) : 140px -> 178px */
-    .col-equipe { width: 178px !important; }
+    .col-equipe { width: 180px !important; }
 </style>
 
 <div class="container-fluid py-3">
-    <div class="d-flex justify-content-between align-items-center mb-3">
+    <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
-            <h4 class="fw-black mb-0" style="font-weight: 900; color: #1e293b;">
+            <h4 class="fw-black mb-0" style="font-weight: 900; color: #1e293b; letter-spacing: -0.5px;">
                 <i class="fas fa-wallet text-primary me-2"></i>CAISSE {{ annee_actuelle }}
             </h4>
-            <span class="text-muted fw-bold">{{ mois_actuel_nom|upper }}</span>
+            <span class="badge text-primary fw-bold" style="background: #e0f2fe; padding: 5px 12px; border-radius: 6px;">
+                {{ mois_actuel_nom|upper }}
+            </span>
         </div>
         <div class="d-flex gap-3">
             <div class="stat-card">
-                <span class="stat-label">Solde Mois</span>
-                <span id="header-solde-mois" class="stat-value text-primary">0,00</span>
+                <span class="stat-label">Solde Mensuel</span>
+                <span id="header-solde-mois" class="stat-value">0</span>
             </div>
-            <div class="stat-card" style="background: #1e293b; color: white;">
-                <span class="stat-label text-white-50">Global</span>
-                <span class="stat-value text-warning">{{ solde_annuel|intcomma }}</span>
+            <div class="stat-card" style="background: #1e293b; color: white; border: none;">
+                <span class="stat-label text-white-50">Solde Global Annuel</span>
+                <span class="stat-value text-warning">{{ solde_annuel|floatformat:0|intcomma }}</span>
             </div>
         </div>
     </div>
 
-    <div class="sticky-actions mb-3">
+    <div class="sticky-actions mb-4">
         <div class="bg-white p-2 shadow-sm rounded-pill d-flex justify-content-between align-items-center px-3 border">
             <div class="nav-scroller">
                 {% for id, nom in liste_mois.items %}
@@ -104,14 +127,15 @@
             </div>
             
             <div class="d-flex gap-2">
-                <button type="button" onclick="addNewRow('ENTREE')" class="btn-sm-custom btn-success">
-                    <i class="fas fa-plus-circle me-1"></i> ENTRÉE
+                <button type="button" onclick="addNewRow('ENTREE')" class="btn-sm-custom btn-success" style="background: #10b981;">
+                    <i class="fas fa-plus-circle"></i> ENTRÉE
                 </button>
-                <button type="button" onclick="addNewRow('SORTIE')" class="btn-sm-custom btn-danger">
-                    <i class="fas fa-minus-circle me-1"></i> SORTIE
+                <button type="button" onclick="addNewRow('SORTIE')" class="btn-sm-custom btn-danger" style="background: #ef4444;">
+                    <i class="fas fa-minus-circle"></i> SORTIE
                 </button>
+                <div class="vr mx-1"></div>
                 <button type="submit" form="caisse-form" class="btn-sm-custom btn-save">
-                    <i class="fas fa-save me-1"></i> ENREGISTRER
+                    <i class="fas fa-save"></i> ENREGISTRER
                 </button>
                 <a href="{% url 'export_excel' mois_actuel_id annee_actuelle %}" class="btn btn-outline-success border-0 rounded-circle">
                     <i class="fas fa-file-excel fa-lg"></i>
@@ -131,20 +155,20 @@
                             <th width="140">Date</th>
                             <th class="col-equipe">Équipe</th>
                             <th>Libellé de l'opération</th>
-                            <th width="120">Type</th>
-                            <th width="150" class="text-end">Montant</th>
-                            <th width="150" class="text-end">Cumul</th>
-                            <th width="50" class="text-center">
-                                <button type="button" onclick="clearFilters()" class="btn btn-sm btn-light text-danger rounded-circle shadow-sm" title="Réinitialiser les filtres">
-                                    <i class="fas fa-sync-alt"></i>
+                            <th width="140">Type</th>
+                            <th width="160" class="text-end">Montant</th>
+                            <th width="160" class="text-end">Cumul</th>
+                            <th width="60" class="text-center">
+                                <button type="button" onclick="clearFilters()" class="btn btn-sm btn-light text-danger rounded-circle shadow-none">
+                                    <i class="fas fa-undo-alt"></i>
                                 </button>
                             </th>
                         </tr>
                         <tr class="bg-light">
                             <th></th>
                             <th><input type="date" class="filter-input" id="f-date" onchange="filterTable()"></th>
-                            <th><input type="text" class="filter-input" id="f-equipe" placeholder="Filtrer équipe" onkeyup="filterTable()"></th>
-                            <th><input type="text" class="filter-input" id="f-libelle" placeholder="Rechercher un libellé..." onkeyup="filterTable()"></th>
+                            <th><input type="text" class="filter-input" id="f-equipe" placeholder="Equipe..." onkeyup="filterTable()"></th>
+                            <th><input type="text" class="filter-input" id="f-libelle" placeholder="Rechercher..." onkeyup="filterTable()"></th>
                             <th>
                                 <select class="filter-select" id="f-type" onchange="filterTable()">
                                     <option value="">TOUT</option>
@@ -169,10 +193,10 @@
                                 </select>
                             </td>
                             <td><input type="number" step="0.01" name="{{ form.montant.html_name }}" class="input-flat text-end fw-bold row-montant w-100" value="{{ form.montant.value|stringformat:'.2f' }}"></td>
-                            <td class="text-end"><span class="cumul-text">0,00</span></td>
+                            <td class="text-end"><span class="cumul-text">0</span></td>
                             <td class="text-center">
                                 <div class="d-none">{{ form.DELETE }}</div>
-                                <button type="button" class="btn btn-link text-danger p-0 btn-delete-row"><i class="fas fa-trash-alt"></i></button>
+                                <button type="button" class="btn btn-link text-danger p-0 btn-delete-row shadow-none"><i class="fas fa-trash-alt"></i></button>
                             </td>
                             <td class="d-none">{{ form.id }}</td>
                         </tr>
@@ -186,13 +210,18 @@
 
 <table class="d-none">
     <tr id="empty-row-model" class="caisse-row animate-row">
-        <td class="text-center small"><i class="fas fa-plus text-primary"></i></td>
+        <td class="text-center small text-primary"><i class="fas fa-plus"></i></td>
         <td><input type="date" name="form-__prefix__-date" class="input-flat row-date w-100" required></td>
         <td><input type="text" name="form-__prefix__-equipe" class="input-flat w-100"></td>
         <td><input type="text" name="form-__prefix__-libelle" class="input-flat fw-bold row-libelle w-100"></td>
-        <td><select name="form-__prefix__-type_mouvement" class="input-flat fw-bold row-type w-100"><option value="ENTREE">ENTRÉE</option><option value="SORTIE">SORTIE</option></select></td>
+        <td>
+            <select name="form-__prefix__-type_mouvement" class="input-flat fw-bold row-type w-100">
+                <option value="ENTREE">ENTRÉE</option>
+                <option value="SORTIE">SORTIE</option>
+            </select>
+        </td>
         <td><input type="number" step="0.01" name="form-__prefix__-montant" class="input-flat text-end fw-bold row-montant w-100" value="0.00"></td>
-        <td class="text-end"><span class="cumul-text">0,00</span></td>
+        <td class="text-end"><span class="cumul-text">0</span></td>
         <td class="text-center"><button type="button" class="btn btn-link text-danger p-0 btn-delete-row"><i class="fas fa-trash-alt"></i></button></td>
     </tr>
 </table>
@@ -203,25 +232,46 @@
     const minD = `${ANNEE}-${MOIS.toString().padStart(2, '0')}-01`;
     const maxD = new Date(ANNEE, MOIS, 0).toISOString().split('T')[0];
 
+    // Formatteur pour séparer par points (15.000) et cacher les ,00
+    const moneyFormatter = new Intl.NumberFormat('de-DE', {
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 2
+    });
+
     function refreshTotals() {
         let bal = 0;
         document.querySelectorAll('#formset-container .caisse-row').forEach(row => {
             if (row.style.display === 'none' || row.querySelector('input[name$="-DELETE"]').checked) return;
+            
             const m = parseFloat(row.querySelector('.row-montant').value) || 0;
             const t = row.querySelector('.row-type').value;
             const mInp = row.querySelector('.row-montant');
-            if (t === 'ENTREE') { bal += m; mInp.style.color = '#0ea5e9'; }
-            else { bal -= m; mInp.style.color = '#ef4444'; }
-            row.querySelector('.cumul-text').innerText = bal.toLocaleString('fr-FR', {minimumFractionDigits: 2});
+            const tSel = row.querySelector('.row-type');
+            
+            if (t === 'ENTREE') { 
+                bal += m; 
+                mInp.style.color = '#0284c7';
+                tSel.className = 'input-flat fw-bold row-type w-100 type-in';
+                row.classList.add('row-in');
+                row.classList.remove('row-out');
+            } else { 
+                bal -= m; 
+                mInp.style.color = '#dc2626';
+                tSel.className = 'input-flat fw-bold row-type w-100 type-out';
+                row.classList.add('row-out');
+                row.classList.remove('row-in');
+            }
+            
+            row.querySelector('.cumul-text').innerText = moneyFormatter.format(bal);
         });
-        document.getElementById('header-solde-mois').innerText = bal.toLocaleString('fr-FR', {minimumFractionDigits: 2});
+        
+        const headerBal = document.getElementById('header-solde-mois');
+        headerBal.innerText = moneyFormatter.format(bal);
+        headerBal.className = bal >= 0 ? 'stat-value text-success' : 'stat-value text-danger';
     }
 
     function clearFilters() {
-        document.getElementById('f-date').value = "";
-        document.getElementById('f-equipe').value = "";
-        document.getElementById('f-libelle').value = "";
-        document.getElementById('f-type').value = "";
+        document.querySelectorAll('.filter-input, .filter-select').forEach(i => i.value = "");
         filterTable();
     }
 
@@ -253,9 +303,11 @@
         const newRow = document.getElementById('empty-row-model').cloneNode(true);
         newRow.id = "";
         newRow.innerHTML = newRow.innerHTML.replace(/__prefix__/g, count);
+        
         const dateInput = newRow.querySelector('.row-date');
         const today = new Date().toISOString().split('T')[0];
         dateInput.value = (today >= minD && today <= maxD) ? today : minD;
+        
         newRow.querySelector('.row-type').value = type;
         document.getElementById('formset-container').appendChild(newRow);
         totalForms.value = count + 1;
