@@ -63,6 +63,7 @@ def logout_view(request):
 def is_admin(user):
     return user.is_superuser or user.groups.filter(name='ADMIN').exists()
 
+@login_required
 @user_passes_test(is_admin)
 def supprimer_commande(request, id):
     if request.method == 'POST':
@@ -77,7 +78,7 @@ def voir_facture(request, facture_id):
     facture = get_object_or_404(Facture, id=facture_id)
     return render(request, "index/voir_facture.html", {"facture": facture})
 
-
+@login_required
 def supprimer_facture(request, pk):
     """ Gère la suppression d'une facture """
     facture = get_object_or_404(Facture, pk=pk)
@@ -95,7 +96,7 @@ def supprimer_facture(request, pk):
 
     # Si on arrive ici sans POST (sécurité), on redirige simplement
     return redirect('detail_fiche', fiche_id=fiche_id)
-
+@login_required
 @transaction.atomic
 def modifier_facture(request, pk):
     """ Gère la modification d'une facture existante """
@@ -155,6 +156,7 @@ def modifier_facture(request, pk):
     })
 
 # Cette fonction est essentielle pour la conversion PDF
+@login_required
 def render_to_pdf(template_src, context_dict={}):
     template = get_template(template_src)
     html  = template.render(context_dict)
@@ -1031,7 +1033,7 @@ def export_commandes_excel(request):
     wb.save(response)
     return response
 
-
+@login_required
 def alertes_counts(request):
     today = timezone.now().date()
     
@@ -1115,8 +1117,6 @@ def creer_facture(request, fiche_id):
         return redirect('detail_fiche', fiche_id=fiche_id) 
     
 @login_required
-
-
 def listes_tapis_abandon(request):
     """
     Liste paginée des commandes de tapis abandonnées
@@ -1431,10 +1431,9 @@ LISTE_MOIS = [
     (5, 'MAI'), (6, 'JUN'), (7, 'JUL'), (8, 'AOÛ'),
     (9, 'SEP'), (10, 'OCT'), (11, 'NOV'), (12, 'DÉC')
 ]
+
 @login_required
 @user_passes_test(is_admin)
-
-
 def gestion_caisse(request):
     try:
         mois_id = int(request.GET.get('mois', timezone.now().month))

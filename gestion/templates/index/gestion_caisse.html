@@ -5,198 +5,167 @@
 {% block content %}
 <style>
     :root { 
-        --in-color: #0ea5e9; 
-        --out-color: #ef4444; 
-        --accent-grad: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        --bg-app: #f4f7f9; 
+        --in-color: #059669; 
+        --out-color: #dc2626; 
+        --bg-app: #f8fafc; 
+        --primary: #2563eb;
     }
     
-    body { background-color: var(--bg-app); font-family: 'Inter', sans-serif; font-size: 0.95rem; }
+    body { background-color: var(--bg-app); font-family: 'Segoe UI', Roboto, sans-serif; font-size: 0.85rem; }
 
-    @keyframes slideIn {
-        from { opacity: 0; transform: translateY(5px); }
-        to { opacity: 1; transform: translateY(0); }
+    /* Boutons Colorés & Animés */
+    .btn-compact {
+        height: 34px; padding: 0 15px; border-radius: 8px; font-size: 0.75rem;
+        font-weight: 800; display: inline-flex; align-items: center; gap: 6px; 
+        border: none; transition: all 0.2s ease; cursor: pointer; color: white;
     }
-    .animate-row { animation: slideIn 0.2s ease-out forwards; }
+    .btn-compact:active { transform: scale(0.95); }
+    
+    .btn-entree { background-color: var(--in-color); box-shadow: 0 4px 0 #047857; }
+    .btn-entree:hover { background-color: #047857; }
+    
+    .btn-sortie { background-color: var(--out-color); box-shadow: 0 4px 0 #b91c1c; }
+    .btn-sortie:hover { background-color: #b91c1c; }
+    
+    .btn-save { background-color: var(--primary); box-shadow: 0 4px 0 #1d4ed8; }
+    .btn-save:hover { background-color: #1d4ed8; }
+
+    .btn-excel { background-color: #166534; box-shadow: 0 4px 0 #14532d; }
 
     /* Stats Cards */
-    .stat-card { 
-        background: white; border-radius: 12px; padding: 10px 18px; 
-        box-shadow: 0 4px 6px rgba(0,0,0,0.02); border: 1px solid rgba(0,0,0,0.05);
-        transition: transform 0.2s;
+    .stat-box {
+        background: white; border-radius: 10px; padding: 10px;
+        border: 1px solid #e2e8f0; border-left: 5px solid var(--primary);
     }
-    .stat-card:hover { transform: translateY(-2px); }
-    .stat-label { font-size: 0.75rem; color: #94a3b8; text-transform: uppercase; font-weight: 800; display: block; line-height: 1; }
-    .stat-value { font-size: 1.3rem; font-weight: 900; }
+    .stat-label { font-size: 0.65rem; color: #64748b; text-transform: uppercase; font-weight: 700; }
+    .stat-value { font-size: 1.2rem; font-weight: 900; }
 
-    /* Navigation */
-    .nav-scroller { 
-        display: flex; gap: 6px; padding: 5px; 
-        background: #fff; border-radius: 50px; border: 1px solid #e2e8f0;
-    }
-    .nav-pill { 
-        padding: 6px 14px; border-radius: 50px; font-size: 0.8rem; font-weight: 700; 
-        text-decoration: none; color: #64748b; transition: all 0.2s;
-    }
-    .nav-pill.active { background: #3b82f6; color: white; box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3); }
-
-    /* Table Design */
-    .table-container { 
-        background: white; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); 
-        overflow: hidden; margin-top: 10px; border: 1px solid #e2e8f0;
-    }
-    .table thead th { 
-        background: #f8fafc; font-size: 0.75rem; letter-spacing: 0.5px; 
-        color: #64748b; padding: 12px 10px; border: none; text-transform: uppercase;
-    }
+    /* Tableau & Inputs */
+    .table-card { background: white; border-radius: 12px; border: 1px solid #e2e8f0; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); }
+    .table thead th { background: #f1f5f9; color: #1e293b; font-weight: 700; text-transform: uppercase; font-size: 0.7rem; border: none; }
     
-    /* Indicateurs dynamiques par ligne */
-    .caisse-row { border-left: 4px solid transparent; transition: all 0.2s; }
-    .caisse-row:hover { background-color: #f8fafc !important; }
-    .row-in { border-left-color: var(--in-color); }
-    .row-out { border-left-color: var(--out-color); }
+    .row-in { background-color: rgba(16, 185, 129, 0.05) !important; border-left: 4px solid var(--in-color) !important; }
+    .row-out { background-color: rgba(239, 68, 68, 0.05) !important; border-left: 4px solid var(--out-color) !important; }
 
-    .input-flat { 
-        border: 1px solid transparent !important; background: transparent; 
-        border-radius: 6px; padding: 6px 8px; font-weight: 600; font-size: 0.9rem;
-        transition: all 0.2s;
+    .input-flat {
+        border: 1px solid #cbd5e1; border-radius: 4px; padding: 4px 8px;
+        width: 100%; background: white; font-size: 0.8rem;
     }
-    .input-flat:focus { 
-        background: white !important; 
-        border-color: #3b82f6 !important; 
-        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-        outline: none; 
+    .input-flat:focus { border-color: var(--primary); outline: 2px solid rgba(37, 99, 235, 0.1); }
+
+    /* Scroller pour mois */
+    .month-nav { display: flex; gap: 5px; overflow-x: auto; padding-bottom: 5px; }
+    .month-btn { 
+        padding: 5px 12px; border-radius: 20px; font-size: 0.7rem; font-weight: 700;
+        text-decoration: none; background: white; color: #64748b; border: 1px solid #e2e8f0;
     }
-
-    /* Style sélecteur Type avec couleurs sémantiques */
-    .row-type { padding: 4px 8px; border-radius: 6px; font-size: 0.75rem; text-align: center; }
-    .type-in { background: #e0f2fe !important; color: #0369a1 !important; }
-    .type-out { background: #fee2e2 !important; color: #b91c1c !important; }
-
-    .btn-sm-custom { 
-        font-size: 0.85rem; font-weight: 800; padding: 8px 16px; border-radius: 10px; 
-        transition: all 0.2s; border: none; display: flex; align-items: center; gap: 8px;
-    }
-    .btn-save { background: var(--accent-grad); color: white; box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3); }
-    .btn-save:hover { transform: scale(1.02); color: white; opacity: 0.9; }
-
-    .filter-input, .filter-select { 
-        border-radius: 8px; border: 1px solid #e2e8f0; padding: 5px 10px; 
-        font-size: 0.8rem; width: 100%; background: #fff;
-    }
-
-    .sticky-actions { position: sticky; top: 10px; z-index: 1000; }
-    .cumul-text { 
-        font-weight: 800; color: #1e293b; background: #f1f5f9; 
-        padding: 5px 12px; border-radius: 8px; font-size: 0.9rem;
-    }
-
-    .col-equipe { width: 180px !important; }
+    .month-btn.active { background: var(--primary); color: white; border-color: var(--primary); }
 </style>
 
-<div class="container-fluid py-3">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <div>
-            <h4 class="fw-black mb-0" style="font-weight: 900; color: #1e293b; letter-spacing: -0.5px;">
-                <i class="fas fa-wallet text-primary me-2"></i>CAISSE {{ annee_actuelle }}
-            </h4>
-            <span class="badge text-primary fw-bold" style="background: #e0f2fe; padding: 5px 12px; border-radius: 6px;">
-                {{ mois_actuel_nom|upper }}
-            </span>
-        </div>
-        <div class="d-flex gap-3">
-            <div class="stat-card">
-                <span class="stat-label">Solde Mensuel</span>
-                <span id="header-solde-mois" class="stat-value">0</span>
-            </div>
-            <div class="stat-card" style="background: #1e293b; color: white; border: none;">
-                <span class="stat-label text-white-50">Solde Global Annuel</span>
-                <span class="stat-value text-warning">{{ solde_annuel|floatformat:0|intcomma }}</span>
-            </div>
-        </div>
-    </div>
-
-    <div class="sticky-actions mb-4">
-        <div class="bg-white p-2 shadow-sm rounded-pill d-flex justify-content-between align-items-center px-3 border">
-            <div class="nav-scroller">
+<div class="container-fluid py-2">
+    <div class="row align-items-center mb-3">
+        <div class="col-md-4">
+            <h4 class="fw-black mb-0" style="color: #0f172a;"><i class="fas fa-coins text-warning me-2"></i>CAISSE {{ annee_actuelle }}</h4>
+            <div class="month-nav mt-2">
                 {% for id, nom in liste_mois.items %}
-                <a href="?mois={{ id }}&annee={{ annee_actuelle }}" class="nav-pill {% if id == mois_actuel_id %}active{% endif %}">
+                <a href="?mois={{ id }}&annee={{ annee_actuelle }}" class="month-btn {% if id == mois_actuel_id %}active{% endif %}">
                     {{ nom|slice:":3"|upper }}
                 </a>
                 {% endfor %}
             </div>
-            
-            <div class="d-flex gap-2">
-                <button type="button" onclick="addNewRow('ENTREE')" class="btn-sm-custom btn-success" style="background: #10b981;">
-                    <i class="fas fa-plus-circle"></i> ENTRÉE
-                </button>
-                <button type="button" onclick="addNewRow('SORTIE')" class="btn-sm-custom btn-danger" style="background: #ef4444;">
-                    <i class="fas fa-minus-circle"></i> SORTIE
-                </button>
-                <div class="vr mx-1"></div>
-                <button type="submit" form="caisse-form" class="btn-sm-custom btn-save">
-                    <i class="fas fa-save"></i> ENREGISTRER
-                </button>
-                <a href="{% url 'export_excel' mois_actuel_id annee_actuelle %}" class="btn btn-outline-success border-0 rounded-circle">
-                    <i class="fas fa-file-excel fa-lg"></i>
-                </a>
+        </div>
+        <div class="col-md-8">
+            <div class="row g-2">
+                <div class="col-6">
+                    <div class="stat-box">
+                        <span class="stat-label">Solde du Mois {{ mois_actuel_nom }}</span>
+                        <div id="header-solde-mois" class="stat-value text-success">0 FCFA</div>
+                    </div>
+                </div>
+                <div class="col-6">
+                    <div class="stat-box" style="border-left-color: #f59e0b;">
+                        <span class="stat-label">Cumul Annuel</span>
+                        <div class="stat-value text-warning">{{ solde_annuel|floatformat:0|intcomma }}</div>
+                    </div>
+                </div>
             </div>
+        </div>
+    </div>
+
+    <div class="bg-white p-2 rounded shadow-sm border mb-3">
+        <div class="row g-2">
+            <div class="col-md-2"><input type="date" id="f-date" class="input-flat" onchange="filterTable()"></div>
+            <div class="col-md-2"><input type="text" id="f-equipe" class="input-flat" placeholder="Filtrer Équipe..." onkeyup="filterTable()"></div>
+            <div class="col-md-4"><input type="text" id="f-libelle" class="input-flat" placeholder="Rechercher une opération..." onkeyup="filterTable()"></div>
+            <div class="col-md-2">
+                <select id="f-type" class="input-flat" onchange="filterTable()">
+                    <option value="">Tous les types</option>
+                    <option value="ENTREE">ENTRÉES</option>
+                    <option value="SORTIE">SORTIES</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <button onclick="clearFilters()" class="btn btn-outline-secondary btn-sm w-100 fw-bold">
+                    <i class="fas fa-sync-alt"></i> RESET
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="d-flex justify-content-between mb-3 bg-white p-2 rounded border shadow-sm">
+        <div class="d-flex gap-2">
+            <button type="button" onclick="addNewRow('ENTREE')" class="btn-compact btn-entree">
+                <i class="fas fa-arrow-up"></i> + ENTRÉE
+            </button>
+            <button type="button" onclick="addNewRow('SORTIE')" class="btn-compact btn-sortie">
+                <i class="fas fa-arrow-down"></i> - SORTIE
+            </button>
+        </div>
+        <div class="d-flex gap-2">
+            <button type="submit" form="caisse-form" class="btn-compact btn-save">
+                <i class="fas fa-check-double"></i> SAUVEGARDER
+            </button>
+            <a href="{% url 'export_excel' mois_actuel_id annee_actuelle %}" class="btn-compact btn-excel text-decoration-none">
+                <i class="fas fa-file-excel"></i> EXCEL
+            </a>
         </div>
     </div>
 
     <form method="post" id="caisse-form">
         {% csrf_token %} {{ formset.management_form }}
-        <div class="table-container">
+        <div class="table-card">
             <div class="table-responsive">
-                <table class="table table-sm align-middle mb-0" id="caisse-table">
+                <table class="table table-sm align-middle mb-0" id="caisse-table" style="min-width: 900px;">
                     <thead>
                         <tr>
-                            <th width="50" class="text-center">#</th>
-                            <th width="140">Date</th>
-                            <th class="col-equipe">Équipe</th>
-                            <th>Libellé de l'opération</th>
-                            <th width="140">Type</th>
-                            <th width="160" class="text-end">Montant</th>
-                            <th width="160" class="text-end">Cumul</th>
-                            <th width="60" class="text-center">
-                                <button type="button" onclick="clearFilters()" class="btn btn-sm btn-light text-danger rounded-circle shadow-none">
-                                    <i class="fas fa-undo-alt"></i>
-                                </button>
-                            </th>
-                        </tr>
-                        <tr class="bg-light">
-                            <th></th>
-                            <th><input type="date" class="filter-input" id="f-date" onchange="filterTable()"></th>
-                            <th><input type="text" class="filter-input" id="f-equipe" placeholder="Equipe..." onkeyup="filterTable()"></th>
-                            <th><input type="text" class="filter-input" id="f-libelle" placeholder="Rechercher..." onkeyup="filterTable()"></th>
-                            <th>
-                                <select class="filter-select" id="f-type" onchange="filterTable()">
-                                    <option value="">TOUT</option>
-                                    <option value="ENTREE">ENTRÉE</option>
-                                    <option value="SORTIE">SORTIE</option>
-                                </select>
-                            </th>
-                            <th colspan="3"></th>
+                            <th class="text-center" width="40">#</th>
+                            <th width="130">Date</th>
+                            <th width="140">Équipe</th>
+                            <th>Libellé / Désignation</th>
+                            <th width="120">Mouvement</th>
+                            <th width="140" class="text-end">Montant</th>
+                            <th width="140" class="text-end">Solde Ligne</th>
+                            <th width="50"></th>
                         </tr>
                     </thead>
                     <tbody id="formset-container">
                         {% for form in formset %}
-                        <tr class="caisse-row animate-row">
-                            <td class="text-center text-muted small">{{ forloop.counter }}</td>
-                            <td><input type="date" name="{{ form.date.html_name }}" class="input-flat row-date w-100" value="{{ form.date.value|date:'Y-m-d' }}" required></td>
-                            <td><input type="text" name="{{ form.equipe.html_name }}" class="input-flat w-100" value="{{ form.equipe.value|default:'' }}"></td>
-                            <td><input type="text" name="{{ form.libelle.html_name }}" class="input-flat fw-bold row-libelle w-100" value="{{ form.libelle.value|default:'' }}"></td>
+                        <tr class="caisse-row">
+                            <td class="text-center fw-bold text-muted">{{ forloop.counter }}</td>
+                            <td><input type="date" name="{{ form.date.html_name }}" class="input-flat row-date" value="{{ form.date.value|date:'Y-m-d' }}" required></td>
+                            <td><input type="text" name="{{ form.equipe.html_name }}" class="input-flat" value="{{ form.equipe.value|default:'' }}"></td>
+                            <td><input type="text" name="{{ form.libelle.html_name }}" class="input-flat fw-bold row-libelle" value="{{ form.libelle.value|default:'' }}"></td>
                             <td>
-                                <select name="{{ form.type_mouvement.html_name }}" class="input-flat fw-bold row-type w-100">
+                                <select name="{{ form.type_mouvement.html_name }}" class="input-flat fw-bold row-type">
                                     <option value="ENTREE" {% if form.type_mouvement.value == "ENTREE" %}selected{% endif %}>ENTRÉE</option>
                                     <option value="SORTIE" {% if form.type_mouvement.value == "SORTIE" %}selected{% endif %}>SORTIE</option>
                                 </select>
                             </td>
-                            <td><input type="number" step="0.01" name="{{ form.montant.html_name }}" class="input-flat text-end fw-bold row-montant w-100" value="{{ form.montant.value|stringformat:'.2f' }}"></td>
-                            <td class="text-end"><span class="cumul-text">0</span></td>
+                            <td><input type="number" step="0.01" name="{{ form.montant.html_name }}" class="input-flat text-end fw-bold row-montant" value="{{ form.montant.value|stringformat:'.2f' }}"></td>
+                            <td class="text-end fw-bold"><span class="cumul-text">0</span></td>
                             <td class="text-center">
                                 <div class="d-none">{{ form.DELETE }}</div>
-                                <button type="button" class="btn btn-link text-danger p-0 btn-delete-row shadow-none"><i class="fas fa-trash-alt"></i></button>
+                                <button type="button" class="btn btn-sm btn-link text-danger btn-delete-row"><i class="fas fa-trash"></i></button>
                             </td>
                             <td class="d-none">{{ form.id }}</td>
                         </tr>
@@ -209,20 +178,20 @@
 </div>
 
 <table class="d-none">
-    <tr id="empty-row-model" class="caisse-row animate-row">
-        <td class="text-center small text-primary"><i class="fas fa-plus"></i></td>
-        <td><input type="date" name="form-__prefix__-date" class="input-flat row-date w-100" required></td>
-        <td><input type="text" name="form-__prefix__-equipe" class="input-flat w-100"></td>
-        <td><input type="text" name="form-__prefix__-libelle" class="input-flat fw-bold row-libelle w-100"></td>
+    <tr id="empty-row-model" class="caisse-row">
+        <td class="text-center text-primary"><i class="fas fa-plus-circle"></i></td>
+        <td><input type="date" name="form-__prefix__-date" class="input-flat row-date" required></td>
+        <td><input type="text" name="form-__prefix__-equipe" class="input-flat"></td>
+        <td><input type="text" name="form-__prefix__-libelle" class="input-flat fw-bold row-libelle"></td>
         <td>
-            <select name="form-__prefix__-type_mouvement" class="input-flat fw-bold row-type w-100">
+            <select name="form-__prefix__-type_mouvement" class="input-flat fw-bold row-type">
                 <option value="ENTREE">ENTRÉE</option>
                 <option value="SORTIE">SORTIE</option>
             </select>
         </td>
-        <td><input type="number" step="0.01" name="form-__prefix__-montant" class="input-flat text-end fw-bold row-montant w-100" value="0.00"></td>
-        <td class="text-end"><span class="cumul-text">0</span></td>
-        <td class="text-center"><button type="button" class="btn btn-link text-danger p-0 btn-delete-row"><i class="fas fa-trash-alt"></i></button></td>
+        <td><input type="number" step="0.01" name="form-__prefix__-montant" class="input-flat text-end fw-bold row-montant" value="0.00"></td>
+        <td class="text-end fw-bold"><span class="cumul-text">0</span></td>
+        <td class="text-center"><button type="button" class="btn btn-sm btn-link text-danger btn-delete-row"><i class="fas fa-trash"></i></button></td>
     </tr>
 </table>
 
@@ -232,102 +201,102 @@
     const minD = `${ANNEE}-${MOIS.toString().padStart(2, '0')}-01`;
     const maxD = new Date(ANNEE, MOIS, 0).toISOString().split('T')[0];
 
-    // Formatteur pour séparer par points (15.000) et cacher les ,00
-    const moneyFormatter = new Intl.NumberFormat('de-DE', {
-        minimumFractionDigits: 0,
-        maximumFractionDigits: 2
-    });
+    const money = new Intl.NumberFormat('fr-FR');
 
     function refreshTotals() {
-        let bal = 0;
+        let runningBal = 0;
         document.querySelectorAll('#formset-container .caisse-row').forEach(row => {
             if (row.style.display === 'none' || row.querySelector('input[name$="-DELETE"]').checked) return;
             
             const m = parseFloat(row.querySelector('.row-montant').value) || 0;
             const t = row.querySelector('.row-type').value;
-            const mInp = row.querySelector('.row-montant');
-            const tSel = row.querySelector('.row-type');
-            
-            if (t === 'ENTREE') { 
-                bal += m; 
-                mInp.style.color = '#0284c7';
-                tSel.className = 'input-flat fw-bold row-type w-100 type-in';
-                row.classList.add('row-in');
-                row.classList.remove('row-out');
-            } else { 
-                bal -= m; 
-                mInp.style.color = '#dc2626';
-                tSel.className = 'input-flat fw-bold row-type w-100 type-out';
-                row.classList.add('row-out');
-                row.classList.remove('row-in');
+            const mField = row.querySelector('.row-montant');
+
+            if (t === 'ENTREE') {
+                runningBal += m;
+                row.className = 'caisse-row row-in';
+                mField.style.color = 'var(--in-color)';
+            } else {
+                runningBal -= m;
+                row.className = 'caisse-row row-out';
+                mField.style.color = 'var(--out-color)';
             }
-            
-            row.querySelector('.cumul-text').innerText = moneyFormatter.format(bal);
+            row.querySelector('.cumul-text').innerText = money.format(runningBal);
         });
         
-        const headerBal = document.getElementById('header-solde-mois');
-        headerBal.innerText = moneyFormatter.format(bal);
-        headerBal.className = bal >= 0 ? 'stat-value text-success' : 'stat-value text-danger';
-    }
-
-    function clearFilters() {
-        document.querySelectorAll('.filter-input, .filter-select').forEach(i => i.value = "");
-        filterTable();
-    }
-
-    function filterTable() {
-        const fDate = document.getElementById('f-date').value;
-        const fEquipe = document.getElementById('f-equipe').value.toLowerCase();
-        const fLibelle = document.getElementById('f-libelle').value.toLowerCase();
-        const fType = document.getElementById('f-type').value;
-
-        document.querySelectorAll('#formset-container .caisse-row').forEach(row => {
-            const data = {
-                date: row.querySelector('.row-date').value,
-                equipe: row.cells[2].querySelector('input').value.toLowerCase(),
-                libelle: row.cells[3].querySelector('input').value.toLowerCase(),
-                type: row.querySelector('.row-type').value
-            };
-            const isVisible = (!fDate || data.date === fDate) &&
-                              (!fEquipe || data.equipe.includes(fEquipe)) &&
-                              (!fLibelle || data.libelle.includes(fLibelle)) &&
-                              (!fType || data.type === fType);
-            row.style.display = isVisible ? "" : "none";
-        });
-        refreshTotals();
+        const h = document.getElementById('header-solde-mois');
+        h.innerText = money.format(runningBal) + " FCFA";
+        h.className = runningBal >= 0 ? 'stat-value text-success' : 'stat-value text-danger';
     }
 
     function addNewRow(type) {
         const totalForms = document.getElementById('id_form-TOTAL_FORMS');
         const count = parseInt(totalForms.value);
-        const newRow = document.getElementById('empty-row-model').cloneNode(true);
-        newRow.id = "";
-        newRow.innerHTML = newRow.innerHTML.replace(/__prefix__/g, count);
+        const model = document.getElementById('empty-row-model').cloneNode(true);
         
-        const dateInput = newRow.querySelector('.row-date');
+        model.id = "";
+        model.innerHTML = model.innerHTML.replace(/__prefix__/g, count);
+        
+        const dateInp = model.querySelector('.row-date');
         const today = new Date().toISOString().split('T')[0];
-        dateInput.value = (today >= minD && today <= maxD) ? today : minD;
+        dateInp.value = (today >= minD && today <= maxD) ? today : minD;
         
-        newRow.querySelector('.row-type').value = type;
-        document.getElementById('formset-container').appendChild(newRow);
+        model.querySelector('.row-type').value = type;
+        document.getElementById('formset-container').appendChild(model);
+        
         totalForms.value = count + 1;
         refreshTotals();
-        newRow.querySelector('.row-libelle').focus();
+        model.querySelector('.row-libelle').focus();
     }
 
-    document.addEventListener('input', e => { if(e.target.matches('.row-montant, .row-type')) refreshTotals(); });
+    function clearFilters() {
+        document.getElementById('f-date').value = "";
+        document.getElementById('f-equipe').value = "";
+        document.getElementById('f-libelle').value = "";
+        document.getElementById('f-type').value = "";
+        filterTable();
+    }
+
+    function filterTable() {
+        const d = document.getElementById('f-date').value;
+        const e = document.getElementById('f-equipe').value.toLowerCase();
+        const l = document.getElementById('f-libelle').value.toLowerCase();
+        const t = document.getElementById('f-type').value;
+
+        document.querySelectorAll('#formset-container .caisse-row').forEach(row => {
+            const rowD = row.querySelector('.row-date').value;
+            const rowE = row.querySelector('input[name*="equipe"]').value.toLowerCase();
+            const rowL = row.querySelector('.row-libelle').value.toLowerCase();
+            const rowT = row.querySelector('.row-type').value;
+
+            const show = (!d || rowD === d) && (!e || rowE.includes(e)) && (!l || rowL.includes(l)) && (!t || rowT === t);
+            row.style.display = show ? "" : "none";
+        });
+        refreshTotals();
+    }
+
+    // Event listeners pour la réactivité immédiate
+    document.addEventListener('input', e => {
+        if (e.target.classList.contains('row-montant') || e.target.classList.contains('row-type')) {
+            refreshTotals();
+        }
+    });
+
     document.addEventListener('click', e => {
         const btn = e.target.closest('.btn-delete-row');
         if (btn) {
             const row = btn.closest('.caisse-row');
-            const idInput = row.querySelector('input[name*="-id"]');
-            if (idInput && idInput.value) { 
-                row.style.display = 'none'; 
-                row.querySelector('input[name$="-DELETE"]').checked = true; 
-            } else { row.remove(); }
+            const idField = row.querySelector('input[name*="-id"]');
+            if (idField && idField.value) {
+                row.style.display = 'none';
+                row.querySelector('input[name$="-DELETE"]').checked = true;
+            } else {
+                row.remove();
+            }
             refreshTotals();
         }
     });
+
     window.onload = refreshTotals;
 </script>
 {% endblock %}
