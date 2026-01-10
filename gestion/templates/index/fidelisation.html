@@ -1,70 +1,178 @@
 {% extends "base.html" %}
 
+{% block title %}Alertes Fidélisation{% endblock %}
+
 {% block content %}
-<div class="container-fluid">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2><i class="fa-solid fa-heart-circle-bolt text-warning"></i> Alertes Fidélisation</h2>
-        <span class="badge bg-secondary">{{ total_alertes }} client(s) à relancer</span>
+<style>
+    :root {
+        --bg-body: #f4f7fa;
+        --table-header-bg: #1e293b;
+        --text-main: #334155;
+        --border-color: #e2e8f0;
+    }
+
+    body { 
+        background-color: var(--bg-body); 
+        color: var(--text-main);
+        font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    }
+
+    /* Conteneur ultra-compact */
+    .table-container {
+        background: white;
+        border-radius: 8px;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.02);
+        border: 1px solid var(--border-color);
+        overflow: hidden;
+    }
+
+    /* Réduction de la hauteur du header */
+    .custom-table thead th {
+        background-color: var(--table-header-bg) !important;
+        color: #f8fafc !important;
+        font-size: 10px;
+        text-transform: uppercase;
+        letter-spacing: 0.03em;
+        padding: 10px 12px !important;
+        border: none;
+    }
+
+    /* Réduction drastique du padding des cellules pour la compacité */
+    .custom-table tbody td {
+        padding: 6px 12px !important;
+        vertical-align: middle;
+        border-bottom: 1px solid var(--border-color);
+        font-size: 12.5px;
+    }
+
+    /* Badges de service plus petits */
+    .service-pill {
+        font-size: 9px;
+        font-weight: 700;
+        padding: 2px 8px;
+        border-radius: 4px;
+        display: inline-block;
+    }
+    .pill-clim { background-color: #e0f2fe; color: #0369a1; }
+    .pill-city { background-color: #dcfce7; color: #15803d; }
+    .pill-tapis { background-color: #fef3c7; color: #92400e; }
+
+    /* Barre de recherche plus fine */
+    .search-clean-wrapper {
+        background: white;
+        border: 1px solid var(--border-color);
+        border-radius: 6px;
+        padding: 5px 12px;
+        display: flex;
+        align-items: center;
+    }
+    .search-clean-wrapper input {
+        border: none;
+        outline: none;
+        width: 100%;
+        margin-left: 8px;
+        font-size: 13px;
+    }
+
+    /* Bouton d'action unique plus petit */
+    .action-circle {
+        width: 28px;
+        height: 28px;
+        border-radius: 6px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.2s;
+        border: 1px solid var(--border-color);
+        background: white;
+        color: #64748b;
+        text-decoration: none;
+    }
+    .action-circle:hover {
+        background-color: #1e293b;
+        color: white;
+    }
+
+    /* Pagination discrète */
+    .pagination .page-link {
+        padding: 4px 10px;
+        font-size: 12px;
+        border-radius: 4px !important;
+    }
+</style>
+
+<div class="container-fluid py-3 px-lg-5">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <div>
+            <h5 class="fw-bold mb-0 text-dark">
+                <i class="fa-solid fa-heart-circle-bolt text-warning me-2"></i>FIDÉLISATION
+            </h5>
+            <p class="text-muted mb-0 small" style="font-size: 11px;">Relances basées sur les cycles d'entretien.</p>
+        </div>
+        <div class="text-end">
+            <span class="badge bg-white border text-dark px-2 py-1 rounded shadow-sm" style="font-size: 11px;">
+                <span class="text-danger fw-bold">{{ total_alertes }}</span> à traiter
+            </span>
+        </div>
     </div>
 
-    <div class="card mb-4 shadow-sm">
-        <div class="card-body">
-            <form method="GET" class="row g-2">
-                <div class="col-md-10">
-                    <input type="text" name="search" class="form-control" placeholder="Rechercher un nom ou numéro..." value="{{ search_query }}">
+    <div class="row mb-3">
+        <div class="col-12">
+            <form method="GET" class="d-flex gap-2">
+                <div class="search-clean-wrapper flex-grow-1">
+                    <i class="fa-solid fa-magnifying-glass text-muted small"></i>
+                    <input type="text" name="search" placeholder="Nom ou téléphone..." value="{{ search_query }}">
                 </div>
-                <div class="col-md-2">
-                    <button type="submit" class="btn btn-primary w-100">Filtrer</button>
-                </div>
+                <button type="submit" class="btn btn-dark btn-sm px-3 fw-bold">Filtrer</button>
             </form>
         </div>
     </div>
 
-    <div class="card shadow-sm">
+    <div class="table-container">
         <div class="table-responsive">
-            <table class="table table-hover align-middle mb-0">
-                <thead class="table-light">
+            <table class="table custom-table mb-0">
+                <thead>
                     <tr>
-                        <th>Type</th>
-                        <th>Client</th>
-                        <th>Téléphone</th>
-                        <th>Dernière Intervention</th>
-                        <th class="text-center">Actions</th>
+                        <th class="ps-3">Type</th>
+                        <th>Client & Contact</th>
+                        <th class="text-center">Date Intervention / livraison</th>
+                        <th class="text-center">Statut</th>
+                        <th class="text-end pe-3">Action</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for alerte in page_obj %}
                     <tr>
-                        <td>
+                        <td class="ps-3">
                             {% if alerte.type == 'CLIMATISEUR' %}
-                                <span class="badge bg-info text-dark">CLIMATISEUR</span>
+                                <span class="service-pill pill-clim">CLIM</span>
                             {% elif alerte.type == 'CITYPROP' %}
-                                <span class="badge bg-success">CITYPROP</span>
+                                <span class="service-pill pill-city">CITYPROP</span>
                             {% else %}
-                                <span class="badge bg-primary">TAPISPROP</span>
+                                <span class="service-pill pill-tapis">TAPISPROP</span>
                             {% endif %}
                         </td>
-                        <td class="fw-bold">{{ alerte.nom_client }}</td>
-                        <td>{{ alerte.numero_client }}</td>
-                        <td>{{ alerte.date_cle|date:"d/m/Y" }}</td>
+                        <td>
+                            <div class="fw-bold text-dark">{{ alerte.nom_client }}</div>
+                            <div class="text-muted" style="font-size: 11px;">{{ alerte.numero_client }}</div>
+                        </td>
                         <td class="text-center">
-                            <div class="btn-group">
-                                <a href="{% url 'detail_fidelisation' alerte.id %}" class="btn btn-sm btn-outline-primary">
-                                    <i class="fa-solid fa-eye"></i> Voir
-                                </a>
-                                
-                                <a href="{% url 'marquer_fidelise' alerte.id %}" class="btn btn-sm btn-outline-success" title="Marquer comme relancé">
-                                    <i class="fa-solid fa-check"></i>
-                                </a>
-                            </div>
+                            <span class="fw-medium text-dark">{{ alerte.date_cle|date:"d/m/Y" }}</span>
+                        </td>
+                        <td class="text-center">
+                            <span class="badge rounded bg-soft-danger text-danger border border-danger" style="font-size: 9px; padding: 2px 5px;">
+                                À RELANCER
+                            </span>
+                        </td>
+                        <td class="text-end pe-3">
+                            <a href="{% url 'detail_fidelisation' alerte.id %}" class="action-circle" title="Détails">
+                                <i class="fa-solid fa-arrow-right"></i>
+                            </a>
                         </td>
                     </tr>
                     {% empty %}
                     <tr>
-                        <td colspan="5" class="text-center py-5 text-muted">
-                            <i class="fa-solid fa-circle-check fa-3x mb-3 text-success"></i>
-                            <p>Aucun client ne nécessite de relance pour le moment.</p>
-                        </td>
+                        <td colspan="5" class="py-4 text-center text-muted">Aucun client à relancer.</td>
                     </tr>
                     {% endfor %}
                 </tbody>
@@ -73,16 +181,14 @@
     </div>
 
     {% if page_obj.has_other_pages %}
-    <nav class="mt-4">
-        <ul class="pagination justify-content-center">
+    <nav class="mt-3">
+        <ul class="pagination pagination-sm justify-content-center mb-0">
             {% if page_obj.has_previous %}
-                <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}&search={{ search_query }}">Précédent</a></li>
+                <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}&search={{ search_query }}"><i class="fa-solid fa-chevron-left"></i></a></li>
             {% endif %}
-            
-            <li class="page-item active"><span class="page-link">{{ page_obj.number }}</span></li>
-            
+            <li class="page-item active"><span class="page-link px-3">{{ page_obj.number }}</span></li>
             {% if page_obj.has_next %}
-                <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}&search={{ search_query }}">Suivant</a></li>
+                <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}&search={{ search_query }}"><i class="fa-solid fa-chevron-right"></i></a></li>
             {% endif %}
         </ul>
     </nav>

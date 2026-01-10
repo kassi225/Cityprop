@@ -617,7 +617,7 @@ def alertes_fidelisation(request):
 
     alertes_list = []
     
-    # Normalisation pour l'affichage unique dans le tableau
+    # Normalisation
     for obj in city_qs:
         alertes_list.append({
             'id': obj.id,
@@ -651,8 +651,8 @@ def alertes_fidelisation(request):
     # Tri par date (la plus ancienne en haut)
     alertes_list.sort(key=lambda x: x['date_cle'] if x['date_cle'] else now)
     
-    # Pagination
-    paginator = Paginator(alertes_list, 20)
+    # PAGINATION MISE À JOUR : 7 éléments par page
+    paginator = Paginator(alertes_list, 7) 
     page_obj = paginator.get_page(page_number)
 
     context = {
@@ -661,6 +661,7 @@ def alertes_fidelisation(request):
         "search_query": search_query,
     }
     return render(request, "index/fidelisation.html", context)
+
 
 @login_required
 def marquer_fidelise(request, id):
@@ -1215,7 +1216,7 @@ def dashboard_financier(request):
     count_factures = queryset.count()
 
     # 6. Pagination compacte (15 par page)
-    paginator = Paginator(queryset, 10)
+    paginator = Paginator(queryset, 7)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
 
