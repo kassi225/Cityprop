@@ -348,6 +348,8 @@ def nouvelle_commande(request):
 def liste_fiches(request):
     commandes = Commande.objects.all().order_by('-date_creation')
 
+    # Récupération des paramètres
+    search_query = request.GET.get('q', '')  # <--- AJOUT POUR RECHERCHE RAPIDE
     type_filter = request.GET.get('type_commande', '')
     statut_filter = request.GET.get('statut', '')
     nom_filter = request.GET.get('nom_client', '')
@@ -355,6 +357,14 @@ def liste_fiches(request):
     date_debut = request.GET.get('date_debut', '')
     date_fin = request.GET.get('date_fin', '')
     fidelise_filter = request.GET.get('fidelise', '')
+
+    # LOGIQUE DE RECHERCHE GLOBALE (S'applique à toutes les colonnes)
+    if search_query:
+        commandes = commandes.filter(
+            Q(nom_client__icontains=search_query) |
+            Q(numero_client__icontains=search_query) |
+            Q(localisation_client__icontains=search_query)
+        )
 
     if type_filter:
         commandes = commandes.filter(type_commande=type_filter)
@@ -368,28 +378,20 @@ def liste_fiches(request):
     if numero_filter:
         commandes = commandes.filter(numero_client__icontains=numero_filter)
 
-    # CORRECTION DES DATES POUR ÉVITER LE RUNTIME WARNING
     if date_debut:
-        # On convertit la chaîne "YYYY-MM-DD" en datetime à 00:00:00
         d_debut = datetime.datetime.strptime(date_debut, '%Y-%m-%d')
-        # On rend la date "consciente" du fuseau horaire (Africa/Abidjan)
         date_debut_aware = timezone.make_aware(d_debut)
         commandes = commandes.filter(date_creation__gte=date_debut_aware)
 
     if date_fin:
-        # On convertit la chaîne et on règle l'heure à 23:59:59 pour inclure toute la journée
         d_fin = datetime.datetime.strptime(date_fin, '%Y-%m-%d').replace(hour=23, minute=59, second=59)
         date_fin_aware = timezone.make_aware(d_fin)
         commandes = commandes.filter(date_creation__lte=date_fin_aware)
 
     if fidelise_filter == "oui":
-        commandes = commandes.filter(
-            Q(cityclimadetails__fidelise=True) | Q(tapisdetails__fidelise=True)
-        )
+        commandes = commandes.filter(Q(cityclimadetails__fidelise=True) | Q(tapisdetails__fidelise=True))
     elif fidelise_filter == "non":
-        commandes = commandes.filter(
-            Q(cityclimadetails__fidelise=False) | Q(tapisdetails__fidelise=False)
-        )
+        commandes = commandes.filter(Q(cityclimadetails__fidelise=False) | Q(tapisdetails__fidelise=False))
 
     paginator = Paginator(commandes.distinct(), 7)
     page_number = request.GET.get('page')
@@ -397,6 +399,7 @@ def liste_fiches(request):
 
     context = {
         'commandes': page_obj,
+        'search_query': search_query, # <--- AJOUT
         'type_filter': type_filter,
         'statut_filter': statut_filter,
         'nom_filter': nom_filter,
@@ -405,7 +408,6 @@ def liste_fiches(request):
         'date_fin': date_fin,
         'fidelise_filter': fidelise_filter,
     }
-
     return render(request, 'index/liste_fiches.html', context)
 
 @login_required

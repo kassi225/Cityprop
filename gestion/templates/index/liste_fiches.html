@@ -24,7 +24,6 @@
     .date-range-group { display: flex; gap: 4px; }
     .date-range-group input { flex: 1; min-width: 100px; }
 
-    /* Barre de progression */
     .prog-container { width: 100%; background: #eee; border-radius: 10px; height: 15px; margin: 10px 0; overflow: hidden; display: none; }
     .prog-bar { width: 0%; height: 100%; background: #0d6efd; transition: width 0.2s; }
 </style>
@@ -36,11 +35,8 @@
             <form method="GET" action="{% url 'liste_fiches' %}" id="searchForm">
                 <div class="search-container">
                     <i class="fa-solid fa-magnifying-glass"></i>
-                    <input type="text" name="q" id="quickSearch" value="{{ request.GET.q|default:'' }}" class="form-control form-control-sm border-0 shadow-sm" style="width: 220px;" placeholder="Recherche rapide...">
+                    <input type="text" name="q" id="quickSearch" value="{{ search_query }}" class="form-control form-control-sm border-0 shadow-sm" style="width: 220px;" placeholder="Recherche rapide...">
                 </div>
-                {% for key, value in request.GET.items %}{% if key != 'q' and key != 'page' %}
-                <input type="hidden" name="{{ key }}" value="{{ value }}">
-                {% endif %}{% endfor %}
             </form>
 
             <button type="button" onclick="showImportModal()" class="btn btn-primary btn-sm shadow-sm d-flex align-items-center gap-2 px-3">
@@ -82,7 +78,7 @@
                     <option value="ABANDON" {% if statut_filter == "ABANDON" %}selected{% endif %}>Tapis Abandonné</option>
                     <option value="KO_RET" {% if statut_filter == "KO_RET" %}selected{% endif %}>KO - Retouche</option>
                     <option value="OK" {% if statut_filter == "OK" %}selected{% endif %}>OK</option>
-                    <option value="KO_REFUS" {% if statut_filter == "KO_REFUS" %}selected{% endif %}>KO - Refuse</option>
+                    <option value="KO_REFUS" {% if statut_filter == "KO_REFUS" %}selected{% endif %}>KO - Refus</option>
                 </select>
             </div>
 
@@ -166,7 +162,6 @@
                                 {% csrf_token %}
                                 <button type="button" class="btn-icon btn-outline-danger btn-delete-trigger"><i class="fa-solid fa-trash-can"></i></button>
                             </form>
-                            
                         </div>
                     </td>
                 </tr>
@@ -196,18 +191,18 @@
 
 <script>
     // --- RECHERCHE INSTANTANÉE (SERVEUR) ---
-    let timeout = null;
-    document.getElementById('quickSearch').addEventListener('keyup', function() {
-        clearTimeout(timeout);
-        timeout = setTimeout(function() {
-            document.getElementById('searchForm').submit();
-        }, 500); // Lance la recherche 0.5s après la fin de saisie
+    let searchTimeout = null;
+    document.getElementById("quickSearch").addEventListener("input", function() {
+        clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(() => {
+            document.getElementById("searchForm").submit();
+        }, 600); // Soumet après 0.6s de silence
     });
 
-    // Replacer le curseur à la fin du texte après le rechargement
+    // Remettre le focus à la fin de l'input après rechargement
     window.onload = function() {
-        let input = document.getElementById('quickSearch');
-        if (input.value.length > 0) {
+        const input = document.getElementById("quickSearch");
+        if (input.value !== "") {
             input.focus();
             input.setSelectionRange(input.value.length, input.value.length);
         }
@@ -234,14 +229,11 @@
             preConfirm: () => {
                 const file = document.getElementById('fileInput').files[0];
                 if (!file) { Swal.showValidationMessage('Sélectionnez un fichier'); return false; }
-                
                 document.getElementById('progCont').style.display = 'block';
                 document.getElementById('statusMsg').style.display = 'block';
-                
                 let formData = new FormData();
                 formData.append('file', file);
                 formData.append('csrfmiddlewaretoken', '{{ csrf_token }}');
-
                 return new Promise((resolve) => {
                     let xhr = new XMLHttpRequest();
                     xhr.open('POST', "{% url 'import_commandes_ajax' %}", true);
