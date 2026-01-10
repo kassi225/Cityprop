@@ -33,10 +33,15 @@
     <div class="d-flex justify-content-between align-items-center mb-2">
         <h6 class="fw-bold mb-0 text-dark"><i class="fa-solid fa-list-check me-2 text-primary"></i>COMMANDES</h6>
         <div class="d-flex gap-2">
-            <div class="search-container">
-                <i class="fa-solid fa-magnifying-glass"></i>
-                <input type="text" id="quickSearch" class="form-control form-control-sm border-0 shadow-sm" style="width: 220px;" placeholder="Recherche rapide...">
-            </div>
+            <form method="GET" action="{% url 'liste_fiches' %}" id="searchForm">
+                <div class="search-container">
+                    <i class="fa-solid fa-magnifying-glass"></i>
+                    <input type="text" name="q" id="quickSearch" value="{{ request.GET.q|default:'' }}" class="form-control form-control-sm border-0 shadow-sm" style="width: 220px;" placeholder="Recherche rapide...">
+                </div>
+                {% for key, value in request.GET.items %}{% if key != 'q' and key != 'page' %}
+                <input type="hidden" name="{{ key }}" value="{{ value }}">
+                {% endif %}{% endfor %}
+            </form>
 
             <button type="button" onclick="showImportModal()" class="btn btn-primary btn-sm shadow-sm d-flex align-items-center gap-2 px-3">
                 <i class="fa-solid fa-file-import"></i>
@@ -71,10 +76,13 @@
                     <option value="">Statut (Tous)</option>
                     <option value="NON_RESPECTE" {% if statut_filter == "NON_RESPECTE" %}selected{% endif %}>En cours</option>
                     <option value="PRET" {% if statut_filter == "PRET" %}selected{% endif %}>En attente</option>
-                    <option value="CLIENT_INDISPO" {% if statut_filter == "CLIENT_INDISPO" %}selected{% endif %}>Prêt / Indispo</option>
-                    <option value="LIVRE-satisfait" {% if statut_filter == "LIVRE-satisfait" %}selected{% endif %}>Livré satisfait</option>
-                    <option value="LIVRE-insatisfait" {% if statut_filter == "LIVRE-insatisfait" %}selected{% endif %}>Livré insatisfait</option>
+                    <option value="CLIENT_INDISPO" {% if statut_filter == "CLIENT_INDISPO" %}selected{% endif %}>Tapis Prêt client indisponible</option>
+                    <option value="LIVRE-satisfait" {% if statut_filter == "LIVRE-satisfait" %}selected{% endif %}>Livré - client satisfait</option>
+                    <option value="LIVRE-insatisfait" {% if statut_filter == "LIVRE-insatisfait" %}selected{% endif %}>Livré - client insatisfait</option>
                     <option value="ABANDON" {% if statut_filter == "ABANDON" %}selected{% endif %}>Tapis Abandonné</option>
+                    <option value="KO_RET" {% if statut_filter == "KO_RET" %}selected{% endif %}>KO - Retouche</option>
+                    <option value="OK" {% if statut_filter == "OK" %}selected{% endif %}>OK</option>
+                    <option value="KO_REFUS" {% if statut_filter == "KO_REFUS" %}selected{% endif %}>KO - Refuse</option>
                 </select>
             </div>
 
@@ -187,6 +195,24 @@
 </div>
 
 <script>
+    // --- RECHERCHE INSTANTANÉE (SERVEUR) ---
+    let timeout = null;
+    document.getElementById('quickSearch').addEventListener('keyup', function() {
+        clearTimeout(timeout);
+        timeout = setTimeout(function() {
+            document.getElementById('searchForm').submit();
+        }, 500); // Lance la recherche 0.5s après la fin de saisie
+    });
+
+    // Replacer le curseur à la fin du texte après le rechargement
+    window.onload = function() {
+        let input = document.getElementById('quickSearch');
+        if (input.value.length > 0) {
+            input.focus();
+            input.setSelectionRange(input.value.length, input.value.length);
+        }
+    };
+
     // --- LOGIQUE D'IMPORTATION ---
     function showImportModal() {
         Swal.fire({
@@ -243,16 +269,6 @@
             }
         });
     }
-
-    // --- RECHERCHE RAPIDE ---
-    document.getElementById("quickSearch").addEventListener("keyup", function () {
-        let value = this.value.toLowerCase();
-        document.querySelectorAll("tbody tr").forEach(row => {
-            if (!row.innerText.includes("Aucune commande")) {
-                row.style.display = row.innerText.toLowerCase().includes(value) ? "" : "none";
-            }
-        });
-    });
 
     // --- SUPPRESSION ---
     document.querySelectorAll('.btn-delete-trigger').forEach(btn => {
