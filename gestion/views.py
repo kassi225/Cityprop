@@ -393,7 +393,7 @@ def liste_fiches(request):
     elif fidelise_filter == "non":
         commandes = commandes.filter(Q(cityclimadetails__fidelise=False) | Q(tapisdetails__fidelise=False))
 
-    paginator = Paginator(commandes.distinct(), 7)
+    paginator = Paginator(commandes.distinct(), 9)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
 
