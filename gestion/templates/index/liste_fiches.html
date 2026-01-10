@@ -21,9 +21,12 @@
     .search-container i { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: #b2bec3; }
     .search-container input { padding-left: 30px; }
 
-    /* Ajustement spécifique pour les dates et le filtre fidélité */
     .date-range-group { display: flex; gap: 4px; }
     .date-range-group input { flex: 1; min-width: 100px; }
+
+    /* Barre de progression */
+    .prog-container { width: 100%; background: #eee; border-radius: 10px; height: 15px; margin: 10px 0; overflow: hidden; display: none; }
+    .prog-bar { width: 0%; height: 100%; background: #0d6efd; transition: width 0.2s; }
 </style>
 
 <div class="container-fluid mt-2 px-3">
@@ -34,9 +37,15 @@
                 <i class="fa-solid fa-magnifying-glass"></i>
                 <input type="text" id="quickSearch" class="form-control form-control-sm border-0 shadow-sm" style="width: 220px;" placeholder="Recherche rapide...">
             </div>
+
+            <button type="button" onclick="showImportModal()" class="btn btn-primary btn-sm shadow-sm d-flex align-items-center gap-2 px-3">
+                <i class="fa-solid fa-file-import"></i>
+                <span class="fw-bold" style="font-size: 11px;">Importer Commandes</span>
+            </button>
+            
             <a href="{% url 'export_commandes_excel' %}?{{ request.GET.urlencode }}" class="btn btn-success btn-sm shadow-sm d-flex align-items-center gap-2 px-3">
                 <i class="fa-solid fa-file-excel"></i>
-                <span class="fw-bold" style="font-size: 11px;">Exporter Excel</span>
+                <span class="fw-bold" style="font-size: 11px;">Exporter Commandes </span>
             </a>
         </div>
     </div>
@@ -122,9 +131,9 @@
                         <div class="text-truncate" style="font-size: 11px;"><i class="fa-solid fa-location-dot me-1 text-muted"></i>{{ c.localisation_client }}</div>
                         <div class="mt-1" style="font-size: 10px; color: #636e72;">
                             {% if c.type_commande != 'TAPISPROP' and c.cityclimadetails %}
-                                <b>Interv:</b> {{ c.cityclimadetails.date_intervention|default:"-" }} | <b>Sat:</b> {{ c.cityclimadetails.satisfaction|default:"-" }}
+                                <b>Interv:</b> {{ c.cityclimadetails.date_intervention|date:"d/m/y"|default:"-" }} | <b>Sat:</b> {{ c.cityclimadetails.satisfaction|default:"-" }}
                             {% elif c.tapisdetails %}
-                                <b>Livraison:</b> {{ c.tapisdetails.date_livraison|default:"-" }} | <b>Etat:</b> {{ c.tapisdetails.get_statut_display }}
+                                <b>Livraison:</b> {{ c.tapisdetails.date_livraison|date:"d/m/y"|default:"-" }} | <b>Etat:</b> {{ c.tapisdetails.get_statut_display }}
                             {% endif %}
                         </div>
                     </td>
@@ -132,10 +141,7 @@
                         {% if c.cityclimadetails.fidelise or c.tapisdetails.fidelise %}
                             {% with d_id=c.cityclimadetails.id|default:c.tapisdetails.id %}
                                 <a href="{% url 'detail_fidelisation' d_id %}" class="text-decoration-none fidelite-link">
-                                    <span class="badge bg-soft-success text-success border border-success px-2" 
-                                        style="font-size: 9px; transition: transform 0.2s; display: inline-block;"
-                                        onmouseover="this.style.transform='scale(1.1)'" 
-                                        onmouseout="this.style.transform='scale(1)'">
+                                    <span class="badge bg-soft-success text-success border border-success px-2" style="font-size: 9px;">
                                         <i class="fa-solid fa-star me-1"></i>OUI
                                     </span>
                                 </a>
@@ -146,22 +152,18 @@
                     </td>
                     <td>
                         <div class="d-flex gap-2 justify-content-center">
-                            <a href="{% url 'detail_fiche' c.id %}" class="btn-icon btn-edit" title="Éditer la fiche">
-                                <i class="fa-solid fa-pen-to-square"></i>
-                            </a>
-                            {% if request.user.is_superuser or request.user.groups.all.0.name == "ADMIN" %}
+                            <a href="{% url 'detail_fiche' c.id %}" class="btn-icon btn-edit" title="Éditer"><i class="fa-solid fa-pen-to-square"></i></a>
+                            
                             <form action="{% url 'supprimer_commande' c.id %}" method="POST" class="delete-form" data-client="{{ c.nom_client|escapejs }}">
                                 {% csrf_token %}
-                                <button type="button" class="btn-icon btn-outline-danger btn-delete-trigger" title="Supprimer">
-                                    <i class="fa-solid fa-trash-can"></i>
-                                </button>
+                                <button type="button" class="btn-icon btn-outline-danger btn-delete-trigger"><i class="fa-solid fa-trash-can"></i></button>
                             </form>
-                            {% endif %}
+                            
                         </div>
                     </td>
                 </tr>
                 {% empty %}
-                <tr><td colspan="6" class="py-5 text-muted fst-italic">Aucune commande ne correspond à vos critères</td></tr>
+                <tr><td colspan="6" class="py-5 text-muted fst-italic">Aucune commande trouvée</td></tr>
                 {% endfor %}
             </tbody>
         </table>
@@ -185,6 +187,64 @@
 </div>
 
 <script>
+    // --- LOGIQUE D'IMPORTATION ---
+    function showImportModal() {
+        Swal.fire({
+            title: 'Importer Excel',
+            html: `
+                <div class="text-start" style="font-size:12px;">
+                    <div class="alert alert-info p-2 mb-3">
+                        <i class="fa-solid fa-circle-info me-1"></i>
+                        <a href="{% url 'generer_modele_excel' %}" class="fw-bold text-decoration-none">Télécharger le modèle (.xlsx)</a>
+                    </div>
+                    <label class="mb-2 fw-bold">Sélectionnez le fichier :</label>
+                    <input type="file" id="fileInput" accept=".xlsx, .xls" class="form-control form-control-sm mb-3">
+                    <div id="progCont" class="prog-container"><div id="progB" class="prog-bar"></div></div>
+                    <small id="statusMsg" class="text-primary fw-bold" style="display:none;">Importation en cours...</small>
+                </div>
+            `,
+            showCancelButton: true,
+            confirmButtonText: 'Lancer l\'import',
+            preConfirm: () => {
+                const file = document.getElementById('fileInput').files[0];
+                if (!file) { Swal.showValidationMessage('Sélectionnez un fichier'); return false; }
+                
+                document.getElementById('progCont').style.display = 'block';
+                document.getElementById('statusMsg').style.display = 'block';
+                
+                let formData = new FormData();
+                formData.append('file', file);
+                formData.append('csrfmiddlewaretoken', '{{ csrf_token }}');
+
+                return new Promise((resolve) => {
+                    let xhr = new XMLHttpRequest();
+                    xhr.open('POST', "{% url 'import_commandes_ajax' %}", true);
+                    xhr.upload.onprogress = (e) => {
+                        if (e.lengthComputable) {
+                            let percent = (e.loaded / e.total) * 100;
+                            document.getElementById('progB').style.width = percent + '%';
+                        }
+                    };
+                    xhr.onload = function() {
+                        if (xhr.status === 200) resolve(JSON.parse(xhr.responseText));
+                        else {
+                            let err = JSON.parse(xhr.responseText);
+                            Swal.showValidationMessage(`Erreur: ${err.message}`);
+                            document.getElementById('progCont').style.display = 'none';
+                            resolve(false);
+                        }
+                    };
+                    xhr.send(formData);
+                });
+            }
+        }).then((result) => {
+            if (result.isConfirmed && result.value) {
+                Swal.fire('Succès !', result.value.message, 'success').then(() => location.reload());
+            }
+        });
+    }
+
+    // --- RECHERCHE RAPIDE ---
     document.getElementById("quickSearch").addEventListener("keyup", function () {
         let value = this.value.toLowerCase();
         document.querySelectorAll("tbody tr").forEach(row => {
@@ -194,6 +254,7 @@
         });
     });
 
+    // --- SUPPRESSION ---
     document.querySelectorAll('.btn-delete-trigger').forEach(btn => {
         btn.addEventListener('click', function(e) {
             const form = this.closest('.delete-form');
@@ -204,10 +265,8 @@
                 icon: 'warning',
                 showCancelButton: true,
                 confirmButtonColor: '#d33',
-                cancelButtonColor: '#3085d6',
                 confirmButtonText: 'Oui, supprimer !',
-                cancelButtonText: 'Annuler',
-                heightAuto: false
+                cancelButtonText: 'Annuler'
             }).then((result) => { if (result.isConfirmed) form.submit(); });
         });
     });

@@ -46,6 +46,9 @@ urlpatterns = [
     path('caisse/excel/<int:mois>/<int:annee>/', views.export_caisse_excel, name='export_excel'),
     path('caisse/pdf/<int:mois>/<int:annee>/', views.export_caisse_pdf, name='export_pdf'),
     path('caisse/', views.gestion_caisse, name='gestion_caisse'),
+    
+    path('import-ajax/', views.import_commandes_ajax, name='import_commandes_ajax'),
+    path('modele-excel/', views.generer_modele_excel, name='generer_modele_excel'),
 
 
 ]

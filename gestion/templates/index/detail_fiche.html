@@ -95,9 +95,14 @@ input, select, textarea { font-size: 0.85rem; padding: 0.5rem 0.75rem; border-ra
                     {% elif commande.type_commande == 'TAPISPROP' and tapis %}
                         <div class="row g-2 small">
                             <div class="col-6"><strong>Ramassage:</strong> <span class="text-primary">{{ tapis.date_ramassage|date:"d/m/Y"|default:"-" }}</span></div>
+                            
+                            <div class="col-6"><strong>Fin traitement:</strong> <span class="text-danger fw-bold">{{ tapis.date_traitement|date:"d/m/Y"|default:"-" }}</span></div>
+                            
                             <div class="col-6"><strong>Livraison:</strong> <span class="text-primary">{{ tapis.date_livraison|date:"d/m/Y"|default:"-" }}</span></div>
                             <div class="col-6"><strong>Nb tapis:</strong> <span class="fw-bold">{{ tapis.nombre_tapis }}</span></div>
+                            
                             <div class="col-6"><strong>Coût:</strong> <span class="fw-bold text-success">{{ tapis.cout }} FCFA</span></div>
+                            
                             <div class="col-12 mt-2">
                                 <strong>Statut actuel:</strong> 
                                 <span class="badge bg-dark">{{ tapis.get_statut_display }}</span>
@@ -222,38 +227,46 @@ input, select, textarea { font-size: 0.85rem; padding: 0.5rem 0.75rem; border-ra
                                     </select>
                                 </div>
                             </div>
-                        {% elif commande.type_commande == 'TAPISPROP' %}
-                            <div class="row g-3 p-2 bg-light rounded border mt-3 mx-0">
-                                <div class="col-md-6">
-                                    <label class="form-label small fw-bold">Date Ramassage</label>
-                                    <input type="date" name="date_ramassage" class="form-control" value="{{ tapis.date_ramassage|date:'Y-m-d' }}">
+                            {% elif commande.type_commande == 'TAPISPROP' %}
+                                <div class="row g-3 p-2 bg-light rounded border mt-3 mx-0">
+                                    <div class="col-md-4">
+                                        <label class="form-label small fw-bold">Date Ramassage</label>
+                                        <input type="date" name="date_ramassage" class="form-control" value="{{ tapis.date_ramassage|date:'Y-m-d' }}">
+                                    </div>
+                                    
+                                    <div class="col-md-4">
+                                        <label class="form-label small fw-bold">Date Fin Traitement</label>
+                                        <input type="date" name="date_traitement" class="form-control" value="{{ tapis.date_traitement|date:'Y-m-d' }}">
+                                    </div>
+
+                                    <div class="col-md-4">
+                                        <label class="form-label small fw-bold">Date Livraison</label>
+                                        <input type="date" name="date_livraison" class="form-control" value="{{ tapis.date_livraison|date:'Y-m-d' }}">
+                                    </div>
+
+                                    <div class="col-md-4">
+                                        <label class="form-label small fw-bold">Nb Tapis</label>
+                                        <input type="number" name="nombre_tapis" class="form-control" value="{{ tapis.nombre_tapis }}">
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label small fw-bold">Coût Estimé</label>
+                                        <input type="number" name="cout" class="form-control" value="{{ tapis.cout }}">
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label small fw-bold">Statut</label>
+                                        <select name="statut" class="form-select">
+                                            {% for code, label in tapis.STATUT_CHOICES %}
+                                                <option value="{{ code }}" {% if tapis.statut == code %}selected{% endif %}>{{ label }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+
+                                    <div class="col-12">
+                                        <label class="form-label small fw-bold">Commentaire</label>
+                                        <textarea name="commentaire" class="form-control" rows="2">{{ tapis.commentaire }}</textarea>
+                                    </div>
                                 </div>
-                                <div class="col-md-6">
-                                    <label class="form-label small fw-bold">Date Livraison</label>
-                                    <input type="date" name="date_livraison" class="form-control" value="{{ tapis.date_livraison|date:'Y-m-d' }}">
-                                </div>
-                                <div class="col-md-4">
-                                    <label class="form-label small fw-bold">Nb Tapis</label>
-                                    <input type="number" name="nombre_tapis" class="form-control" value="{{ tapis.nombre_tapis }}">
-                                </div>
-                                <div class="col-md-4">
-                                    <label class="form-label small fw-bold">Coût Estimé</label>
-                                    <input type="number" name="cout" class="form-control" value="{{ tapis.cout }}">
-                                </div>
-                                <div class="col-md-4">
-                                    <label class="form-label small fw-bold">Statut</label>
-                                    <select name="statut" class="form-select">
-                                        {% for code, label in tapis.STATUT_CHOICES %}
-                                            <option value="{{ code }}" {% if tapis.statut == code %}selected{% endif %}>{{ label }}</option>
-                                        {% endfor %}
-                                    </select>
-                                </div>
-                                <div class="col-12">
-                                    <label class="form-label small fw-bold">Commentaire</label>
-                                    <textarea name="commentaire" class="form-control" rows="2">{{ tapis.commentaire }}</textarea>
-                                </div>
-                            </div>
-                        {% endif %}
+                            {% endif %}
 
                         <div class="col-12 mt-4 d-flex justify-content-between">
                             <button type="submit" class="btn btn-success px-4">

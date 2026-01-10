@@ -2,46 +2,49 @@
 import datetime
 from io import BytesIO
 from datetime import timedelta
-from django.db.models import Sum
-from django.forms import modelformset_factory
-from django.urls import reverse
-from .models import Facture, OperationCaisse
-from datetime import datetime
+
+# 2. Bibliothèques Tierces (Data & Excel)
+import pandas as pd
+from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
-from openpyxl.utils import get_column_letter # Import nécessaire pour la correction
-from openpyxl.utils import get_column_letter # Import nécessaire pour la correction
+from openpyxl.utils import get_column_letter, quote_sheetname
+from openpyxl.worksheet.datavalidation import DataValidation
+from num2words import num2words
+from xhtml2pdf import pisa
 
-
-# 2. Django Core (Raccourcis, Auth, Base)
+# 3. Django Core (Raccourcis, Réponses & Auth)
 from django.shortcuts import render, get_object_or_404, redirect
-from django.http import HttpResponse
+from django.http import HttpResponse, JsonResponse
 from django.contrib import messages
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required, user_passes_test
+from django.template.loader import get_template
+from django.urls import reverse
 from django.utils import timezone
 
-# 3. Django Database (Modèles, Requêtes, Transactions)
+# 4. Django Database & Forms
 from django.db import transaction
-from django.db.models import Count, Q
+from django.db.models import Sum, Count, Q
 from django.core.paginator import Paginator
+from django.forms import modelformset_factory
 
-# 4. Bibliothèques Tierces (Excel, PDF, Texte)
-from openpyxl import Workbook
-from openpyxl.styles import Font, PatternFill, Alignment
-from xhtml2pdf import pisa
-from django.template.loader import get_template
-from num2words import num2words
-
-# 5. Vos modèles (Regroupés en une seule ligne)
+# 5. Vos Modèles Locaux (Regroupés proprement)
 from .models import (
     Commande, 
     CityClimaDetails, 
-    FidelisationNote, 
     TapisDetails, 
+    FidelisationNote, 
     Facture, 
-    FactureLigne
-    
+    FactureLigne, 
+    OperationCaisse,
+    TapisAlerteCommentaire  # Ajouté car présent dans votre models.py précédent
 )
+from django.http import JsonResponse, HttpResponse
+from django.contrib.auth.decorators import login_required
+from django.utils import timezone
+from openpyxl.styles import PatternFill, Font, Alignment
+from openpyxl.worksheet.datavalidation import DataValidation
+from .models import Commande, CityClimaDetails, TapisDetails
 
 
 
@@ -64,7 +67,6 @@ def is_admin(user):
     return user.is_superuser or user.groups.filter(name='ADMIN').exists()
 
 @login_required
-@user_passes_test(is_admin)
 def supprimer_commande(request, id):
     if request.method == 'POST':
         commande = get_object_or_404(Commande, id=id)
@@ -1480,3 +1482,176 @@ def gestion_caisse(request):
         'liste_mois': dict(LISTE_MOIS),
         'solde_annuel': solde_annuel,
     })
+    
+
+# Dictionnaire de correspondance (Label Excel -> Code Base de données)
+TRADUCTION_STATUTS = {
+    'En cours': 'NON_RESPECTE',
+    'En attente': 'PRET',
+    'Tapis prêt Client indisponible': 'CLIENT_INDISPO',
+    'Livré - Client satisfait': 'LIVRE_SATISFAIT',
+    'Livré - Client insatisfait': 'LIVRE_INSATISFAIT',
+    'Tapis abandonné': 'ABANDON',
+    'OK': 'OK',
+    'KO_Retouche': 'KO_RET',
+    'KO_Refus': 'KO_REFUS'
+}
+
+@login_required
+def import_commandes_ajax(request):
+    if request.method == 'POST' and request.FILES.get('file'):
+        try:
+            file = request.FILES['file']
+            df = pd.read_excel(file)
+            df.columns = [c.strip() for c in df.columns]
+            df = df.replace({pd.NA: None, float('nan'): None}) 
+
+            count = 0
+            doublons_ignores = 0
+            
+            with transaction.atomic():
+                for index, row in df.iterrows():
+                    line_num = index + 2 
+
+                    # --- 1. RÉCUPÉRATION ET VALIDATION DATE (OBLIGATOIRE) ---
+                    raw_date_crea = row.get('Date')
+                    if not raw_date_crea:
+                        raise ValueError(f"Ligne {line_num}: La 'Date' (Création) est obligatoire.")
+                    
+                    try:
+                        date_enregistre = pd.to_datetime(raw_date_crea).date()
+                    except:
+                        raise ValueError(f"Ligne {line_num}: Format de Date '{raw_date_crea}' invalide.")
+
+                    # --- 2. AUTRES PILIERS ---
+                    nom = str(row.get('Nom Client') or '').strip()
+                    num = str(row.get('Numéro Client') or '').strip()
+                    loc = str(row.get('Localisation') or '').strip()
+                    raw_type = str(row.get('Type Commande') or '').strip().upper()
+
+                    if not all([nom, num, loc, raw_type]):
+                        raise ValueError(f"Ligne {line_num}: Nom, Numéro, Localisation et Type sont obligatoires.")
+
+                    # --- 3. GESTION DES DOUBLONS ---
+                    if Commande.objects.filter(nom_client=nom, numero_client=num, 
+                                            date_creation=date_enregistre, type_commande=raw_type).exists():
+                        doublons_ignores += 1
+                        continue
+
+                    # --- 4. CRÉATION DE LA COMMANDE ---
+                    commande = Commande.objects.create(
+                        nom_client=nom, numero_client=num,
+                        localisation_client=loc, type_commande=raw_type,
+                        date_creation=date_enregistre
+                    )
+
+                    # --- 5. GESTION DES DÉTAILS ---
+                    is_fidelise = str(row.get('Fidélisé') or '').strip().lower() in ['oui', 'yes', 'true', '1']
+                    
+                    def get_opt_date(val):
+                        if val is None or str(val).strip() == '': return None
+                        try: return pd.to_datetime(val).date()
+                        except: return None
+
+                    # Traduction du statut Excel -> Code technique
+                    statut_label = str(row.get('Satisfaction / Statut') or 'En cours').strip()
+                    statut_technique = TRADUCTION_STATUTS.get(statut_label, 'NON_RESPECTE')
+
+                    if raw_type in ['CITYPROP', 'CLIMATISEUR']:
+                        CityClimaDetails.objects.create(
+                            commande=commande,
+                            date_intervention=get_opt_date(row.get('Date Intervention')) or date_enregistre,
+                            fidelise=is_fidelise,
+                            satisfaction=statut_technique
+                        )
+                    
+                    elif raw_type == 'TAPISPROP':
+                        try:
+                            nb = int(float(row.get('Tapis (Nb)') or 0))
+                            prix = float(row.get('Coût') or 0)
+                        except: nb, prix = 0, 0
+
+                        TapisDetails.objects.create(
+                            commande=commande,
+                            fidelise=is_fidelise,
+                            nombre_tapis=nb,
+                            cout=prix,
+                            date_ramassage=get_opt_date(row.get('Date Ramassage')) or date_enregistre,
+                            date_traitement=get_opt_date(row.get('Date Fin Traitement')),
+                            date_livraison=get_opt_date(row.get('Date Livraison')),
+                            statut=statut_technique,
+                            commentaire=str(row.get('Commentaire') or '').strip()
+                        )
+                    count += 1
+
+            return JsonResponse({'status': 'success', 'message': f'{count} importés, {doublons_ignores} doublons ignorés.'})
+        except ValueError as e:
+            return JsonResponse({'status': 'error', 'message': str(e)}, status=400)
+        except Exception as e:
+            return JsonResponse({'status': 'error', 'message': f"Erreur: {str(e)}"}, status=400)
+    return JsonResponse({'status': 'error', 'message': 'Fichier manquant.'}, status=400)
+
+@login_required
+def generer_modele_excel(request):
+    colonnes = [
+        'Nom Client', 'Numéro Client', 'Localisation', 'Type Commande', 'Date', 
+        'Date Intervention', 'Date Ramassage', 'Date Fin Traitement', 'Date Livraison', 
+        'Satisfaction / Statut', 'Fidélisé', 'Tapis (Nb)', 'Coût', 'Commentaire'
+    ]
+    
+    # Données d'exemple avec les LABELS EXACTS du dictionnaire
+    data_exemples = [
+        ['Jean Dupont', '0102030405', 'Plateau', 'CITYPROP', '05/01/2026', '06/01/2026', None, None, None, 'OK', 'oui', None, 15000, 'Passage mensuel'],
+        ['Marie Koné', '0708091011', 'Cocody', 'CLIMATISEUR', '05/01/2026', '07/01/2026', None, None, None, 'OK', 'non', None, 25000, 'Entretien split'],
+        ['Ahmed Sylla', '0506070809', 'Marcory', 'TAPISPROP', '06/01/2026', None, '06/01/2026', '08/01/2026', '09/01/2026', 'Livré - Client satisfait', 'oui', 3, 12000, 'Tapis salon'],
+        ['Moussa Diop', '0202020202', 'Treichville', 'CLIMATISEUR', '07/01/2026', '08/01/2026', None, None, None, 'KO_Refus', 'non', None, 30000, 'Rappeler demain'],
+        ['Sarah Kouamé', '0303030303', 'Bingerville', 'TAPISPROP', '07/01/2026', None, '07/01/2026', None, None, 'En cours', 'non', 1, 5000, 'À récupérer'],
+    ]
+
+    df = pd.DataFrame(data_exemples, columns=colonnes)
+    response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    response['Content-Disposition'] = 'attachment; filename="modele_commandes.xlsx"'
+    
+    with pd.ExcelWriter(response, engine='openpyxl') as writer:
+        df.to_excel(writer, index=False, sheet_name='Import')
+        ws = writer.sheets['Import']
+
+        # --- VALIDATION STATUTS (Colonne J) ---
+        # Note: Les labels doivent être séparés par des virgules SANS ESPACES après la virgule
+        labels_liste = "En cours,En attente,Tapis prêt Client indisponible,Livré - Client satisfait,Livré - Client insatisfait,Tapis abandonné,OK,KO_Retouche,KO_Refus"
+        
+        dv_sat = DataValidation(type="list", formula1=f'"{labels_liste}"', allow_blank=True)
+        dv_sat.errorTitle = 'Sélection invalide'
+        dv_sat.error = 'Veuillez choisir un statut dans la liste.'
+        ws.add_data_validation(dv_sat)
+        dv_sat.add('J2:J1000') # Applique à la colonne Satisfaction / Statut
+
+        # --- VALIDATION FIDÉLISÉ (Colonne K) ---
+        dv_fid = DataValidation(type="list", formula1='"oui,non"', allow_blank=True)
+        ws.add_data_validation(dv_fid)
+        dv_fid.add('K2:K1000')
+
+        # --- VALIDATION TYPE (Colonne D) ---
+        dv_type = DataValidation(type="list", formula1='"CITYPROP,CLIMATISEUR,TAPISPROP"', allow_blank=False)
+        ws.add_data_validation(dv_type)
+        dv_type.add('D2:D1000')
+
+        # --- STYLE ET COULEURS ---
+        red_fill = PatternFill(start_color="FFCCCC", end_color="FFCCCC", fill_type="solid")
+        header_fill = PatternFill(start_color="4F81BD", end_color="4F81BD", fill_type="solid")
+        
+        for cell in ws[1]:
+            cell.font = Font(bold=True, color="FFFFFF")
+            cell.fill = header_fill
+            cell.alignment = Alignment(horizontal="center")
+
+        for row in range(2, 100): # On colore les 100 premières lignes en rouge pour la date
+            ws[f'E{row}'].fill = red_fill
+
+        # Ajustement largeur
+        ws.column_dimensions['J'].width = 35 # Statut (plus large pour les longs textes)
+        ws.column_dimensions['A'].width = 20 # Nom
+        ws.column_dimensions['D'].width = 15 # Type
+
+    return response
+
