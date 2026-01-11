@@ -28,7 +28,12 @@ from django.utils import timezone
 from django.db import transaction
 from django.db.models import Sum, Count, Q
 from django.core.paginator import Paginator
-from django.forms import modelformset_factory
+from django.forms import DateField, modelformset_factory
+from django.shortcuts import render
+from django.db.models import Q, F
+from django.db.models.functions import Coalesce,Cast,TruncDate
+from django.core.paginator import Paginator
+from .models import Commande
 
 # 5. Vos Modèles Locaux (Regroupés proprement)
 from .models import (
@@ -349,68 +354,99 @@ def nouvelle_commande(request):
     return render(request, 'index/nouvelle_commande.html')
 @login_required
 def liste_fiches(request):
-    commandes = Commande.objects.all().order_by('-date_creation')
+    # 1. Optimisation SQL initiale
+    commandes_qs = Commande.objects.select_related('cityclimadetails', 'tapisdetails').all()
 
-    # Récupération des paramètres
-    search_query = request.GET.get('q', '')  # <--- AJOUT POUR RECHERCHE RAPIDE
+    # 2. Récupération de TOUS les filtres
+    search_query = request.GET.get('q', '')
     type_filter = request.GET.get('type_commande', '')
     statut_filter = request.GET.get('statut', '')
     nom_filter = request.GET.get('nom_client', '')
     numero_filter = request.GET.get('numero_client', '')
-    date_debut = request.GET.get('date_debut', '')
-    date_fin = request.GET.get('date_fin', '')
+    date_crea = request.GET.get('date_crea', '') # Date de saisie
+    date_debut = request.GET.get('date_debut', '') # Plage opération début
+    date_fin = request.GET.get('date_fin', '')     # Plage opération fin
     fidelise_filter = request.GET.get('fidelise', '')
 
-    # LOGIQUE DE RECHERCHE GLOBALE (S'applique à toutes les colonnes)
+    # 3. Application des filtres sur le QuerySet (SQL)
     if search_query:
-        commandes = commandes.filter(
+        commandes_qs = commandes_qs.filter(
             Q(nom_client__icontains=search_query) |
             Q(numero_client__icontains=search_query) |
             Q(localisation_client__icontains=search_query)
         )
-
     if type_filter:
-        commandes = commandes.filter(type_commande=type_filter)
+        commandes_qs = commandes_qs.filter(type_commande=type_filter)
+    
+    if nom_filter:
+        commandes_qs = commandes_qs.filter(nom_client__icontains=nom_filter)
+        
+    if numero_filter:
+        commandes_qs = commandes_qs.filter(numero_client__icontains=numero_filter)
+
+    if date_crea:
+        commandes_qs = commandes_qs.filter(date_creation__date=date_crea)
 
     if statut_filter:
-        commandes = commandes.filter(tapisdetails__statut=statut_filter)
-
-    if nom_filter:
-        commandes = commandes.filter(nom_client__icontains=nom_filter)
-
-    if numero_filter:
-        commandes = commandes.filter(numero_client__icontains=numero_filter)
-
-    if date_debut:
-        d_debut = datetime.datetime.strptime(date_debut, '%Y-%m-%d')
-        date_debut_aware = timezone.make_aware(d_debut)
-        commandes = commandes.filter(date_creation__gte=date_debut_aware)
-
-    if date_fin:
-        d_fin = datetime.datetime.strptime(date_fin, '%Y-%m-%d').replace(hour=23, minute=59, second=59)
-        date_fin_aware = timezone.make_aware(d_fin)
-        commandes = commandes.filter(date_creation__lte=date_fin_aware)
+        commandes_qs = commandes_qs.filter(
+            Q(tapisdetails__statut=statut_filter) | 
+            Q(cityclimadetails__satisfaction=statut_filter)
+        )
 
     if fidelise_filter == "oui":
-        commandes = commandes.filter(Q(cityclimadetails__fidelise=True) | Q(tapisdetails__fidelise=True))
+        commandes_qs = commandes_qs.filter(Q(cityclimadetails__fidelise=True) | Q(tapisdetails__fidelise=True))
     elif fidelise_filter == "non":
-        commandes = commandes.filter(Q(cityclimadetails__fidelise=False) | Q(tapisdetails__fidelise=False))
+        commandes_qs = commandes_qs.filter(Q(cityclimadetails__fidelise=False) | Q(tapisdetails__fidelise=False))
 
-    paginator = Paginator(commandes.distinct(), 9)
+    # 4. Conversion en liste pour le TRI MÉTIER
+    commandes_list = list(commandes_qs.distinct())
+
+    def obtenir_date_tri(cmd):
+        """Récupère la date d'opération (ramassage ou intervention)"""
+        try:
+            if cmd.type_commande == 'TAPISPROP' and cmd.tapisdetails:
+                return cmd.tapisdetails.date_ramassage or cmd.date_creation.date()
+            if cmd.cityclimadetails:
+                return cmd.cityclimadetails.date_intervention or cmd.date_creation.date()
+        except:
+            pass
+        return cmd.date_creation.date()
+
+    # Tri par date d'opération (du plus récent au plus ancien)
+    commandes_list.sort(key=obtenir_date_tri, reverse=True)
+
+    # 5. Filtrage par PLAGE de date d'opération (sur la liste triée)
+    if date_debut or date_fin:
+        try:
+            d_deb = datetime.datetime.strptime(date_debut, '%Y-%m-%d').date() if date_debut else None
+            d_fin = datetime.datetime.strptime(date_fin, '%Y-%m-%d').date() if date_fin else None
+            commandes_list = [
+                c for c in commandes_list 
+                if (not d_deb or obtenir_date_tri(c) >= d_deb) and (not d_fin or obtenir_date_tri(c) <= d_fin)
+            ]
+        except ValueError:
+            pass
+
+    # 6. PAGINATION (Indispensable pour définir page_obj)
+    paginator = Paginator(commandes_list, 9) # 15 par page
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
 
+    # 7. CONTEXTE COMPLET
     context = {
-        'commandes': page_obj,
-        'search_query': search_query, # <--- AJOUT
+        'commandes': page_obj,  # C'est ici que page_obj est passé au template
+        'today': timezone.now().date(),
+        'search_query': search_query,
         'type_filter': type_filter,
         'statut_filter': statut_filter,
         'nom_filter': nom_filter,
         'numero_filter': numero_filter,
+        'date_crea': date_crea,
         'date_debut': date_debut,
         'date_fin': date_fin,
         'fidelise_filter': fidelise_filter,
     }
+    
     return render(request, 'index/liste_fiches.html', context)
 
 @login_required
@@ -1667,7 +1703,7 @@ def suivi_atelier_tapis(request):
     date_filtre = request.GET.get('date', '')
 
     tapis_list = TapisDetails.objects.filter(
-        statut__in=['NON_RESPECTE', 'PRET', 'CLIENT_INDISPO']
+        statut__in=['NON_RESPECTE']
     ).select_related('commande')
 
     # 🔎 FILTRE NOM / NUMÉRO
@@ -1714,6 +1750,8 @@ def suivi_atelier_tapis(request):
     return render(request, 'index/suivi_tapis.html', {
         'page_obj': page_obj
     })
+    
+    
 
 
 
