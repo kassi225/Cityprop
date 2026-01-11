@@ -148,6 +148,12 @@
                 </a>
             </li>
 
+            <li>
+                <a href="{% url 'suivi_atelier_tapis' %}" class="{% if request.resolver_match.url_name == 'suivi_atelier_tapis' %}active{% endif %}">
+                    <i class="fa-solid fa-clock-rotate-left"></i> Suivi Atelier Tapis
+                </a>
+            </li>
+
             <li><a href="{% url 'listes_tapis_abandon' %}" class="{% if request.resolver_match.url_name == 'listes_tapis_abandon' %}active{% endif %}"><i class="fa-solid fa-box-open"></i> Tapis abandonnés</a></li>
             
             {% if request.user.is_superuser or request.user.groups.all.0.name == "ADMIN" %}

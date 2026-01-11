@@ -11,6 +11,8 @@ from openpyxl.utils import get_column_letter, quote_sheetname
 from openpyxl.worksheet.datavalidation import DataValidation
 from num2words import num2words
 from xhtml2pdf import pisa
+from django.db.models import Q
+from datetime import date, timedelta
 
 # 3. Django Core (Raccourcis, Réponses & Auth)
 from django.shortcuts import render, get_object_or_404, redirect
@@ -158,7 +160,7 @@ def modifier_facture(request, pk):
     })
 
 # Cette fonction est essentielle pour la conversion PDF
-@login_required
+
 def render_to_pdf(template_src, context_dict={}):
     template = get_template(template_src)
     html  = template.render(context_dict)
@@ -175,7 +177,6 @@ def render_to_pdf(template_src, context_dict={}):
     return HttpResponse('Nous avons rencontré des erreurs lors de la génération du PDF: %s' % html)
 
 
-@login_required
 def telecharger_devis_pdf(request, facture_id):
     """
     Génère et télécharge le PDF d'une facture/devis spécifique.
@@ -285,7 +286,6 @@ def dashboard(request):
 @login_required
 def nouvelle_commande(request):
     if request.method == 'POST':
-
         nom = request.POST.get('nom_client')
         numero = request.POST.get('numero_client')
         loc = request.POST.get('localisation_client')
@@ -295,7 +295,7 @@ def nouvelle_commande(request):
             messages.error(request, "Veuillez remplir tous les champs obligatoires.")
             return render(request, 'index/nouvelle_commande.html')
 
-        # Création commande
+        # 1. Création de la commande de base
         commande = Commande.objects.create(
             nom_client=nom,
             numero_client=numero,
@@ -303,47 +303,50 @@ def nouvelle_commande(request):
             type_commande=type_cmd
         )
 
-        # Details CITYCLIMA
+        # 2. Section CITYCLIMA (Uniquement si le type correspond)
         if type_cmd in ['CITYPROP', 'CLIMATISEUR']:
             date_inter = request.POST.get('date_intervention')
             satisfaction = request.POST.get('satisfaction')
+            designation = request.POST.get('designation')
+            cout_clim = request.POST.get('cout_clim')
 
-            if date_inter or satisfaction:
+            if any([date_inter, satisfaction, designation, cout_clim]):
                 CityClimaDetails.objects.create(
                     commande=commande,
                     date_intervention=date_inter or None,
-                    satisfaction=satisfaction or None
+                    satisfaction=satisfaction or None,
+                    designation=designation or "",
+                    cout=int(cout_clim) if cout_clim else 0  # Conversion en entier
                 )
 
-        # Details TAPIS
-        if type_cmd == 'TAPISPROP':
+        # 3. Section TAPIS (Uniquement si le type correspond)
+        elif type_cmd == 'TAPISPROP':
             date_ramassage = request.POST.get('date_ramassage')
             nombre = request.POST.get('nombre_tapis')
-            cout = request.POST.get('cout')
+            cout_tapis = request.POST.get('cout')
             traitement = request.POST.get('date_traitement')
+            prevue = request.POST.get('date_prevue_livraison')
             livraison = request.POST.get('date_livraison')
             commentaire = request.POST.get('commentaire')
+            statut = request.POST.get('statut')
 
-            if date_ramassage or nombre or cout or traitement or livraison or commentaire:
+            if any([date_ramassage, nombre, cout_tapis, traitement, prevue, livraison, commentaire]):
                 TapisDetails.objects.create(
                     commande=commande,
                     date_ramassage=date_ramassage or None,
-                    nombre_tapis=nombre or 0,
-                    cout=cout or 0,
+                    nombre_tapis=int(nombre) if nombre else 0,
+                    cout=int(cout_tapis) if cout_tapis else 0,
                     date_traitement=traitement or None,
+                    date_prevue_livraison=prevue or None,
                     date_livraison=livraison or None,
                     commentaire=commentaire or "",
-                    statut=request.POST.get('statut') or "NON_RESPECTE"
+                    statut=statut or "NON_RESPECTE"
                 )
 
         messages.success(request, "La commande a été créée avec succès !")
         return redirect('liste_fiches')
-    
 
     return render(request, 'index/nouvelle_commande.html')
-
-
-
 @login_required
 def liste_fiches(request):
     commandes = Commande.objects.all().order_by('-date_creation')
@@ -426,58 +429,64 @@ def detail_fiche(request, fiche_id):
         commande.type_commande = request.POST.get('type_commande', commande.type_commande)
         commande.save()
 
-        # --- 2. Mise à jour détails CityClima (Cityprop / Climatiseur) ---
+        # --- 2. Mise à jour détails CityClima (Désignation + Coût inclus) ---
         if commande.type_commande in ['CITYPROP', 'CLIMATISEUR']:
             date_int = request.POST.get('date_intervention') or None
             satisfact = request.POST.get('satisfaction') or None
+            desig = request.POST.get('designation', '')
+            c_clim = request.POST.get('cout_clim') or 0
             
             if cityclima:
                 cityclima.date_intervention = date_int
                 cityclima.satisfaction = satisfact
+                cityclima.designation = desig
+                cityclima.cout = int(c_clim)
                 cityclima.save()
-            elif date_int or satisfact:
+            elif any([date_int, satisfact, desig, c_clim]):
                 CityClimaDetails.objects.create(
                     commande=commande,
                     date_intervention=date_int,
-                    satisfaction=satisfact
+                    satisfaction=satisfact,
+                    designation=desig,
+                    cout=int(c_clim)
                 )
 
-        # --- 3. Mise à jour détails Tapis (Tapisprop) ---
+        # --- 3. Mise à jour détails Tapis (Date prévue incluse) ---
         elif commande.type_commande == 'TAPISPROP':
-            # On récupère toutes les données du formulaire
             d_ramassage = request.POST.get('date_ramassage') or None
-            d_livraison = request.POST.get('date_livraison') or None
             d_traitement = request.POST.get('date_traitement') or None
+            d_prevue = request.POST.get('date_prevue_livraison') or None # Nouveau
+            d_livraison = request.POST.get('date_livraison') or None
             nb_tapis = request.POST.get('nombre_tapis') or 0
             prix_cout = request.POST.get('cout') or 0
             stat = request.POST.get('statut') or 'NON_RESPECTE'
             comm = request.POST.get('commentaire', '')
 
             if tapis:
-                # MISE À JOUR SYSTÉMATIQUE (Permet la modification)
                 tapis.date_ramassage = d_ramassage
-                tapis.date_livraison = d_livraison  # <--- Sera mis à jour correctement
                 tapis.date_traitement = d_traitement
-                tapis.nombre_tapis = nb_tapis
-                tapis.cout = prix_cout
+                tapis.date_prevue_livraison = d_prevue # Mise à jour
+                tapis.date_livraison = d_livraison
+                tapis.nombre_tapis = int(nb_tapis)
+                tapis.cout = int(prix_cout)
                 tapis.statut = stat
                 tapis.commentaire = comm
                 tapis.save()
             else:
-                # CRÉATION si n'existait pas encore
-                if any([d_ramassage, d_livraison, nb_tapis, prix_cout]):
+                if any([d_ramassage, d_traitement, d_prevue, d_livraison, nb_tapis, prix_cout]):
                     TapisDetails.objects.create(
                         commande=commande,
                         date_ramassage=d_ramassage,
-                        date_livraison=d_livraison,
                         date_traitement=d_traitement,
-                        nombre_tapis=nb_tapis,
-                        cout=prix_cout,
+                        date_prevue_livraison=d_prevue, # Création
+                        date_livraison=d_livraison,
+                        nombre_tapis=int(nb_tapis),
+                        cout=int(prix_cout),
                         statut=stat,
                         commentaire=comm
                     )
 
-        messages.success(request, "La fiche et les dates ont été mises à jour !")
+        messages.success(request, "La fiche a été mise à jour avec succès !")
         return redirect('detail_fiche', fiche_id=fiche_id)
 
     # Contexte pour le rendu
@@ -488,8 +497,6 @@ def detail_fiche(request, fiche_id):
         'factures': Facture.objects.filter(commande=commande).order_by('-date_emission'),
     }
     return render(request, 'index/detail_fiche.html', context)
-
-
 @login_required
 def creer_facture(request, fiche_id):
     """
@@ -942,52 +949,28 @@ def detail_alerte_tapis(request, id):
     return render(request, "index/detail_alerte_tapis.html", context)
 
 @login_required
+@login_required
 def export_commandes_excel(request):
     commandes = Commande.objects.all().order_by('-date_creation')
 
-    # mêmes filtres que liste_fiches
-    type_filter = request.GET.get('type_commande', '')
-    statut_filter = request.GET.get('statut', '')
-    nom_filter = request.GET.get('nom_client', '')
-    numero_filter = request.GET.get('numero_client', '')
-    date_debut = request.GET.get('date_debut', '')
-    date_fin = request.GET.get('date_fin', '')
-    fidelise_filter = request.GET.get('fidelise', '')
-
-    if type_filter:
-        commandes = commandes.filter(type_commande=type_filter)
-    if statut_filter:
-        commandes = commandes.filter(tapisdetails__statut=statut_filter)
-    if nom_filter:
-        commandes = commandes.filter(nom_client__icontains=nom_filter)
-    if numero_filter:
-        commandes = commandes.filter(numero_client__icontains=numero_filter)
-    if date_debut:
-        commandes = commandes.filter(date_creation__date__gte=date_debut)
-    if date_fin:
-        commandes = commandes.filter(date_creation__date__lte=date_fin)
-    if fidelise_filter == "oui":
-        commandes = commandes.filter(
-            Q(cityclimadetails__fidelise=True) | Q(tapisdetails__fidelise=True)
-        )
-    elif fidelise_filter == "non":
-        commandes = commandes.filter(
-            Q(cityclimadetails__fidelise=False) | Q(tapisdetails__fidelise=False)
-        )
+    # ... (Gardez vos filtres existants ici sans changement) ...
+    # [Filtres type_filter, nom_filter, etc.]
 
     wb = Workbook()
     ws = wb.active
-    ws.title = "Commandes"
+    ws.title = "Commandes Détaillées"
 
     # 🎨 Styles
     header_fill = PatternFill(start_color="157347", end_color="157347", fill_type="solid")
     header_font = Font(color="FFFFFF", bold=True)
-    center = Alignment(vertical="center", wrap_text=True)
+    center = Alignment(vertical="center", horizontal="center", wrap_text=True)
 
+    # 📌 Nouveaux En-têtes (Tous les champs)
     headers = [
-        "Client", "Numéro", "Localisation",
-        "Type", "Date création",
-        "Détails", "Fidélisé"
+        "Client", "Numéro", "Localisation", "Type", "Date Création",
+        "Désignation / Détails", "Coût (FCFA)", "Date Intervention / Ramassage",
+        "Fin de Traitement", "Prévu Livraison", "Livraison Réelle",
+        "Statut / Satisfaction", "Fidélisé", "Commentaire"
     ]
     ws.append(headers)
 
@@ -999,22 +982,35 @@ def export_commandes_excel(request):
 
     # 📊 Données
     for c in commandes:
-        details = "-"
+        desig_details = "-"
+        cout = 0
+        date_1 = "-" # Intervention ou Ramassage
+        date_2 = "-" # Fin de Traitement (Tapis uniquement)
+        date_3 = "-" # Prévue (Tapis uniquement)
+        date_4 = "-" # Réelle (Tapis uniquement)
+        statut_text = "-"
         fidelise = "Non"
+        comm = "-"
 
         if c.type_commande in ["CITYPROP", "CLIMATISEUR"] and hasattr(c, "cityclimadetails"):
             d = c.cityclimadetails
-            details = f"Intervention: {d.date_intervention or '-'}\nSatisfaction: {d.satisfaction or '-'}"
+            desig_details = d.designation or "Sans désignation"
+            cout = d.cout or 0
+            date_1 = d.date_intervention.strftime("%d/%m/%Y") if d.date_intervention else "-"
+            statut_text = d.get_satisfaction_display() if d.satisfaction else "-"
             fidelise = "Oui" if d.fidelise else "Non"
 
         elif c.type_commande == "TAPISPROP" and hasattr(c, "tapisdetails"):
             t = c.tapisdetails
-            details = (
-                f"Ramassage: {t.date_ramassage or '-'}\n"
-                f"Livraison: {t.date_livraison or '-'}\n"
-                f"Statut: {t.get_statut_display()}"
-            )
+            desig_details = f"{t.nombre_tapis} tapis"
+            cout = t.cout or 0
+            date_1 = t.date_ramassage.strftime("%d/%m/%Y") if t.date_ramassage else "-"
+            date_2 = t.date_traitement.strftime("%d/%m/%Y") if t.date_traitement else "-"
+            date_3 = t.date_prevue_livraison.strftime("%d/%m/%Y") if t.date_prevue_livraison else "-"
+            date_4 = t.date_livraison.strftime("%d/%m/%Y") if t.date_livraison else "-"
+            statut_text = t.get_statut_display()
             fidelise = "Oui" if t.fidelise else "Non"
+            comm = t.commentaire or "-"
 
         ws.append([
             c.nom_client,
@@ -1022,19 +1018,26 @@ def export_commandes_excel(request):
             c.localisation_client,
             c.type_commande,
             c.date_creation.strftime("%d/%m/%Y"),
-            details,
-            fidelise
+            desig_details,
+            cout,
+            date_1,
+            date_2,
+            date_3,
+            date_4,
+            statut_text,
+            fidelise,
+            comm
         ])
 
-    # 📐 Ajustement colonnes
-    widths = [22, 18, 35, 15, 15, 45, 12]
+    # 📐 Ajustement automatique des colonnes (Largeurs adaptées)
+    widths = [20, 15, 25, 12, 12, 35, 12, 15, 15, 15, 15, 20, 10, 30]
     for i, w in enumerate(widths, start=1):
-        ws.column_dimensions[chr(64 + i)].width = w
+        ws.column_dimensions[get_column_letter(i)].width = w
 
     response = HttpResponse(
         content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
     )
-    response["Content-Disposition"] = 'attachment; filename="commandes_cityprop.xlsx"'
+    response["Content-Disposition"] = 'attachment; filename="export_complet_cityprop.xlsx"'
     wb.save(response)
     return response
 
@@ -1657,4 +1660,62 @@ def generer_modele_excel(request):
         ws.column_dimensions['D'].width = 15 # Type
 
     return response
+
+def suivi_atelier_tapis(request):
+    query = request.GET.get('q', '').strip()
+    alerte = request.GET.get('alerte', '')
+    date_filtre = request.GET.get('date', '')
+
+    tapis_list = TapisDetails.objects.filter(
+        statut__in=['NON_RESPECTE', 'PRET', 'CLIENT_INDISPO']
+    ).select_related('commande')
+
+    # 🔎 FILTRE NOM / NUMÉRO
+    if query:
+        tapis_list = tapis_list.filter(
+            Q(commande__nom_client__icontains=query) |
+            Q(commande__numero_client__icontains=query)
+        )
+
+    # 📅 FILTRE DATE (DateField)
+    if date_filtre:
+        tapis_list = tapis_list.filter(
+            date_traitement=date_filtre
+        )
+
+    # 🚨 FILTRE PRIORITÉ (LOGIQUE IDENTIQUE À LA PROPERTY)
+    if alerte:
+        aujourd_hui = date.today()
+        demain = aujourd_hui + timedelta(days=1)
+
+        if alerte == "RETARD":
+            tapis_list = tapis_list.filter(
+                date_traitement__lt=aujourd_hui
+            )
+
+        elif alerte == "URGENT":
+            tapis_list = tapis_list.filter(
+                date_traitement__gte=aujourd_hui,
+                date_traitement__lte=demain
+            )
+
+        elif alerte == "NORMAL":
+            tapis_list = tapis_list.filter(
+                Q(date_traitement__gt=demain) |
+                Q(date_traitement__isnull=True)
+            )
+
+    tapis_list = tapis_list.order_by('date_traitement')
+
+    paginator = Paginator(tapis_list, 10)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+
+    return render(request, 'index/suivi_tapis.html', {
+        'page_obj': page_obj
+    })
+
+
+
+
 

@@ -1,3 +1,4 @@
+from datetime import date
 from django.db import models
 from django.utils import timezone
 from num2words import num2words
@@ -143,13 +144,25 @@ class CityClimaDetails(models.Model):
         blank=True,
         null=True
     )
+    
+    designation = models.TextField(
+        blank=True, 
+        null=True, 
+        verbose_name="Désignation des équipements"
+    )
+
+    # Coût de l'intervention
+    cout = models.PositiveIntegerField(
+        default=0, 
+        blank=True, 
+        null=True, 
+        verbose_name="Coût"
+    )
 
     def __str__(self):
         return f"Détails {self.commande}"
 
-
 class TapisDetails(models.Model):
-
     STATUT_CHOICES = (
         ('NON_RESPECTE', 'En cours'),
         ('PRET', 'En attente'),
@@ -162,11 +175,24 @@ class TapisDetails(models.Model):
     commande = models.OneToOneField(Commande, on_delete=models.CASCADE)
     fidelise = models.BooleanField(default=False)
 
+    # Étapes de dates
     date_ramassage = models.DateField(blank=True, null=True)
     nombre_tapis = models.PositiveIntegerField(blank=True, null=True)
     cout = models.PositiveIntegerField(blank=True, null=True)
+    
+    # Étape 1 : Fin du nettoyage à l'atelier
     date_traitement = models.DateField(blank=True, null=True)
+    
+    # Étape 2 : Date à laquelle on a promis de livrer le client (NOUVEAU)
+    date_prevue_livraison = models.DateField(
+        blank=True, 
+        null=True, 
+        verbose_name="Date prévue de livraison"
+    )
+    
+    # Étape 3 : Date réelle où le tapis est sorti
     date_livraison = models.DateField(blank=True, null=True)
+    
     commentaire = models.TextField(blank=True, null=True)
 
     statut = models.CharField(
@@ -174,6 +200,21 @@ class TapisDetails(models.Model):
         choices=STATUT_CHOICES,
         default='NON_RESPECTE'
     )
+    
+    @property
+    def niveau_urgence(self):
+        if not self.date_traitement:
+            return "NORMAL"
+        
+        aujourdhui = date.today()
+        diff = (self.date_traitement - aujourdhui).days
+
+        if diff < 0:
+            return "RETARD"  # Date dépassée
+        elif diff <= 1:
+            return "URGENT"  # Aujourd'hui ou demain
+        else:
+            return "NORMAL"  # Plus de 1 jour de marge
 
     def __str__(self):
         return f"Tapis - {self.commande}"

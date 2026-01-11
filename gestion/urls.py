@@ -49,6 +49,8 @@ urlpatterns = [
     
     path('import-ajax/', views.import_commandes_ajax, name='import_commandes_ajax'),
     path('modele-excel/', views.generer_modele_excel, name='generer_modele_excel'),
+    
+    path('suivi-atelier-tapis/', views.suivi_atelier_tapis, name='suivi_atelier_tapis'),
 
 
 ]

@@ -1,0 +1,260 @@
+{% extends "base.html" %}
+{% block title %}Priorités Atelier{% endblock %}
+
+{% block content %}
+<style>
+    /* 1. FIXER L'ENTETE ET CONTENEUR SCROLLABLE */
+    .table-container {
+        max-height: 65vh;
+        overflow-y: auto;
+        border: 1px solid #dee2e6;
+        border-radius: 8px;
+        background-color: white;
+    }
+
+    .table-fixed thead th {
+        position: sticky;
+        top: 0;
+        z-index: 10;
+        background-color: #212529 !important;
+        color: white !important;
+        padding: 10px 12px !important;
+        font-size: 0.85rem;
+        text-transform: uppercase;
+        border: none;
+    }
+
+    /* 2. FORÇAGE DES COULEURS SUR TOUTE LA LIGNE */
+    .tr-retard td { background-color: #dc3545 !important; color: white !important; }
+    .tr-retard i, .tr-retard small { color: white !important; }
+
+    .tr-urgent td { background-color: #ffc107 !important; color: #000000 !important; }
+    .tr-urgent i, .tr-urgent small { color: #000000 !important; }
+
+    .tr-normal td { background-color: #ffffff !important; color: #212529 !important; }
+
+    /* 3. CONTRASTE DU BOUTON ACTION */
+    .tr-retard .btn-action-custom,
+    .tr-urgent .btn-action-custom {
+        background-color: #ffffff !important;
+        color: #212529 !important;
+        border: 1px solid rgba(0,0,0,0.2) !important;
+    }
+    .tr-normal .btn-action-custom {
+        background-color: #212529 !important;
+        color: #ffffff !important;
+    }
+
+    /* 4. MODE ULTRA COMPACT */
+    .table-compact-custom td {
+        padding: 4px 12px !important;
+        vertical-align: middle;
+        border-bottom: 1px solid rgba(0,0,0,0.05) !important;
+        font-size: 0.85rem;
+    }
+
+    /* Barre de filtres */
+    .filter-card {
+        background-color: #f8f9fa;
+        border: 1px solid #e9ecef;
+        border-radius: 8px;
+        padding: 10px;
+        margin-bottom: 10px;
+    }
+
+    .badge-white-custom {
+        background-color: white !important;
+        color: black !important;
+        font-weight: bold;
+        border: 1px solid rgba(0,0,0,0.2);
+    }
+
+    .flash-alert { animation: blinker 1.2s linear infinite; }
+    @keyframes blinker { 50% { opacity: 0.1; } }
+</style>
+
+<div class="container-fluid py-2">
+
+    <!-- HEADER -->
+    <div class="d-flex justify-content-between align-items-center mb-2">
+        <h5 class="fw-bold text-dark mb-0">
+            <i class="fa-solid fa-person-digging text-success me-2"></i>
+            SUIVI TRAITEMENT ATELIER
+        </h5>
+        <div class="d-flex align-items-center gap-3">
+            
+            <a href="{% url 'liste_fiches' %}" class="btn btn-sm btn-outline-secondary">
+                <i class="fa-solid fa-list me-1"></i> Toutes les fiches
+            </a>
+        </div>
+    </div>
+
+    <!-- FILTRES -->
+    <div class="filter-card shadow-sm">
+        <form method="GET" action="{% url 'suivi_atelier_tapis' %}" class="row g-2">
+
+            <div class="col-md-3">
+                <input type="text"
+                       name="q"
+                       class="form-control form-control-sm"
+                       placeholder="N° Client ou Nom..."
+                       value="{{ request.GET.q }}">
+            </div>
+
+            <div class="col-md-2">
+                <select name="alerte" class="form-select form-select-sm">
+                    <option value="">-- Niveau d'alerte --</option>
+                    <option value="RETARD" {% if request.GET.alerte == "RETARD" %}selected{% endif %}>
+                        🔴 RETARD CRITIQUE
+                    </option>
+                    <option value="URGENT" {% if request.GET.alerte == "URGENT" %}selected{% endif %}>
+                        🟡 VITE (J-1)
+                    </option>
+                    <option value="NORMAL" {% if request.GET.alerte == "NORMAL" %}selected{% endif %}>
+                        ⚪ En temps voulu
+                    </option>
+                </select>
+            </div>
+
+            <div class="col-md-3">
+                <input type="date"
+                       name="date"
+                       class="form-control form-control-sm"
+                       value="{{ request.GET.date }}">
+            </div>
+
+            <div class="col-md-4 d-flex gap-2">
+                <button type="submit" class="btn btn-sm btn-primary flex-grow-1">
+                    <i class="fa-solid fa-magnifying-glass me-1"></i> Rechercher
+                </button>
+                <a href="{% url 'suivi_atelier_tapis' %}" class="btn btn-sm btn-secondary">
+                    <i class="fa-solid fa-rotate-left"></i>
+                </a>
+            </div>
+
+        </form>
+    </div>
+
+    <!-- TABLE -->
+    <div class="card shadow-sm border-0">
+        <div class="table-container">
+            <table class="table table-fixed table-compact-custom mb-0">
+                <thead>
+                    <tr>
+                        <th style="width:180px;">Niveau d'Alerte</th>
+                        <th>Client / Contact</th>
+                        <th class="text-center">Tapis</th>
+                        <th>Date Fin Traitement</th>
+                        <th>Statut</th>
+                        <th class="text-end">Action</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                {% for tapis in page_obj %}
+                    <tr class="
+                        {% if tapis.niveau_urgence == 'RETARD' %}tr-retard
+                        {% elif tapis.niveau_urgence == 'URGENT' %}tr-urgent
+                        {% else %}tr-normal{% endif %}
+                    ">
+
+                        <td class="fw-bold">
+                            {% if tapis.niveau_urgence == "RETARD" %}
+                                <i class="fa-solid fa-circle-exclamation flash-alert"></i> RETARD CRITIQUE
+                            {% elif tapis.niveau_urgence == "URGENT" %}
+                                <i class="fa-solid fa-clock"></i> VITE (J-1)
+                            {% else %}
+                                <i class="fa-solid fa-check-circle text-success"></i> En temps voulu
+                            {% endif %}
+                        </td>
+
+                        <td>
+                            <div class="fw-bold">
+                                {{ tapis.commande.nom_client|truncatechars:25 }}
+                            </div>
+                            <small class="opacity-75">
+                                {{ tapis.commande.numero_client }}
+                            </small>
+                        </td>
+
+                        <td class="text-center">
+                            <span class="badge badge-white-custom shadow-sm px-2">
+                                {{ tapis.nombre_tapis }}
+                            </span>
+                        </td>
+
+                        <td class="fw-bold">
+                            <i class="fa-regular fa-calendar-days me-1"></i>
+                            {{ tapis.date_traitement|date:"d/m/Y" }}
+
+                            {% if tapis.niveau_urgence == "RETARD" %}
+                                <div style="font-size:0.7rem;">
+                                    (Dépassé de {{ tapis.date_traitement|timesince }})
+                                </div>
+                            {% endif %}
+                        </td>
+
+                        <td>
+                            <span class="badge bg-light text-dark border shadow-sm" style="font-size:0.7rem;">
+                                {{ tapis.get_statut_display }}
+                            </span>
+                        </td>
+
+                        <td class="text-end">
+                            <a href="{% url 'detail_fiche' tapis.commande.id %}"
+                               class="btn btn-dark btn-sm py-0 px-2 btn-action-custom shadow-sm">
+                                <i class="fa-solid fa-eye me-1"></i> Ouvrir
+                            </a>
+                        </td>
+
+                    </tr>
+                {% empty %}
+                    <tr>
+                        <td colspan="6" class="text-center py-5">
+                            Aucun résultat pour ces filtres.
+                        </td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- PAGINATION -->
+    {% if page_obj.has_other_pages %}
+    <div class="mt-2">
+        <nav>
+            <ul class="pagination pagination-sm justify-content-center mb-0">
+                {% if page_obj.has_previous %}
+                <li class="page-item">
+                    <a class="page-link"
+                       href="?page={{ page_obj.previous_page_number }}&q={{ request.GET.q }}&alerte={{ request.GET.alerte }}&date={{ request.GET.date }}">
+                        &laquo;
+                    </a>
+                </li>
+                {% endif %}
+
+                <li class="page-item active">
+                    <span class="page-link px-3">
+                        {{ page_obj.number }} / {{ page_obj.paginator.num_pages }}
+                    </span>
+                </li>
+
+                {% if page_obj.has_next %}
+                <li class="page-item">
+                    <a class="page-link"
+                       href="?page={{ page_obj.next_page_number }}&q={{ request.GET.q }}&alerte={{ request.GET.alerte }}&date={{ request.GET.date }}">
+                        &raquo;
+                    </a>
+                </li>
+                {% endif %}
+            </ul>
+        </nav>
+    </div>
+    {% endif %}
+
+</div>
+
+<link rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
+{% endblock %}

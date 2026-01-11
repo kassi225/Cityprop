@@ -6,7 +6,7 @@
 
 <style>
 /* Styles généraux optimisés */
-body { font-size: 0.9rem; background-color: #f4f7f6; }
+body { font-size: 1rem; background-color: #f4f7f6; }
 .card { border-radius: 0.75rem; transition: all 0.3s; box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
 .card:hover { transform: translateY(-2px); box-shadow: 0 6px 15px rgba(0,0,0,0.12); }
 .card-header { border-bottom: none; border-radius: 0.75rem 0.75rem 0 0 !important; font-weight: 700; padding: 0.75rem 1.25rem; }
@@ -86,33 +86,88 @@ input, select, textarea { font-size: 0.85rem; padding: 0.5rem 0.75rem; border-ra
                 </div>
                 <div class="card-body collapse show" id="detailsCard">
                     {% if commande.type_commande == 'CITYPROP' or commande.type_commande == 'CLIMATISEUR' %}
-                        {% if cityclima %}
-                        <div class="row g-2 small">
-                            <div class="col-6"><strong>Intervention:</strong> {{ cityclima.date_intervention|default:"-"|date:"d/m/Y" }}</div>
-                            <div class="col-6"><strong>Satisfaction:</strong> <span class="badge bg-light text-dark border">{{ cityclima.get_satisfaction_display|default:"Non définie" }}</span></div>
-                        </div>
-                        {% endif %}
-                    {% elif commande.type_commande == 'TAPISPROP' and tapis %}
-                        <div class="row g-2 small">
-                            <div class="col-6"><strong>Ramassage:</strong> <span class="text-primary">{{ tapis.date_ramassage|date:"d/m/Y"|default:"-" }}</span></div>
-                            
-                            <div class="col-6"><strong>Fin traitement:</strong> <span class="text-danger fw-bold">{{ tapis.date_traitement|date:"d/m/Y"|default:"-" }}</span></div>
-                            
-                            <div class="col-6"><strong>Livraison:</strong> <span class="text-primary">{{ tapis.date_livraison|date:"d/m/Y"|default:"-" }}</span></div>
-                            <div class="col-6"><strong>Nb tapis:</strong> <span class="fw-bold">{{ tapis.nombre_tapis }}</span></div>
-                            
-                            <div class="col-6"><strong>Coût:</strong> <span class="fw-bold text-success">{{ tapis.cout }} FCFA</span></div>
-                            
-                            <div class="col-12 mt-2">
-                                <strong>Statut actuel:</strong> 
-                                <span class="badge bg-dark">{{ tapis.get_statut_display }}</span>
-                            </div>
-                            <div class="col-12 mt-2">
-                                <strong>Commentaire:</strong>
-                                <div class="p-2 border rounded bg-light mt-1">{{ tapis.commentaire|default:"Aucun commentaire" }}</div>
-                            </div>
-                        </div>
-                    {% endif %}
+    {% if cityclima %}
+    <div class="detail-section bg-white p-3 rounded border shadow-sm mt-3">
+        <h6 class="border-bottom pb-2 mb-3 text-uppercase small fw-bold text-secondary">
+            <i class="fas fa-tools me-2"></i>Détails Intervention Clima
+        </h6>
+        <div class="row g-3 small">
+            <div class="col-6">
+                <div class="text-muted mb-1">Coût de la prestation</div>
+                <span class="fs-6 fw-bold text-success">{{ cityclima.cout|default:"0" }} FCFA</span>
+            </div>
+            <div class="col-6 text-end">
+                <div class="text-muted mb-1">Date Intervention</div>
+                <span class="fw-bold"><i class="far fa-calendar-alt me-1"></i>{{ cityclima.date_intervention|default:"-"|date:"d/m/Y" }}</span>
+            </div>
+
+            <div class="col-12">
+                <div class="p-2 rounded bg-light border-start border-4 border-info">
+                    <div class="text-muted mb-1 fw-bold">Désignation des équipements</div>
+                    <div class="fst-italic text-dark">{{ cityclima.designation|default:"Aucune description fournie." }}</div>
+                </div>
+            </div>
+
+            <div class="col-12 d-flex justify-content-between align-items-center mt-2">
+                <strong>État de satisfaction :</strong>
+                <span class="badge rounded-pill {% if cityclima.satisfaction == 'OK' %}bg-success text-white px-3{% else %}bg-warning text-dark px-3{% endif %}">
+                    {{ cityclima.get_satisfaction_display|default:"Non définie" }}
+                </span>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    {% elif commande.type_commande == 'TAPISPROP' and tapis %}
+        <div class="detail-section bg-white p-3 rounded border shadow-sm mt-3">
+            <h6 class="border-bottom pb-2 mb-3 text-uppercase small fw-bold text-secondary">
+                <i class="fas fa-rug me-2"></i>Suivi Traitement Tapis
+            </h6>
+            <div class="row g-3 small">
+                <div class="col-6 col-md-3">
+                    <div class="text-muted small">Ramassage</div>
+                    <div class="fw-bold text-primary"><i class="fas fa-truck-loading me-1"></i>{{ tapis.date_ramassage|date:"d/m/Y"|default:"-" }}</div>
+                </div>
+                <div class="col-6 col-md-3">
+                    <div class="text-muted small">Fin de traitement </div>
+                    <div class="fw-bold text-danger"><i class="fas fa-check-circle me-1"></i>{{ tapis.date_traitement|date:"d/m/Y"|default:"-" }}</div>
+                </div>
+                <div class="col-6 col-md-3">
+                    <div class="text-muted small">Prévu le</div>
+                    <div class="fw-bold text-warning"><i class="fas fa-clock me-1"></i>{{ tapis.date_prevue_livraison|date:"d/m/Y"|default:"-" }}</div>
+                </div>
+                <div class="col-6 col-md-3">
+                    <div class="text-muted small">Livré le</div>
+                    <div class="fw-bold text-success"><i class="fas fa-home me-1"></i>{{ tapis.date_livraison|date:"d/m/Y"|default:"-" }}</div>
+                </div>
+
+                <div class="col-6">
+                    <div class="p-2 bg-light rounded text-center border">
+                        <span class="text-muted">Nombre de Tapis:</span> <span class="fw-bold">{{ tapis.nombre_tapis }} Tapis</span>
+                    </div>
+                </div>
+                <div class="col-6">
+                    <div class="p-2 bg-light rounded text-center border">
+                        <span class="text-muted">cout :</span> <span class="fw-bold text-success">{{ tapis.cout }} FCFA</span>
+                    </div>
+                </div>
+
+                <div class="col-12 mt-2">
+                    <div class="d-flex align-items-center">
+                        <span class="me-2">Statut :</span>
+                        <span class="badge bg-dark w-100 py-2">{{ tapis.get_statut_display }}</span>
+                    </div>
+                </div>
+                
+                {% if tapis.commentaire %}
+                <div class="col-12">
+                    <div class="small text-muted mb-1 fw-bold"><i class="far fa-comment-dots me-1"></i>Note interne :</div>
+                    <div class="p-2 border-start border-3 bg-light rounded-end">{{ tapis.commentaire }}</div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    {% endif %}
                 </div>
             </div>
 
@@ -190,226 +245,289 @@ input, select, textarea { font-size: 0.85rem; padding: 0.5rem 0.75rem; border-ra
                     <form method="POST" class="row g-3">
                         {% csrf_token %}
                         
-                        <div class="col-md-6">
-                            <label class="form-label small fw-bold">Nom</label>
-                            <input type="text" name="nom_client" class="form-control" value="{{ commande.nom_client }}">
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label small fw-bold">Numéro</label>
-                            <input type="text" name="numero_client" class="form-control" value="{{ commande.numero_client }}">
-                        </div>
-                        <div class="col-12">
-                            <label class="form-label small fw-bold">Localisation</label>
-                            <input type="text" name="localisation_client" class="form-control" value="{{ commande.localisation_client }}">
-                        </div>
-                        <div class="col-12">
-                            <label class="form-label small fw-bold">Type commande</label>
-                            <select name="type_commande" class="form-select">
-                                <option value="CITYPROP" {% if commande.type_commande == "CITYPROP" %}selected{% endif %}>Cityprop</option>
-                                <option value="CLIMATISEUR" {% if commande.type_commande == "CLIMATISEUR" %}selected{% endif %}>Climatiseur</option>
-                                <option value="TAPISPROP" {% if commande.type_commande == "TAPISPROP" %}selected{% endif %}>Tapisprop</option>
-                            </select>
-                        </div>
+                        <div class="card border-0 shadow-sm mb-4">
+                            <div class="card-header bg-primary text-white py-2">
+                                <h6 class="mb-0 small fw-bold"><i class="fas fa-user-circle me-2"></i>Informations Client & Commande</h6>
+                            </div>
+                            <div class="card-body bg-light">
+                                <div class="row g-3">
+                                    <div class="col-md-6">
+                                        <label class="form-label small fw-bold text-muted">Nom Complet</label>
+                                        <div class="input-group input-group-sm">
+                                            <span class="input-group-text bg-white border-end-0"><i class="fas fa-user text-primary"></i></span>
+                                            <input type="text" name="nom_client" class="form-control border-start-0 ps-0" value="{{ commande.nom_client }}" placeholder="Nom du client">
+                                        </div>
+                                    </div>
 
-                        {% if commande.type_commande == 'CITYPROP' or commande.type_commande == 'CLIMATISEUR' %}
-                            <div class="row g-3 p-2 bg-light rounded border mt-3 mx-0">
-                                <div class="col-md-6">
-                                    <label class="form-label small fw-bold">Date intervention</label>
-                                    <input type="date" name="date_intervention" class="form-control" value="{{ cityclima.date_intervention|date:'Y-m-d' }}">
-                                </div>
-                                <div class="col-md-6">
-                                    <label class="form-label small fw-bold">Satisfaction</label>
-                                    <select name="satisfaction" class="form-select">
-                                        <option value="">-- Choisir --</option>
-                                        <option value="OK" {% if cityclima.satisfaction == 'OK' %}selected{% endif %}>OK</option>
-                                        <option value="KO_RET" {% if cityclima.satisfaction == 'KO_RET' %}selected{% endif %}>KO - Retouche</option>
-                                        <option value="KO_REFUS" {% if cityclima.satisfaction == 'KO_REFUS' %}selected{% endif %}>KO - Refus</option>
-                                    </select>
+                                    <div class="col-md-6">
+                                        <label class="form-label small fw-bold text-muted">Numéro Client</label>
+                                        <div class="input-group input-group-sm">
+                                            <span class="input-group-text bg-white border-end-0"><i class="fas fa-phone-alt text-success"></i></span>
+                                            <input type="text" name="numero_client" class="form-control border-start-0 ps-0" value="{{ commande.numero_client }}" placeholder="Ex: 07 00 00 00 00">
+                                        </div>
+                                    </div>
+
+                                    <div class="col-md-7">
+                                        <label class="form-label small fw-bold text-muted">Localisation / Adresse</label>
+                                        <div class="input-group input-group-sm">
+                                            <span class="input-group-text bg-white border-end-0"><i class="fas fa-map-marker-alt text-danger"></i></span>
+                                            <input type="text" name="localisation_client" class="form-control border-start-0 ps-0" value="{{ commande.localisation_client }}" placeholder="Quartier, Rue, Porte...">
+                                        </div>
+                                    </div>
+
+                                    <div class="col-md-5">
+                                        <label class="form-label small fw-bold text-muted">Type de Service</label>
+                                        <div class="input-group input-group-sm">
+                                            <span class="input-group-text bg-white border-end-0"><i class="fas fa-concierge-bell text-warning"></i></span>
+                                            <select name="type_commande" class="form-select border-start-0 ps-0 fw-bold">
+                                                <option value="CITYPROP" {% if commande.type_commande == 'CITYPROP' %}selected{% endif %}>CITYPROP</option>
+                                                <option value="CLIMATISEUR" {% if commande.type_commande == 'CLIMATISEUR' %}selected{% endif %}>CLIMATISEUR</option>
+                                                <option value="TAPISPROP" {% if commande.type_commande == 'TAPISPROP' %}selected{% endif %}>TAPISPROP</option>
+                                            </select>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
-                            {% elif commande.type_commande == 'TAPISPROP' %}
-                                <div class="row g-3 p-2 bg-light rounded border mt-3 mx-0">
-                                    <div class="col-md-4">
-                                        <label class="form-label small fw-bold">Date Ramassage</label>
-                                        <input type="date" name="date_ramassage" class="form-control" value="{{ tapis.date_ramassage|date:'Y-m-d' }}">
-                                    </div>
-                                    
-                                    <div class="col-md-4">
-                                        <label class="form-label small fw-bold">Date Fin Traitement</label>
-                                        <input type="date" name="date_traitement" class="form-control" value="{{ tapis.date_traitement|date:'Y-m-d' }}">
+                        </div>
+                        
+
+        {% if commande.type_commande == 'CITYPROP' or commande.type_commande == 'CLIMATISEUR' %}
+            <div class="card border-0 shadow-sm mt-3">
+                <div class="card-header bg-info text-white py-2">
+                    <h6 class="mb-0 small fw-bold"><i class="fas fa-edit me-2"></i>Modification Intervention Clima</h6>
+                </div>
+                <div class="card-body bg-light">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label small fw-bold"><i class="fas fa-tag me-1 text-primary"></i>Désignation des équipements</label>
+                            <input type="text" name="designation" class="form-control form-control-sm border-primary-subtle" value="{{ cityclima.designation|default:'' }}" placeholder="ex: Split Salon, Cassette Bureau...">
+                        </div>
+
+                        <div class="col-md-3">
+                            <label class="form-label small fw-bold"><i class="fas fa-money-bill-wave me-1 text-success"></i>Coût (FCFA)</label>
+                            <input type="number" name="cout_clim" class="form-control form-control-sm" value="{{ cityclima.cout|default:0 }}">
+                        </div>
+
+                        <div class="col-md-3">
+                            <label class="form-label small fw-bold"><i class="fas fa-calendar-day me-1 text-danger"></i>Date intervention</label>
+                            <input type="date" name="date_intervention" class="form-control form-control-sm" value="{{ cityclima.date_intervention|date:'Y-m-d' }}">
+                        </div>
+
+                        <div class="col-md-12">
+                            <label class="form-label small fw-bold"><i class="fas fa-smile me-1 text-warning"></i>Niveau de Satisfaction</label>
+                            <select name="satisfaction" class="form-select form-select-sm">
+                                <option value="">-- Choisir --</option>
+                                <option value="OK" {% if cityclima.satisfaction == 'OK' %}selected{% endif %}>✅ OK (Terminé)</option>
+                                <option value="KO_RET" {% if cityclima.satisfaction == 'KO_RET' %}selected{% endif %}>🔄 KO - Retouche nécessaire</option>
+                                <option value="KO_REFUS" {% if cityclima.satisfaction == 'KO_REFUS' %}selected{% endif %}>❌ KO - Refus client</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+                                {% elif commande.type_commande == 'TAPISPROP' %}
+                                <div class="card border-0 shadow-sm mt-3">
+                                <div class="card-header bg-dark text-white py-2">
+                                    <h6 class="mb-0 small fw-bold"><i class="fas fa-rug me-2"></i>Mise à jour Suivi Tapis</h6>
+                                </div>
+                                <div class="card-body bg-light">
+                                    <div class="row g-3 mb-3">
+                                        <div class="col-md-3">
+                                            <label class="form-label small fw-bold text-muted">Date Ramassage</label>
+                                            <input type="date" name="date_ramassage" class="form-control form-control-sm border-primary" value="{{ tapis.date_ramassage|date:'Y-m-d' }}">
+                                        </div>
+                                        <div class="col-md-3">
+                                            <label class="form-label small fw-bold text-muted">Fin de Traitement</label>
+                                            <input type="date" name="date_traitement" class="form-control form-control-sm border-danger" value="{{ tapis.date_traitement|date:'Y-m-d' }}">
+                                        </div>
+                                        <div class="col-md-3">
+                                            <label class="form-label small fw-bold text-primary">Prévue Livraison</label>
+                                            <input type="date" name="date_prevue_livraison" class="form-control form-control-sm border-primary bg-primary-subtle" value="{{ tapis.date_prevue_livraison|date:'Y-m-d' }}">
+                                        </div>
+                                        <div class="col-md-3">
+                                            <label class="form-label small fw-bold text-muted">Livraison Réelle</label>
+                                            <input type="date" name="date_livraison" class="form-control form-control-sm border-success" value="{{ tapis.date_livraison|date:'Y-m-d' }}">
+                                        </div>
                                     </div>
 
-                                    <div class="col-md-4">
-                                        <label class="form-label small fw-bold">Date Livraison</label>
-                                        <input type="date" name="date_livraison" class="form-control" value="{{ tapis.date_livraison|date:'Y-m-d' }}">
-                                    </div>
+                                    <div class="row g-3">
+                                        <div class="col-md-4">
+                                            <label class="form-label small fw-bold">Nombre de Tapis</label>
+                                            <div class="input-group input-group-sm">
+                                                <span class="input-group-text"><i class="fas fa-layer-group"></i></span>
+                                                <input type="number" name="nombre_tapis" class="form-control" value="{{ tapis.nombre_tapis }}">
+                                            </div>
+                                        </div>
 
-                                    <div class="col-md-4">
-                                        <label class="form-label small fw-bold">Nb Tapis</label>
-                                        <input type="number" name="nombre_tapis" class="form-control" value="{{ tapis.nombre_tapis }}">
-                                    </div>
-                                    <div class="col-md-4">
-                                        <label class="form-label small fw-bold">Coût Estimé</label>
-                                        <input type="number" name="cout" class="form-control" value="{{ tapis.cout }}">
-                                    </div>
-                                    <div class="col-md-4">
-                                        <label class="form-label small fw-bold">Statut</label>
-                                        <select name="statut" class="form-select">
-                                            {% for code, label in tapis.STATUT_CHOICES %}
-                                                <option value="{{ code }}" {% if tapis.statut == code %}selected{% endif %}>{{ label }}</option>
-                                            {% endfor %}
-                                        </select>
-                                    </div>
+                                        <div class="col-md-4">
+                                            <label class="form-label small fw-bold">Coût Estimé</label>
+                                            <div class="input-group input-group-sm">
+                                                <span class="input-group-text">FCFA</span>
+                                                <input type="number" name="cout" class="form-control fw-bold text-success" value="{{ tapis.cout }}">
+                                            </div>
+                                        </div>
 
-                                    <div class="col-12">
-                                        <label class="form-label small fw-bold">Commentaire</label>
-                                        <textarea name="commentaire" class="form-control" rows="2">{{ tapis.commentaire }}</textarea>
+                                        <div class="col-md-4">
+                                            <label class="form-label small fw-bold text-danger">Statut Actuel</label>
+                                            <select name="statut" class="form-select form-select-sm border-danger fw-bold">
+                                                {% for code, label in tapis.STATUT_CHOICES %}
+                                                    <option value="{{ code }}" {% if tapis.statut == code %}selected{% endif %}>{{ label }}</option>
+                                                {% endfor %}
+                                            </select>
+                                        </div>
+
+                                        <div class="col-12">
+                                            <label class="form-label small fw-bold italic"><i class="far fa-comment-alt me-1"></i>Observations / Commentaires</label>
+                                            <textarea name="commentaire" class="form-control form-control-sm" rows="2" placeholder="Notez ici les particularités (taches, état spécial...)">{{ tapis.commentaire }}</textarea>
+                                        </div>
                                     </div>
                                 </div>
-                            {% endif %}
+                                </div>
+                                {% endif %}
 
-                        <div class="col-12 mt-4 d-flex justify-content-between">
-                            <button type="submit" class="btn btn-success px-4">
-                                <i class="fa-solid fa-floppy-disk me-1"></i> Mettre à jour
+                                <div class="col-12 mt-4 d-flex justify-content-between">
+                                    <button type="submit" class="btn btn-success px-4">
+                                        <i class="fa-solid fa-floppy-disk me-1"></i> Mettre à jour
+                                    </button>
+                                    <a href="{% url 'liste_fiches' %}" class="btn btn-secondary px-4">Retour</a>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+
+                    <div class="d-grid mt-4">
+                        
+                    </div>
+                </div>
+            </div>
+        </div>
+
+
+        <div class="modal fade" id="factureModal" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-xl">
+                <div class="modal-content">
+                    <form method="POST" action="{% url 'creer_facture' fiche_id=commande.id %}">
+                        {% csrf_token %}
+                        <div class="modal-header bg-primary text-white">
+                            <h5 class="modal-title"><i class="fa-solid fa-plus me-2"></i>Nouveau Document pour {{ commande.nom_client }}</h5>
+                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                        </div>
+                        <div class="modal-body">
+                            <div class="row g-3 mb-4">
+                                <div class="col-md-3">
+                                    <label class="form-label small fw-bold">Type</label>
+                                    <select name="type_document" class="form-select form-select-sm">
+                                        <option value="DEVIS">DEVIS</option>
+                                        <option value="FACTURE">FACTURE</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-5">
+                                    <label class="form-label small fw-bold">Objet</label>
+                                    <input type="text" name="objet" class="form-control form-control-sm" placeholder="Ex: Nettoyage complet">
+                                </div>
+                                <div class="col-md-2">
+                                    <label class="form-label small fw-bold">Lieu</label>
+                                    <input type="text" name="lieu_emission" class="form-control form-control-sm" value="Abidjan">
+                                </div>
+                                <div class="col-md-2">
+                                    <label class="form-label small fw-bold">Signature</label>
+                                    <input type="text" name="signature" class="form-control form-control-sm" value="LA COMPTABILITÉ">
+                                </div>
+                            </div>
+
+                            <h6 class="text-primary border-bottom pb-2"><i class="fa-solid fa-list me-2"></i>Lignes de Prestation</h6>
+                            
+                            <div id="lignesFacture" class="mt-3">
+                                <div class="row g-2 ligne-facture align-items-center mb-2">
+                                    <div class="col-4">
+                                        <input type="text" name="designation[]" class="form-control form-control-sm" placeholder="Désignation" required>
+                                    </div>
+                                    <div class="col-1">
+                                        <input type="number" name="quantite[]" class="form-control form-control-sm text-end quantite-input" value="1" min="1">
+                                    </div>
+                                    <div class="col-2">
+                                        <input type="number" name="prix_unitaire[]" class="form-control form-control-sm text-end prix-unitaire-input" placeholder="Prix Unit." required>
+                                    </div>
+                                    <div class="col-2">
+                                        <input type="text" class="form-control form-control-sm text-end total-ligne-display" value="0" readonly>
+                                    </div>
+                                    <div class="col-2">
+                                        <input type="text" name="note_prix[]" class="form-control form-control-sm" placeholder="Note (ex: HT)">
+                                    </div>
+                                    <div class="col-1 text-center">
+                                        <button type="button" class="btn btn-outline-danger btn-sm remove-line"><i class="fa-solid fa-trash"></i></button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <button type="button" class="btn btn-sm btn-outline-secondary" id="ajouterLigne">
+                                <i class="fa-solid fa-plus me-1"></i> Ajouter une prestation
                             </button>
-                            <a href="{% url 'liste_fiches' %}" class="btn btn-secondary px-4">Retour</a>
+
+                            <div class="row mt-4 pt-3 border-top g-3">
+                                <div class="col-md-4">
+                                    <div class="p-3 bg-light rounded">
+                                        <div class="d-flex justify-content-between">
+                                            <span class="small fw-bold">Total Brut HT:</span>
+                                            <span id="totalHTFacture" class="text-primary fw-bold">0 FCFA</span>
+                                        </div>
+                                        <div class="d-flex justify-content-between mt-2 text-danger">
+                                            <span class="small fw-bold">Réduction:</span>
+                                            <span id="montantReductionDisplay" class="fw-bold">0 FCFA</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-5">
+                                    <div class="row g-2">
+                                        <div class="col-6">
+                                            <label class="form-label small fw-bold">Taux Réduction (%)</label>
+                                            <input type="number" id="tauxReductionInput" name="taux_reduction" class="form-control" step="0.001" min="0" max="100">
+                                        </div>
+                                        <div class="col-6">
+                                            <label class="form-label small fw-bold">Ou Montant Fixe</label>
+                                            <input type="number" id="montantReductionInput" class="form-control form-control-sm" placeholder="Ex: 2000">
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label small fw-bold text-success">NET À PAYER (Arrondi 5 FCFA)</label>
+                                    <div class="input-group">
+                                        <input type="text" id="totalFinalFacture" class="form-control form-control-lg text-end fw-bold text-success" value="0" readonly>
+                                        <span class="input-group-text bg-success text-white">FCFA</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="submit" class="btn btn-success btn-lg px-5">Générer le document</button>
                         </div>
                     </form>
                 </div>
             </div>
-
-            <div class="d-grid mt-4">
-                
-            </div>
         </div>
-    </div>
-</div>
 
-
-<div class="modal fade" id="factureModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-xl">
-        <div class="modal-content">
-            <form method="POST" action="{% url 'creer_facture' fiche_id=commande.id %}">
-                {% csrf_token %}
-                <div class="modal-header bg-primary text-white">
-                    <h5 class="modal-title"><i class="fa-solid fa-plus me-2"></i>Nouveau Document pour {{ commande.nom_client }}</h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body">
-                    <div class="row g-3 mb-4">
-                        <div class="col-md-3">
-                            <label class="form-label small fw-bold">Type</label>
-                            <select name="type_document" class="form-select form-select-sm">
-                                <option value="DEVIS">DEVIS</option>
-                                <option value="FACTURE">FACTURE</option>
-                            </select>
-                        </div>
-                        <div class="col-md-5">
-                            <label class="form-label small fw-bold">Objet</label>
-                            <input type="text" name="objet" class="form-control form-control-sm" placeholder="Ex: Nettoyage complet">
-                        </div>
-                        <div class="col-md-2">
-                            <label class="form-label small fw-bold">Lieu</label>
-                            <input type="text" name="lieu_emission" class="form-control form-control-sm" value="Abidjan">
-                        </div>
-                        <div class="col-md-2">
-                            <label class="form-label small fw-bold">Signature</label>
-                            <input type="text" name="signature" class="form-control form-control-sm" value="LA COMPTABILITÉ">
-                        </div>
+        <div class="modal fade" id="deleteFactureModal" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header bg-danger text-white">
+                        <h5 class="modal-title"><i class="fa-solid fa-triangle-exclamation me-2"></i>Confirmer la suppression</h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                     </div>
-
-                    <h6 class="text-primary border-bottom pb-2"><i class="fa-solid fa-list me-2"></i>Lignes de Prestation</h6>
-                    
-                    <div id="lignesFacture" class="mt-3">
-                        <div class="row g-2 ligne-facture align-items-center mb-2">
-                            <div class="col-4">
-                                <input type="text" name="designation[]" class="form-control form-control-sm" placeholder="Désignation" required>
-                            </div>
-                            <div class="col-1">
-                                <input type="number" name="quantite[]" class="form-control form-control-sm text-end quantite-input" value="1" min="1">
-                            </div>
-                            <div class="col-2">
-                                <input type="number" name="prix_unitaire[]" class="form-control form-control-sm text-end prix-unitaire-input" placeholder="Prix Unit." required>
-                            </div>
-                            <div class="col-2">
-                                <input type="text" class="form-control form-control-sm text-end total-ligne-display" value="0" readonly>
-                            </div>
-                            <div class="col-2">
-                                <input type="text" name="note_prix[]" class="form-control form-control-sm" placeholder="Note (ex: HT)">
-                            </div>
-                            <div class="col-1 text-center">
-                                <button type="button" class="btn btn-outline-danger btn-sm remove-line"><i class="fa-solid fa-trash"></i></button>
-                            </div>
-                        </div>
+                    <div class="modal-body">
+                        <p>Êtes-vous sûr de vouloir supprimer définitivement le document <strong id="deleteFactureNum"></strong> ?</p>
+                        <p class="text-danger small"><i class="fa-solid fa-info-circle me-1"></i> Cette action est irréversible.</p>
                     </div>
-
-                    <button type="button" class="btn btn-sm btn-outline-secondary" id="ajouterLigne">
-                        <i class="fa-solid fa-plus me-1"></i> Ajouter une prestation
-                    </button>
-
-                    <div class="row mt-4 pt-3 border-top g-3">
-                        <div class="col-md-4">
-                            <div class="p-3 bg-light rounded">
-                                <div class="d-flex justify-content-between">
-                                    <span class="small fw-bold">Total Brut HT:</span>
-                                    <span id="totalHTFacture" class="text-primary fw-bold">0 FCFA</span>
-                                </div>
-                                <div class="d-flex justify-content-between mt-2 text-danger">
-                                    <span class="small fw-bold">Réduction:</span>
-                                    <span id="montantReductionDisplay" class="fw-bold">0 FCFA</span>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-md-5">
-                            <div class="row g-2">
-                                <div class="col-6">
-                                    <label class="form-label small fw-bold">Taux Réduction (%)</label>
-                                    <input type="number" id="tauxReductionInput" name="taux_reduction" class="form-control" step="0.001" min="0" max="100">
-                                </div>
-                                <div class="col-6">
-                                    <label class="form-label small fw-bold">Ou Montant Fixe</label>
-                                    <input type="number" id="montantReductionInput" class="form-control form-control-sm" placeholder="Ex: 2000">
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-md-3">
-                            <label class="form-label small fw-bold text-success">NET À PAYER (Arrondi 5 FCFA)</label>
-                            <div class="input-group">
-                                <input type="text" id="totalFinalFacture" class="form-control form-control-lg text-end fw-bold text-success" value="0" readonly>
-                                <span class="input-group-text bg-success text-white">FCFA</span>
-                            </div>
-                        </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                        <form id="formSupprimerFacture" method="POST">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-danger">Supprimer le document</button>
+                        </form>
                     </div>
                 </div>
-                <div class="modal-footer">
-                    <button type="submit" class="btn btn-success btn-lg px-5">Générer le document</button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
-
-<div class="modal fade" id="deleteFactureModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header bg-danger text-white">
-                <h5 class="modal-title"><i class="fa-solid fa-triangle-exclamation me-2"></i>Confirmer la suppression</h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body">
-                <p>Êtes-vous sûr de vouloir supprimer définitivement le document <strong id="deleteFactureNum"></strong> ?</p>
-                <p class="text-danger small"><i class="fa-solid fa-info-circle me-1"></i> Cette action est irréversible.</p>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
-                <form id="formSupprimerFacture" method="POST">
-                    {% csrf_token %}
-                    <button type="submit" class="btn btn-danger">Supprimer le document</button>
-                </form>
             </div>
         </div>
-    </div>
-</div>
 
 
 <script>
