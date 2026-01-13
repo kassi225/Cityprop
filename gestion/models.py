@@ -119,7 +119,7 @@ class Commande(models.Model):
     )
 
     nom_client = models.CharField(max_length=255)
-    numero_client = models.CharField(max_length=20)
+    numero_client = models.CharField(max_length=50)
     localisation_client = models.CharField(max_length=255)
     type_commande = models.CharField(max_length=20, choices=TYPE_CHOICES)
     date_creation = models.DateTimeField(auto_now_add=True)
