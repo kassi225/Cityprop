@@ -43,8 +43,8 @@
                 <div class="mb-2">
                     <label for="statut" class="form-label"><i class="fas fa-tasks"></i> Modifier le statut</label>
                     <select name="statut" id="statut" class="form-select form-select-sm">
-                        <option value="NON_RESPECTE" {% if tapis.statut == 'NON_RESPECTE' %}selected{% endif %}>Délai non respecté</option>
-                        <option value="PRET" {% if tapis.statut == 'PRET' %}selected{% endif %}>En attente</option>
+                        <option value="NON_RESPECTE" {% if tapis.statut == 'NON_RESPECTE' %}selected{% endif %}>En Cours(en Atelier)</option>
+                        <option value="PRET" {% if tapis.statut == 'PRET' %}selected{% endif %}>En attente(Sortie d'Atelier)</option>
                         <option value="CLIENT_INDISPO" {% if tapis.statut == 'CLIENT_INDISPO' %}selected{% endif %}>Tapis prêt - Client indisponible</option>
                         <option value="LIVRE-satisfait" {% if tapis.statut == 'LIVRE-satisfait' %}selected{% endif %}>Livré - Client satisfait</option>
                         <option value="LIVRE-insatisfait" {% if tapis.statut == 'LIVRE-insatisfait' %}selected{% endif %}>Livré - Client insatisfait</option>

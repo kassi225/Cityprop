@@ -89,8 +89,8 @@
                 <label class="label-filter text-muted">Statut / Satisfaction</label>
                 <select name="statut" class="form-select form-select-sm">
                     <option value="">Statut (Tous)</option>
-                    <option value="NON_RESPECTE" {% if statut_filter == "NON_RESPECTE" %}selected{% endif %}>En cours</option>
-                    <option value="PRET" {% if statut_filter == "PRET" %}selected{% endif %}>En attente</option>
+                    <option value="NON_RESPECTE" {% if statut_filter == "NON_RESPECTE" %}selected{% endif %}>En cours(en Atelier)</option>
+                    <option value="PRET" {% if statut_filter == "PRET" %}selected{% endif %}>En attente(sortie d'Atelier)</option>
                     <option value="CLIENT_INDISPO" {% if statut_filter == "CLIENT_INDISPO" %}selected{% endif %}>Tapis Prêt client indisponible</option>
                     <option value="LIVRE-satisfait" {% if statut_filter == "LIVRE-satisfait" %}selected{% endif %}>Livré - client satisfait</option>
                     <option value="LIVRE-insatisfait" {% if statut_filter == "LIVRE-insatisfait" %}selected{% endif %}>Livré - client insatisfait</option>

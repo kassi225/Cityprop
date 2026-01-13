@@ -33,45 +33,91 @@
     .kpi-value { font-size: 1.8rem; font-weight: 800; line-height: 1; margin-bottom: 4px; }
     .kpi-label { font-size: 0.85rem; color: #64748b; font-weight: 600; text-transform: uppercase; }
 
-    /* SECTIONS */
-    .section-card {
-        border: none;
-        border-radius: 16px;
-        background: #ffffff;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-    }
-    .section-title {
-        font-size: 1.1rem; font-weight: 700; color: #1e293b;
-        display: flex; align-items: center; gap: 10px; padding-bottom: 15px;
-        border-bottom: 1px solid #f1f5f9; margin-bottom: 20px;
-    }
+   /* Barre de filtre épurée et intelligente */
+.filter-bar-minimal {
+    position: sticky;
+    top: 60px; /* AJUSTEZ CETTE VALEUR selon la hauteur de votre navbar */
+    z-index: 1010;
+    background: rgba(255, 255, 255, 0.95);
+    border-bottom: 1px solid #e2e8f0;
+    margin: -24px -24px 24px -24px; /* Aligné sur les bords du container */
+    padding: 10px 24px;
+    backdrop-filter: blur(8px);
+}
 
-    /* BADGES STATUS */
-    .badge-soft {
-        padding: 6px 12px; border-radius: 8px; font-weight: 600; font-size: 0.75rem;
-    }
-    .bg-soft-danger { background: var(--danger-soft); color: #dc2626; }
-    .bg-soft-warning { background: var(--warning-soft); color: #d97706; }
-    .bg-soft-success { background: var(--success-soft); color: #059669; }
-    .bg-soft-info { background: var(--primary-soft); color: #2563eb; }
+.input-flat {
+    background: #f8fafc !important;
+    border: 1px solid #cbd5e1 !important;
+    border-radius: 6px !important;
+    font-size: 0.8rem !important;
+}
 
-    /* TABLE */
-    .table thead th {
-        background: #f8fafc; border: none; color: #64748b;
-        font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em;
-    }
-    .table td { vertical-align: middle; border-top: 1px solid #f1f5f9; padding: 12px 8px; }
+.btn-update {
+    background: #2563eb;
+    color: white;
+    font-size: 0.8rem;
+    padding: 5px 15px;
+    border: none;
+    border-radius: 6px;
+    font-weight: 600;
+}
+
+.btn-update:hover { background: #1d4ed8; color: white; }
+
+
 </style>
 
 <div class="container-fluid py-4" style="background-color: #f8fafc; min-height: 100vh;">
     
+    <div class="filter-bar-minimal shadow-sm d-flex align-items-center">
+        <form method="GET" class="d-flex align-items-center gap-3 w-100">
+            <div class="small fw-bold text-secondary text-uppercase" style="letter-spacing: 0.5px;">
+                <i class="fa-solid fa-sliders me-1"></i> Période
+            </div>
+            
+            <div class="d-flex align-items-center gap-2">
+                <input type="date" name="start_date" class="form-control form-control-sm input-flat" value="{{ start_date }}">
+                <span class="text-muted small">à</span>
+                <input type="date" name="end_date" class="form-control form-control-sm input-flat" value="{{ end_date }}">
+            </div>
+
+            <button type="submit" class="btn btn-update">
+                Filtrer
+            </button>
+
+            {% if start_date %}
+            <a href="{% url 'dashboard' %}" class="text-danger small fw-bold text-decoration-none ms-2">
+                Effacer
+            </a>
+            {% endif %}
+
+            <div class="ms-auto d-none d-md-block">
+                 <span class="badge bg-light text-dark border small fw-normal">
+                    <i class="far fa-calendar-alt me-1 text-primary"></i> {% now "d F Y" %}
+                 </span>
+            </div>
+        </form>
+    </div>
+
+    
+    <div class="d-flex justify-content-between align-items-center mb-4 px-2">
+        <div>
+           
+            <p class="text-muted mb-0 small">
+                {% if start_date %}
+                    Période du <span class="fw-bold text-primary">{{ start_date }}</span> au <span class="fw-bold text-primary">{{ end_date }}</span>
+                {% else %}
+                    Toutes les statistiques globales
+                {% endif %}
+            </p>
+        </div>
+        
+    </div>
+           
     <div class="d-flex justify-content-between align-items-center mb-4 px-2">
         <div>
             <h2 class="fw-bold text-dark mb-0">Tableau de Bord</h2>
-            <p class="text-muted mb-0 small">Bienvenue sur votre espace de gestion CityProp</p>
-        </div>
-        <div class="text-muted small fw-bold">
-            <i class="far fa-calendar-alt me-1"></i> {% now "d F Y" %}
+            <p class="text-muted mb-0 small">Analyse de l'activité CityProp</p>
         </div>
     </div>
 
@@ -140,7 +186,7 @@
                 <div class="col-md-6">
                     <div class="card section-card p-4 h-100 border-start border-danger border-4 shadow-sm">
                         <div class="section-title text-danger fw-bold mb-3">
-                            <i class="fa-solid fa-triangle-exclamation me-2"></i> Alertes Critiques
+                            <i class="fa-solid fa-triangle-exclamation me-2"></i> Alertes Fidelisation
                         </div>
 
                         <div class="list-group list-group-flush">
@@ -215,7 +261,7 @@
                 <div class="section-title text-warning"><i class="fa-solid fa-clock"></i> Focus Tapis</div>
                 <div class="text-center mb-3 py-3 bg-soft-warning rounded-3">
                     <div class="h2 fw-bold text-warning mb-0">{{ alertes_tapis_7j }}</div>
-                    <div class="small fw-bold">Tapis en retard (+7j)</div>
+                    <div class="small fw-bold">Tapis en retard (+11j)</div>
                 </div>
                 <a href="{% url 'alertes_tapis_retard' %}" class="btn btn-warning w-100 rounded-pill fw-bold">
                     Gérer les retards

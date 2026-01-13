@@ -23,6 +23,7 @@ from django.contrib.auth.decorators import login_required, user_passes_test
 from django.template.loader import get_template
 from django.urls import reverse
 from django.utils import timezone
+from datetime import datetime, timedelta, time
 
 # 4. Django Database & Forms
 from django.db import transaction
@@ -213,56 +214,57 @@ def telecharger_devis_pdf(request, facture_id):
 
 @login_required
 def dashboard(request):
-    # On récupère l'instant présent (avec fuseau horaire)
+    # Temps présent
     now = timezone.now()
     today = now.date()
     
-    # CORRECTION : On crée un datetime complet pour le 1er du mois à 00:00:00
-    # Cela évite le RuntimeWarning lors de la comparaison avec date_creation
-    first_day_month = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+    # 1. RÉCUPÉRATION DES FILTRES (Dates exactes)
+    start_date_str = request.GET.get('start_date')
+    end_date_str = request.GET.get('end_date')
+    
+    commande_filter = Q()
+    details_filter = Q()
 
-    # Comptages globaux
-    total_commandes = Commande.objects.count()
-    total_cityprop = Commande.objects.filter(type_commande="CITYPROP").count()
-    total_clim = Commande.objects.filter(type_commande="CLIMATISEUR").count()
-    total_tapis = Commande.objects.filter(type_commande="TAPISPROP").count()
+    if start_date_str and end_date_str:
+        try:
+            # Conversion des strings en objets date
+            d_start = datetime.strptime(start_date_str, "%Y-%m-%d").date()
+            d_end = datetime.strptime(end_date_str, "%Y-%m-%d").date()
+            
+            # Création de datetimes aware pour couvrir toute la journée (00:00:00 à 23:59:59)
+            dt_start = timezone.make_aware(datetime.combine(d_start, time.min))
+            dt_end = timezone.make_aware(datetime.combine(d_end, time.max))
+            
+            commande_filter &= Q(date_creation__range=(dt_start, dt_end))
+            details_filter &= Q(commande__date_creation__range=(dt_start, dt_end))
+        except ValueError:
+            pass
 
-    # Fidélisation
-    fidelises = CityClimaDetails.objects.filter(fidelise=True).count() + TapisDetails.objects.filter(fidelise=True).count()
+    # 2. COMPTAGES (Basés sur les filtres)
+    total_commandes = Commande.objects.filter(commande_filter).count()
+    total_cityprop = Commande.objects.filter(commande_filter, type_commande="CITYPROP").count()
+    total_clim = Commande.objects.filter(commande_filter, type_commande="CLIMATISEUR").count()
+    total_tapis = Commande.objects.filter(commande_filter, type_commande="TAPISPROP").count()
+
+    # 3. FIDÉLISATION
+    fidelises = CityClimaDetails.objects.filter(details_filter, fidelise=True).count() + \
+                TapisDetails.objects.filter(details_filter, fidelise=True).count()
     non_fidelises = total_commandes - fidelises
     
-    # Utilisation de first_day_month (Datetime aware)
-    fidelisations_mois = CityClimaDetails.objects.filter(fidelise=True, commande__date_creation__gte=first_day_month).count() + \
-                        TapisDetails.objects.filter(fidelise=True, commande__date_creation__gte=first_day_month).count()
-
-    # Alertes TAPIS >7 jours (Ici today est utilisable car date_ramassage est souvent un DateField simple)
+    # 4. ALERTES (Filtrées par période d'entrée)
     alertes_tapis_7j = TapisDetails.objects.filter(
-        date_ramassage__lte=today - timedelta(days=7),
+        details_filter,
+        date_ramassage__lte=today - timedelta(days=11),
         statut__in=["NON_RESPECTE","PRET","CLIENT_INDISPO"]
     ).count()
 
-    tapis_traite_mois = TapisDetails.objects.filter(
-        statut__in=["LIVRE-satisfait","LIVRE-insatisfait"],
-        commande__date_creation__gte=first_day_month
-    ).count()
+    alertes_city = CityClimaDetails.objects.filter(details_filter, fidelise=False, commande__type_commande='CITYPROP', date_intervention__lte=today - timedelta(days=180)).count()
+    alertes_clima = CityClimaDetails.objects.filter(details_filter, fidelise=False, commande__type_commande='CLIMATISEUR', date_intervention__lte=today - timedelta(days=90)).count()
+    alertes_tapis_fidelisation = TapisDetails.objects.filter(details_filter, fidelise=False, date_livraison__lte=today - timedelta(days=180)).count()
 
-    # Statuts TAPIS
-    tapis_non_respecte = TapisDetails.objects.filter(statut="NON_RESPECTE").count()
-    tapis_pret = TapisDetails.objects.filter(statut="PRET").count()
-    tapis_client_indispo = TapisDetails.objects.filter(statut="CLIENT_INDISPO").count()
-    tapis_livre_satisfait = TapisDetails.objects.filter(statut="LIVRE-satisfait").count()
-    tapis_livre_insatisfait = TapisDetails.objects.filter(statut="LIVRE-insatisfait").count()
-
-    # Commandes récentes
-    commandes_recents = Commande.objects.order_by('-date_creation')[:5]
-    
-    # Alertes fidélisation
-    alertes_city = CityClimaDetails.objects.filter(fidelise=False, commande__type_commande='CITYPROP', date_intervention__lte=today - timedelta(days=180)).count()
-    alertes_clima = CityClimaDetails.objects.filter(fidelise=False, commande__type_commande='CLIMATISEUR', date_intervention__lte=today - timedelta(days=90)).count()
-    alertes_tapis_fidelisation = TapisDetails.objects.filter(fidelise=False, date_livraison__lte=today - timedelta(days=180)).count()
-
-    # Top clients
-    top_clients = Commande.objects.values("nom_client").annotate(total=Count("id")).order_by("-total")[:5]
+    # 5. LISTES ET TOP CLIENTS
+    commandes_recents = Commande.objects.filter(commande_filter).order_by('-date_creation')[:5]
+    top_clients = Commande.objects.filter(commande_filter).values("nom_client").annotate(total=Count("id")).order_by("-total")[:5]
 
     context = {
         "total_commandes": total_commandes,
@@ -271,22 +273,18 @@ def dashboard(request):
         "total_tapis": total_tapis,
         "fidelises": fidelises,
         "non_fidelises": non_fidelises,
-        "fidelisations_mois": fidelisations_mois,
         "alertes_city": alertes_city,
         "alertes_clima": alertes_clima,
         "alertes_tapis_fidelisation": alertes_tapis_fidelisation,
         "alertes_tapis_7j": alertes_tapis_7j,
-        "tapis_traite_mois": tapis_traite_mois,
-        "tapis_non_respecte": tapis_non_respecte,
-        "tapis_pret": tapis_pret,
-        "tapis_client_indispo": tapis_client_indispo,
-        "tapis_livre_satisfait": tapis_livre_satisfait,
-        "tapis_livre_insatisfait": tapis_livre_insatisfait,
         "commandes_recents": commandes_recents,
         "top_clients": top_clients,
+        "start_date": start_date_str,
+        "end_date": end_date_str,
     }
 
     return render(request, "index/dashboard.html", context)
+
 
 @login_required
 def nouvelle_commande(request):
@@ -852,7 +850,7 @@ def alertes_tapis_retard(request):
     # =========================
     alertes = TapisDetails.objects.filter(
         date_ramassage__isnull=False,
-        date_ramassage__lte=today - timedelta(days=7)
+        date_ramassage__lte=today - timedelta(days=11)
     ).exclude(
         statut__in=STATUTS_FINAUX
     )

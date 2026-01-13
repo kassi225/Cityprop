@@ -30,7 +30,7 @@ def alertes_sidebar(request):
     # 4. RETARD LOGISTIQUE : Tapis (Non livrés 7 jours après RAMASSAGE)
     alertes_tapis_retard = TapisDetails.objects.filter(
         date_ramassage__isnull=False,
-        date_ramassage__lte=today - timedelta(days=7)
+        date_ramassage__lte=today - timedelta(days=11)
     ).exclude(
         statut__in=['LIVRE_SATISFAIT', 'LIVRE_INSATISFAIT', 'ABANDON']
     ).count()

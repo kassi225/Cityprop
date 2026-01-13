@@ -164,8 +164,8 @@ class CityClimaDetails(models.Model):
 
 class TapisDetails(models.Model):
     STATUT_CHOICES = (
-        ('NON_RESPECTE', 'En cours'),
-        ('PRET', 'En attente'),
+        ('NON_RESPECTE', 'En cours(en Atelier)'),
+        ('PRET', 'En attente(Sortie Atelier)'),
         ('CLIENT_INDISPO', 'Tapis prêt Client indisponible'),
         ('LIVRE_SATISFAIT', 'Livré - Client satisfait'),
         ('LIVRE_INSATISFAIT', 'Livré - Client insatisfait'),
