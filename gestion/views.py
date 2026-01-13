@@ -355,18 +355,18 @@ def liste_fiches(request):
     # 1. Optimisation SQL initiale
     commandes_qs = Commande.objects.select_related('cityclimadetails', 'tapisdetails').all()
 
-    # 2. Récupération de TOUS les filtres
+    # 2. Récupération des filtres
     search_query = request.GET.get('q', '')
     type_filter = request.GET.get('type_commande', '')
     statut_filter = request.GET.get('statut', '')
     nom_filter = request.GET.get('nom_client', '')
     numero_filter = request.GET.get('numero_client', '')
-    date_crea = request.GET.get('date_crea', '') # Date de saisie
-    date_debut = request.GET.get('date_debut', '') # Plage opération début
-    date_fin = request.GET.get('date_fin', '')     # Plage opération fin
+    date_crea = request.GET.get('date_crea', '') 
+    date_debut = request.GET.get('date_debut', '') 
+    date_fin = request.GET.get('date_fin', '')     
     fidelise_filter = request.GET.get('fidelise', '')
 
-    # 3. Application des filtres sur le QuerySet (SQL)
+    # 3. Application des filtres SQL
     if search_query:
         commandes_qs = commandes_qs.filter(
             Q(nom_client__icontains=search_query) |
@@ -396,43 +396,45 @@ def liste_fiches(request):
     elif fidelise_filter == "non":
         commandes_qs = commandes_qs.filter(Q(cityclimadetails__fidelise=False) | Q(tapisdetails__fidelise=False))
 
-    # 4. Conversion en liste pour le TRI MÉTIER
+    # 4. Conversion en liste pour le TRI MÉTIER (Dates hybrides)
     commandes_list = list(commandes_qs.distinct())
 
     def obtenir_date_tri(cmd):
-        """Récupère la date d'opération (ramassage ou intervention)"""
+        """Récupère la date d'opération selon le type"""
         try:
-            if cmd.type_commande == 'TAPISPROP' and cmd.tapisdetails:
+            if cmd.type_commande == 'TAPISPROP' and hasattr(cmd, 'tapisdetails') and cmd.tapisdetails:
                 return cmd.tapisdetails.date_ramassage or cmd.date_creation.date()
-            if cmd.cityclimadetails:
+            if hasattr(cmd, 'cityclimadetails') and cmd.cityclimadetails:
                 return cmd.cityclimadetails.date_intervention or cmd.date_creation.date()
         except:
             pass
         return cmd.date_creation.date()
 
-    # Tri par date d'opération (du plus récent au plus ancien)
+    # Tri : Plus récent au plus ancien
     commandes_list.sort(key=obtenir_date_tri, reverse=True)
 
-    # 5. Filtrage par PLAGE de date d'opération (sur la liste triée)
+    # 5. Filtrage par PLAGE (Correction de l'AttributeError ici)
     if date_debut or date_fin:
         try:
-            d_deb = datetime.datetime.strptime(date_debut, '%Y-%m-%d').date() if date_debut else None
-            d_fin = datetime.datetime.strptime(date_fin, '%Y-%m-%d').date() if date_fin else None
+            # On utilise datetime.strptime car "from datetime import datetime" est utilisé
+            d_deb = datetime.strptime(date_debut, '%Y-%m-%d').date() if date_debut else None
+            d_fin = datetime.strptime(date_fin, '%Y-%m-%d').date() if date_fin else None
+            
             commandes_list = [
                 c for c in commandes_list 
                 if (not d_deb or obtenir_date_tri(c) >= d_deb) and (not d_fin or obtenir_date_tri(c) <= d_fin)
             ]
-        except ValueError:
+        except (ValueError, TypeError):
             pass
 
-    # 6. PAGINATION (Indispensable pour définir page_obj)
-    paginator = Paginator(commandes_list, 9) # 15 par page
+    # 6. Pagination
+    paginator = Paginator(commandes_list, 10) 
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
 
-    # 7. CONTEXTE COMPLET
+    # 7. Contexte
     context = {
-        'commandes': page_obj,  # C'est ici que page_obj est passé au template
+        'commandes': page_obj,
         'today': timezone.now().date(),
         'search_query': search_query,
         'type_filter': type_filter,
@@ -446,6 +448,8 @@ def liste_fiches(request):
     }
     
     return render(request, 'index/liste_fiches.html', context)
+
+
 
 @login_required
 def detail_fiche(request, fiche_id):
