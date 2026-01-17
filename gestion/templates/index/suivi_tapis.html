@@ -69,58 +69,49 @@
         border: 1px solid rgba(0,0,0,0.2);
     }
 
+    .comment-text {
+        font-style: italic;
+        font-size: 0.75rem;
+        max-width: 200px;
+        display: block;
+        line-height: 1.1;
+    }
+
     .flash-alert { animation: blinker 1.2s linear infinite; }
     @keyframes blinker { 50% { opacity: 0.1; } }
 </style>
 
 <div class="container-fluid py-2">
 
-    <!-- HEADER -->
     <div class="d-flex justify-content-between align-items-center mb-2">
         <h5 class="fw-bold text-dark mb-0">
             <i class="fa-solid fa-person-digging text-success me-2"></i>
             SUIVI TRAITEMENT ATELIER
         </h5>
         <div class="d-flex align-items-center gap-3">
-            
             <a href="{% url 'liste_fiches' %}" class="btn btn-sm btn-outline-secondary">
                 <i class="fa-solid fa-list me-1"></i> Toutes les fiches
             </a>
         </div>
     </div>
 
-    <!-- FILTRES -->
     <div class="filter-card shadow-sm">
         <form method="GET" action="{% url 'suivi_atelier_tapis' %}" class="row g-2">
-
             <div class="col-md-3">
-                <input type="text"
-                       name="q"
-                       class="form-control form-control-sm"
-                       placeholder="N° Client ou Nom..."
-                       value="{{ request.GET.q }}">
+                <input type="text" name="q" class="form-control form-control-sm" placeholder="N° Client ou Nom..." value="{{ request.GET.q }}">
             </div>
 
             <div class="col-md-2">
                 <select name="alerte" class="form-select form-select-sm">
                     <option value="">-- Niveau d'alerte --</option>
-                    <option value="RETARD" {% if request.GET.alerte == "RETARD" %}selected{% endif %}>
-                        🔴 RETARD CRITIQUE
-                    </option>
-                    <option value="URGENT" {% if request.GET.alerte == "URGENT" %}selected{% endif %}>
-                        🟡 VITE (J-1)
-                    </option>
-                    <option value="NORMAL" {% if request.GET.alerte == "NORMAL" %}selected{% endif %}>
-                        ⚪ En temps voulu
-                    </option>
+                    <option value="RETARD" {% if request.GET.alerte == "RETARD" %}selected{% endif %}>🔴 RETARD CRITIQUE</option>
+                    <option value="URGENT" {% if request.GET.alerte == "URGENT" %}selected{% endif %}>🟡 VITE (J-1)</option>
+                    <option value="NORMAL" {% if request.GET.alerte == "NORMAL" %}selected{% endif %}>⚪ En temps voulu</option>
                 </select>
             </div>
 
             <div class="col-md-3">
-                <input type="date"
-                       name="date"
-                       class="form-control form-control-sm"
-                       value="{{ request.GET.date }}">
+                <input type="date" name="date" class="form-control form-control-sm" value="{{ request.GET.date }}">
             </div>
 
             <div class="col-md-4 d-flex gap-2">
@@ -131,11 +122,9 @@
                     <i class="fa-solid fa-rotate-left"></i>
                 </a>
             </div>
-
         </form>
     </div>
 
-    <!-- TABLE -->
     <div class="card shadow-sm border-0">
         <div class="table-container">
             <table class="table table-fixed table-compact-custom mb-0">
@@ -146,17 +135,13 @@
                         <th class="text-center">Tapis</th>
                         <th>Date Fin Traitement</th>
                         <th>Statut</th>
-                        <th class="text-end">Action</th>
+                        <th>Commentaire</th> <th class="text-end">Action</th>
                     </tr>
                 </thead>
 
                 <tbody>
                 {% for tapis in page_obj %}
-                    <tr class="
-                        {% if tapis.niveau_urgence == 'RETARD' %}tr-retard
-                        {% elif tapis.niveau_urgence == 'URGENT' %}tr-urgent
-                        {% else %}tr-normal{% endif %}
-                    ">
+                    <tr class="{% if tapis.niveau_urgence == 'RETARD' %}tr-retard{% elif tapis.niveau_urgence == 'URGENT' %}tr-urgent{% else %}tr-normal{% endif %}">
 
                         <td class="fw-bold">
                             {% if tapis.niveau_urgence == "RETARD" %}
@@ -169,34 +154,31 @@
                         </td>
 
                         <td>
-                            <div class="fw-bold">
-                                {{ tapis.commande.nom_client|truncatechars:25 }}
-                            </div>
-                            <small class="opacity-75">
-                                {{ tapis.commande.numero_client }}
-                            </small>
+                            <div class="fw-bold">{{ tapis.commande.nom_client|truncatechars:25 }}</div>
+                            <small class="opacity-75">{{ tapis.commande.numero_client }}</small>
                         </td>
 
                         <td class="text-center">
-                            <span class="badge badge-white-custom shadow-sm px-2">
-                                {{ tapis.nombre_tapis }}
-                            </span>
+                            <span class="badge badge-white-custom shadow-sm px-2">{{ tapis.nombre_tapis }}</span>
                         </td>
 
                         <td class="fw-bold">
                             <i class="fa-regular fa-calendar-days me-1"></i>
                             {{ tapis.date_traitement|date:"d/m/Y" }}
-
                             {% if tapis.niveau_urgence == "RETARD" %}
-                                <div style="font-size:0.7rem;">
-                                    (Dépassé de {{ tapis.date_traitement|timesince }})
-                                </div>
+                                <div style="font-size:0.7rem;">(Dépassé de {{ tapis.date_traitement|timesince }})</div>
                             {% endif %}
                         </td>
 
                         <td>
                             <span class="badge bg-light text-dark border shadow-sm" style="font-size:0.7rem;">
                                 {{ tapis.get_statut_display }}
+                            </span>
+                        </td>
+
+                        <td>
+                            <span class="comment-text">
+                                {{ tapis.commentaire|default:"---"|truncatechars:60 }}
                             </span>
                         </td>
 
@@ -210,9 +192,7 @@
                     </tr>
                 {% empty %}
                     <tr>
-                        <td colspan="6" class="text-center py-5">
-                            Aucun résultat pour ces filtres.
-                        </td>
+                        <td colspan="7" class="text-center py-5">Aucun résultat pour ces filtres.</td>
                     </tr>
                 {% endfor %}
                 </tbody>
@@ -220,32 +200,23 @@
         </div>
     </div>
 
-    <!-- PAGINATION -->
     {% if page_obj.has_other_pages %}
     <div class="mt-2">
         <nav>
             <ul class="pagination pagination-sm justify-content-center mb-0">
                 {% if page_obj.has_previous %}
                 <li class="page-item">
-                    <a class="page-link"
-                       href="?page={{ page_obj.previous_page_number }}&q={{ request.GET.q }}&alerte={{ request.GET.alerte }}&date={{ request.GET.date }}">
-                        &laquo;
-                    </a>
+                    <a class="page-link" href="?page={{ page_obj.previous_page_number }}&q={{ request.GET.q }}&alerte={{ request.GET.alerte }}&date={{ request.GET.date }}">&laquo;</a>
                 </li>
                 {% endif %}
 
                 <li class="page-item active">
-                    <span class="page-link px-3">
-                        {{ page_obj.number }} / {{ page_obj.paginator.num_pages }}
-                    </span>
+                    <span class="page-link px-3">{{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span>
                 </li>
 
                 {% if page_obj.has_next %}
                 <li class="page-item">
-                    <a class="page-link"
-                       href="?page={{ page_obj.next_page_number }}&q={{ request.GET.q }}&alerte={{ request.GET.alerte }}&date={{ request.GET.date }}">
-                        &raquo;
-                    </a>
+                    <a class="page-link" href="?page={{ page_obj.next_page_number }}&q={{ request.GET.q }}&alerte={{ request.GET.alerte }}&date={{ request.GET.date }}">&raquo;</a>
                 </li>
                 {% endif %}
             </ul>
@@ -255,6 +226,5 @@
 
 </div>
 
-<link rel="stylesheet"
-      href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
 {% endblock %}

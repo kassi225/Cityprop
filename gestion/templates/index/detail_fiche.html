@@ -317,9 +317,9 @@ input, select, textarea { font-size: 0.85rem; padding: 0.5rem 0.75rem; border-ra
                             <label class="form-label small fw-bold"><i class="fas fa-smile me-1 text-warning"></i>Niveau de Satisfaction</label>
                             <select name="satisfaction" class="form-select form-select-sm">
                                 <option value="">-- Choisir --</option>
-                                <option value="OK" {% if cityclima.satisfaction == 'OK' %}selected{% endif %}>✅ OK (Terminé)</option>
-                                <option value="KO_RET" {% if cityclima.satisfaction == 'KO_RET' %}selected{% endif %}>🔄 KO - Retouche nécessaire</option>
-                                <option value="KO_REFUS" {% if cityclima.satisfaction == 'KO_REFUS' %}selected{% endif %}>❌ KO - Refus client</option>
+                                <option value="OK" {% if cityclima.satisfaction == 'OK' %}selected{% endif %}>✅ OK - client satisfait</option>
+                                <option value="KO_RET" {% if cityclima.satisfaction == 'KO_RET' %}selected{% endif %}>🔄 KO - client accepte retouche</option>
+                                <option value="KO_REFUS" {% if cityclima.satisfaction == 'KO_REFUS' %}selected{% endif %}>❌ KO - Refus retouche client</option>
                             </select>
                         </div>
                     </div>

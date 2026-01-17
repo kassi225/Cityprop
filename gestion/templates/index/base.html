@@ -25,7 +25,7 @@
         body { margin: 0; font-family: "Inter", sans-serif; background: var(--bg-body); display: flex; min-height: 100vh; }
         a { text-decoration: none; color: inherit; }
 
-        /* SIDEBAR */
+        /* SIDEBAR ORIGINALE */
         .sidebar {
             width: var(--sidebar-width); background: #fff; height: 100vh; padding: 25px 20px;
             box-shadow: 2px 0 12px rgba(0,0,0,0.06); position: fixed;
@@ -38,78 +38,59 @@
         }
         .logo img { width: 36px; height: 36px; border-radius: 8px; object-fit: cover; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
         
-        .menu { list-style: none; padding: 0; margin: 0; overflow-y: auto; }
+        .menu { list-style: none; padding: 0; margin: 0; overflow-y: auto; flex-grow: 1; }
         .menu li { margin: 8px 0; }
         
-        .menu a {
+        /* STYLE DES LIENS (VOTRE STYLE PRECEDENT) */
+        .menu a, .submenu-btn {
             padding: 12px 16px; display: flex; align-items: center; gap: 12px;
             border-radius: 12px; font-weight: 500; color: #4b5563;
             transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1); 
-            font-size: 14.5px; position: relative;
+            font-size: 14.5px; position: relative; cursor: pointer; border: none; background: none; width: 100%;
         }
 
-        .menu a i { 
+        .menu a i, .submenu-btn i { 
             width: 20px; font-size: 16px; color: #9ca3af; 
             transition: transform 0.3s ease, color 0.3s ease;
         }
 
-        /* --- ANIMATIONS AU SURVOL (HOVER) --- */
-        .menu a:hover {
-            background: #f0fdf4;
-            color: var(--primary-green);
-            transform: translateX(8px); /* Petit décalage vers la droite */
+        .menu a:hover, .submenu-btn:hover {
+            background: #f0fdf4; color: var(--primary-green); transform: translateX(8px);
             box-shadow: 0 4px 10px rgba(29, 154, 108, 0.08);
         }
 
-        .menu a:hover i {
-            color: var(--primary-green);
-            transform: scale(1.2) rotate(-10deg); /* L'icône grossit et penche */
-        }
+        .menu a:hover i, .submenu-btn:hover i { color: var(--primary-green); transform: scale(1.2) rotate(-10deg); }
 
-        /* ÉTAT ACTIF */
         .menu a.active {
-            background: var(--primary-green);
-            color: white !important;
-            font-weight: 600;
-            box-shadow: 0 4px 15px rgba(29, 154, 108, 0.2);
+            background: var(--primary-green); color: white !important;
+            font-weight: 600; box-shadow: 0 4px 15px rgba(29, 154, 108, 0.2);
         }
         .menu a.active i { color: white; }
-        
-        /* TOPBAR */
+
+        /* SOUS-MENU */
+        .submenu { list-style: none; padding-left: 20px; margin-top: 5px; }
+        .submenu a { padding: 10px 16px; font-size: 13.5px; }
+        .chevron { margin-left: auto; font-size: 12px; transition: transform 0.3s; }
+        .submenu-btn[aria-expanded="true"] .chevron { transform: rotate(180deg); }
+
+        /* TOPBAR & AUTRES */
         .topbar {
             background: var(--dark-green); height: var(--topbar-height); position: fixed; 
-            left: var(--sidebar-width); top: 0;
-            width: calc(100% - var(--sidebar-width)); z-index: 1000; padding: 0 20px;
-            display: flex; justify-content: space-between; align-items: center;
+            left: var(--sidebar-width); top: 0; width: calc(100% - var(--sidebar-width)); 
+            z-index: 1000; padding: 0 20px; display: flex; justify-content: space-between; align-items: center;
             box-shadow: 0 2px 8px rgba(0,0,0,0.15); transition: all var(--transition-speed) ease;
         }
+        .menu-toggle { display: none; background: transparent; border: none; color: white; font-size: 22px; cursor: pointer; }
+        .content { margin-left: var(--sidebar-width); width: calc(100% - var(--sidebar-width)); padding: 20px; padding-top: calc(var(--topbar-height) + 20px); transition: all var(--transition-speed) ease; }
+        .sidebar-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4); z-index: 1040; backdrop-filter: blur(2px); }
 
-        .menu-toggle {
-            display: none; background: transparent; border: none; color: white; font-size: 22px; cursor: pointer;
-        }
-
-        /* CONTENT */
-        .content { 
-            margin-left: var(--sidebar-width); width: calc(100% - var(--sidebar-width)); 
-            padding: 20px; padding-top: calc(var(--topbar-height) + 20px); transition: all var(--transition-speed) ease;
-        }
-
-        /* OVERLAY MOBILE */
-        .sidebar-overlay {
-            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.4); z-index: 1040; backdrop-filter: blur(2px);
-        }
-
-        /* RESPONSIVE DESIGN */
         @media (max-width: 992px) {
             .sidebar { transform: translateX(-100%); }
             .sidebar.active { transform: translateX(0); }
             .sidebar-overlay.active { display: block; }
             .topbar { left: 0; width: 100%; }
-            .content { margin-left: 0; width: 100%; padding: 15px; padding-top: calc(var(--topbar-height) + 15px); }
+            .content { margin-left: 0; width: 100%; }
             .menu-toggle { display: block; }
-            .topbar-logo { display: flex; align-items: center; gap: 8px; color: white; font-weight: 700; font-size: 16px; }
-            .topbar-logo img { width: 32px; border-radius: 6px; }
             .logout-text { display: none; }
         }
     </style>
@@ -127,43 +108,68 @@
 
         <ul class="menu">
             <li><a href="{% url 'dashboard' %}" class="{% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}"><i class="fa-solid fa-gauge-high"></i> Dashboard</a></li>
-            <li><a href="{% url 'nouvelle_commande' %}" class="{% if request.resolver_match.url_name == 'nouvelle_commande' %}active{% endif %}"><i class="fa-solid fa-cart-plus"></i> Créer une commande</a></li>
-            <li><a href="{% url 'liste_fiches' %}" class="{% if request.resolver_match.url_name == 'liste_fiches' %}active{% endif %}"><i class="fa-solid fa-clipboard-list"></i> Liste des commandes</a></li>
-            
+
             <li>
-                <a href="{% url 'alertes_fidelisation' %}" class="{% if request.resolver_match.url_name == 'alertes_fidelisation' %}active{% endif %}">
-                    <i class="fa-solid fa-heart-circle-bolt"></i> Fidélisation 
-                    {% if total_fidelisation > 0 %}
-                        <span class="badge bg-warning text-dark ms-auto">{{ total_fidelisation }}</span>
-                    {% endif %}
-                </a>
+                <div class="submenu-btn" data-bs-toggle="collapse" data-bs-target="#subCommandes" aria-expanded="{% if 'commande' in request.path or 'fiches' in request.path or 'fidelisation' in request.path %}true{% else %}false{% endif %}">
+                    <i class="fa-solid fa-file-invoice"></i> COMMANDES
+                    <i class="fa-solid fa-chevron-down chevron"></i>
+                </div>
+                <div class="collapse {% if 'commande' in request.path or 'fiches' in request.path or 'fidelisation' in request.path %}show{% endif %}" id="subCommandes">
+                    <ul class="submenu">
+                        <li><a href="{% url 'nouvelle_commande' %}" class="{% if request.resolver_match.url_name == 'nouvelle_commande' %}active{% endif %}"><i class="fa-solid fa-plus-circle"></i> Créer commande</a></li>
+                        <li><a href="{% url 'liste_fiches' %}" class="{% if request.resolver_match.url_name == 'liste_fiches' %}active{% endif %}"><i class="fa-solid fa-list-ul"></i> Liste commandes</a></li>
+                        <li>
+                            <a href="{% url 'alertes_fidelisation' %}" class="{% if request.resolver_match.url_name == 'alertes_fidelisation' %}active{% endif %}">
+                                <i class="fa-solid fa-heart"></i> Fidélisation 
+                                {% if total_fidelisation > 0 %}
+                                    <span class="badge bg-warning text-dark ms-auto">{{ total_fidelisation }}</span>
+                                {% endif %}
+                            </a>
+                        </li>
+                    </ul>
+                </div>
             </li>
 
             <li>
-                <a href="{% url 'alertes_tapis_retard' %}" class="{% if request.resolver_match.url_name == 'alertes_tapis_retard' %}active{% endif %}">
-                    <i class="fa-solid fa-bell"></i> Alertes tapis 
+                <div class="submenu-btn" data-bs-toggle="collapse" data-bs-target="#subTapis">
+                    <i class="fa-solid fa-rug"></i> TAPIS
                     {% if alertes_tapis_retard > 0 %}
-                        <span class="badge bg-danger ms-auto">{{ alertes_tapis_retard }}</span>
+                        <span class="badge bg-danger ms-2" style="font-size: 10px;">{{ alertes_tapis_retard }}</span>
                     {% endif %}
-                </a>
+                    <i class="fa-solid fa-chevron-down chevron"></i>
+                </div>
+                <div class="collapse {% if 'tapis' in request.path or 'atelier' in request.path %}show{% endif %}" id="subTapis">
+                    <ul class="submenu">
+                        <li>
+                            <a href="{% url 'alertes_tapis_retard' %}" class="{% if request.resolver_match.url_name == 'alertes_tapis_retard' %}active{% endif %}">
+                                <i class="fa-solid fa-bell"></i> Alertes tapis 
+                                {% if alertes_tapis_retard > 0 %}
+                                    <span class="badge bg-danger ms-auto">{{ alertes_tapis_retard }}</span>
+                                {% endif %}
+                            </a>
+                        </li>
+                        <li><a href="{% url 'suivi_atelier_tapis' %}" class="{% if request.resolver_match.url_name == 'suivi_atelier_tapis' %}active{% endif %}"><i class="fa-solid fa-clock-rotate-left"></i> Suivi Atelier</a></li>
+                        <li><a href="{% url 'listes_tapis_abandon' %}" class="{% if request.resolver_match.url_name == 'listes_tapis_abandon' %}active{% endif %}"><i class="fa-solid fa-box-open"></i> Tapis abandonnés</a></li>
+                    </ul>
+                </div>
             </li>
 
             <li>
-                <a href="{% url 'suivi_atelier_tapis' %}" class="{% if request.resolver_match.url_name == 'suivi_atelier_tapis' %}active{% endif %}">
-                    <i class="fa-solid fa-clock-rotate-left"></i> Suivi Atelier Tapis
-                </a>
+                <div class="submenu-btn" data-bs-toggle="collapse" data-bs-target="#subClima">
+                    <i class="fa-solid fa-wind"></i> CITYCLIMA
+                    <i class="fa-solid fa-chevron-down chevron"></i>
+                </div>
+                <div class="collapse {% if 'clima' in request.path or 'retouche' in request.path %}show{% endif %}" id="subClima">
+                    <ul class="submenu">
+                        <li><a href="{% url 'suivi_retouche_clima' %}" class="{% if request.resolver_match.url_name == 'suivi_retouche_clima' %}active{% endif %}"><i class="fa-solid fa-screwdriver-wrench"></i> Suivi Retouches</a></li>
+                    </ul>
+                </div>
             </li>
 
-            <li><a href="{% url 'listes_tapis_abandon' %}" class="{% if request.resolver_match.url_name == 'listes_tapis_abandon' %}active{% endif %}"><i class="fa-solid fa-box-open"></i> Tapis abandonnés</a></li>
-            
             {% if request.user.is_superuser or request.user.groups.all.0.name == "ADMIN" %}
             <hr class="my-3 mx-2 opacity-25">
             <li><a href="{% url 'dashboard_financier' %}" class="{% if request.resolver_match.url_name == 'dashboard_financier' %}active{% endif %}" style="color: var(--dark-green);"><i class="fa-solid fa-file-invoice-dollar"></i> Suivi Financier</a></li>
-            <li>
-                <a href="{% url 'gestion_caisse' %}" class="{% if request.resolver_match.url_name == 'gestion_caisse' %}active{% endif %}" style="color: var(--primary-green); font-weight: 700;">
-                    <i class="fa-solid fa-calculator"></i> Brouillard de Caisse
-                </a>
-            </li>
+            <li><a href="{% url 'gestion_caisse' %}" class="{% if request.resolver_match.url_name == 'gestion_caisse' %}active{% endif %}" style="color: var(--primary-green); font-weight: 700;"><i class="fa-solid fa-calculator"></i> Brouillard Caisse</a></li>
             <li><a href="/admin/" target="_blank" class="text-danger"><i class="fa-solid fa-user-shield"></i> Administration</a></li>
             {% endif %}
         </ul>
@@ -174,15 +180,10 @@
 </nav>
 
 <nav class="topbar">
-    <button class="menu-toggle" id="menuBtn">
-        <i class="fa-solid fa-bars"></i>
-    </button>
-    
+    <button class="menu-toggle" id="menuBtn"><i class="fa-solid fa-bars"></i></button>
     <div class="topbar-logo d-lg-none">
-        <img src="{% static 'images/cityprop_logo.png' %}" alt="Logo">
-        <span>CITYPROP</span>
+        <img src="{% static 'images/cityprop_logo.png' %}" alt="Logo"><span>CITYPROP</span>
     </div>
-
     <div class="ms-auto d-flex align-items-center gap-2 gap-md-3">
         <div class="d-none d-sm-flex flex-column text-end">
             <span class="username" style="color: white; font-size: 13px; font-weight: 600;">{{ request.user.username }}</span>
@@ -203,31 +204,17 @@
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
 <script>
-    // GESTION DU MENU MOBILE
     const menuBtn = document.getElementById('menuBtn');
     const sidebar = document.getElementById('sidebar');
     const overlay = document.getElementById('overlay');
-
-    function toggleMenu() {
-        sidebar.classList.toggle('active');
-        overlay.classList.toggle('active');
-    }
-
+    function toggleMenu() { sidebar.classList.toggle('active'); overlay.classList.toggle('active'); }
     menuBtn.addEventListener('click', toggleMenu);
     overlay.addEventListener('click', toggleMenu);
 
-    // GESTION DES MESSAGES SWAL
     {% if messages %}
-    const Toast = Swal.mixin({
-        toast: true, position: 'top-end', showConfirmButton: false, timer: 3000,
-        timerProgressBar: true
-    });
+    const Toast = Swal.mixin({ toast: true, position: 'top-end', showConfirmButton: false, timer: 3000, timerProgressBar: true });
     {% for message in messages %}
-    Toast.fire({
-        icon: '{% if message.tags == "error" %}error{% else %}success{% endif %}',
-        title: '{{ message|escapejs }}',
-        customClass: { popup: 'toast-border-{{ message.tags }}' }
-    });
+    Toast.fire({ icon: '{% if message.tags == "error" %}error{% else %}success{% endif %}', title: '{{ message|escapejs }}' });
     {% endfor %}
     {% endif %}
 </script>

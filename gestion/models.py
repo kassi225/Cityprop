@@ -134,8 +134,8 @@ class CityClimaDetails(models.Model):
     fidelise = models.BooleanField(default=False)
 
     SATISFACTION_CHOICES = (
-        ('OK', 'OK'),
-        ('KO_RET', 'KO - Retouche'),
+        ('OK', 'OK - client satisfait'),
+        ('KO_RET', 'KO - client accepte Retouche'),
         ('KO_REFUS', 'KO - Refus seconde intervention'),
     )
     satisfaction = models.CharField(

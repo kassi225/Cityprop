@@ -214,77 +214,73 @@ def telecharger_devis_pdf(request, facture_id):
 
 @login_required
 def dashboard(request):
-    # Temps présent
     now = timezone.now()
     today = now.date()
     
-    # 1. RÉCUPÉRATION DES FILTRES (Dates exactes)
+    # Traduction des jours pour Chart.js
+    jours_fr = {'Mon': 'Lun', 'Tue': 'Mar', 'Wed': 'Mer', 'Thu': 'Jeu', 'Fri': 'Ven', 'Sat': 'Sam', 'Sun': 'Dim'}
+    
+    # 1. FILTRES
     start_date_str = request.GET.get('start_date')
     end_date_str = request.GET.get('end_date')
-    
     commande_filter = Q()
     details_filter = Q()
 
     if start_date_str and end_date_str:
         try:
-            # Conversion des strings en objets date
             d_start = datetime.strptime(start_date_str, "%Y-%m-%d").date()
             d_end = datetime.strptime(end_date_str, "%Y-%m-%d").date()
-            
-            # Création de datetimes aware pour couvrir toute la journée (00:00:00 à 23:59:59)
             dt_start = timezone.make_aware(datetime.combine(d_start, time.min))
             dt_end = timezone.make_aware(datetime.combine(d_end, time.max))
-            
             commande_filter &= Q(date_creation__range=(dt_start, dt_end))
             details_filter &= Q(commande__date_creation__range=(dt_start, dt_end))
-        except ValueError:
-            pass
+        except ValueError: pass
 
-    # 2. COMPTAGES (Basés sur les filtres)
+    # 2. KPI - VOLUMES
     total_commandes = Commande.objects.filter(commande_filter).count()
     total_cityprop = Commande.objects.filter(commande_filter, type_commande="CITYPROP").count()
     total_clim = Commande.objects.filter(commande_filter, type_commande="CLIMATISEUR").count()
     total_tapis = Commande.objects.filter(commande_filter, type_commande="TAPISPROP").count()
 
-    # 3. FIDÉLISATION
-    fidelises = CityClimaDetails.objects.filter(details_filter, fidelise=True).count() + \
-                TapisDetails.objects.filter(details_filter, fidelise=True).count()
-    non_fidelises = total_commandes - fidelises
-    
-    # 4. ALERTES (Filtrées par période d'entrée)
+    # 3. KO RETOUR (Cityprop satisfaction KO_RET + Tapis statut KO_RET)
+    ko_city = CityClimaDetails.objects.filter(details_filter, satisfaction="KO_RET").count()
+    ko_tapis = TapisDetails.objects.filter(details_filter, statut="KO_RET").count()
+    total_ko_ret = ko_city + ko_tapis
+
+    # 4. ALERTE FIDÉLISATION GLOBALE (Tous les non fidélisés)
+    non_fidel_city = CityClimaDetails.objects.filter(details_filter, fidelise=False).count()
+    non_fidel_tapis = TapisDetails.objects.filter(details_filter, fidelise=False).count()
+    total_a_fideliser = non_fidel_city + non_fidel_tapis
+
+    # 5. RETARDS TAPIS (Plus de 11 jours et non livré)
     alertes_tapis_7j = TapisDetails.objects.filter(
         details_filter,
         date_ramassage__lte=today - timedelta(days=11),
-        statut__in=["NON_RESPECTE","PRET","CLIENT_INDISPO"]
+        statut__in=["NON_RESPECTE", "PRET", "CLIENT_INDISPO"]
     ).count()
 
-    alertes_city = CityClimaDetails.objects.filter(details_filter, fidelise=False, commande__type_commande='CITYPROP', date_intervention__lte=today - timedelta(days=180)).count()
-    alertes_clima = CityClimaDetails.objects.filter(details_filter, fidelise=False, commande__type_commande='CLIMATISEUR', date_intervention__lte=today - timedelta(days=90)).count()
-    alertes_tapis_fidelisation = TapisDetails.objects.filter(details_filter, fidelise=False, date_livraison__lte=today - timedelta(days=180)).count()
+    # 6. GRAPHIQUE COMPARATIF (Dates en Français)
+    stats_actuelle, stats_precedente, labels_jours = [], [], []
+    for i in range(6, -1, -1):
+        dA = today - timedelta(days=i)
+        stats_actuelle.append(Commande.objects.filter(date_creation__date=dA).count())
+        labels_jours.append(jours_fr.get(dA.strftime('%a'), dA.strftime('%a')))
+        stats_precedente.append(Commande.objects.filter(date_creation__date=dA - timedelta(days=7)).count())
 
-    # 5. LISTES ET TOP CLIENTS
+    # 7. LISTES
     commandes_recents = Commande.objects.filter(commande_filter).order_by('-date_creation')[:5]
     top_clients = Commande.objects.filter(commande_filter).values("nom_client").annotate(total=Count("id")).order_by("-total")[:5]
 
     context = {
-        "total_commandes": total_commandes,
-        "total_cityprop": total_cityprop,
-        "total_clim": total_clim,
-        "total_tapis": total_tapis,
-        "fidelises": fidelises,
-        "non_fidelises": non_fidelises,
-        "alertes_city": alertes_city,
-        "alertes_clima": alertes_clima,
-        "alertes_tapis_fidelisation": alertes_tapis_fidelisation,
-        "alertes_tapis_7j": alertes_tapis_7j,
-        "commandes_recents": commandes_recents,
-        "top_clients": top_clients,
-        "start_date": start_date_str,
-        "end_date": end_date_str,
+        "total_commandes": total_commandes, "total_cityprop": total_cityprop,
+        "total_clim": total_clim, "total_tapis": total_tapis,
+        "total_ko_ret": total_ko_ret, "total_a_fideliser": total_a_fideliser,
+        "alertes_tapis_7j": alertes_tapis_7j, "commandes_recents": commandes_recents,
+        "top_clients": top_clients, "stats_actuelle": stats_actuelle,
+        "stats_precedente": stats_precedente, "labels_jours": labels_jours,
+        "start_date": start_date_str, "end_date": end_date_str,
     }
-
     return render(request, "index/dashboard.html", context)
-
 
 @login_required
 def nouvelle_commande(request):
@@ -1699,11 +1695,18 @@ def generer_modele_excel(request):
 
     return response
 
+from django.shortcuts import render
+from django.db.models import Q
+from django.core.paginator import Paginator
+from datetime import date, timedelta
+from .models import TapisDetails
+
 def suivi_atelier_tapis(request):
     query = request.GET.get('q', '').strip()
     alerte = request.GET.get('alerte', '')
     date_filtre = request.GET.get('date', '')
 
+    # On ne suit que ce qui est encore en atelier (NON_RESPECTE)
     tapis_list = TapisDetails.objects.filter(
         statut__in=['NON_RESPECTE']
     ).select_related('commande')
@@ -1715,13 +1718,13 @@ def suivi_atelier_tapis(request):
             Q(commande__numero_client__icontains=query)
         )
 
-    # 📅 FILTRE DATE (DateField)
+    # 📅 FILTRE DATE (Basé sur date_traitement)
     if date_filtre:
         tapis_list = tapis_list.filter(
             date_traitement=date_filtre
         )
 
-    # 🚨 FILTRE PRIORITÉ (LOGIQUE IDENTIQUE À LA PROPERTY)
+    # 🚨 FILTRE PRIORITÉ (Logique identique à la property niveau_urgence)
     if alerte:
         aujourd_hui = date.today()
         demain = aujourd_hui + timedelta(days=1)
@@ -1730,13 +1733,11 @@ def suivi_atelier_tapis(request):
             tapis_list = tapis_list.filter(
                 date_traitement__lt=aujourd_hui
             )
-
         elif alerte == "URGENT":
             tapis_list = tapis_list.filter(
                 date_traitement__gte=aujourd_hui,
                 date_traitement__lte=demain
             )
-
         elif alerte == "NORMAL":
             tapis_list = tapis_list.filter(
                 Q(date_traitement__gt=demain) |
@@ -1745,6 +1746,7 @@ def suivi_atelier_tapis(request):
 
     tapis_list = tapis_list.order_by('date_traitement')
 
+    # Pagination
     paginator = Paginator(tapis_list, 10)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
@@ -1753,6 +1755,32 @@ def suivi_atelier_tapis(request):
         'page_obj': page_obj
     })
     
+    
+def suivi_retouche_clima(request):
+    # Filtrer uniquement les clients acceptant une retouche
+    retouches_list = CityClimaDetails.objects.filter(
+        satisfaction='KO_RET'
+    ).select_related('commande').order_by('date_intervention')
+
+    # Recherche par nom ou numéro
+    query = request.GET.get('q', '').strip()
+    if query:
+        retouches_list = retouches_list.filter(
+            Q(commande__nom_client__icontains=query) |
+            Q(commande__numero_client__icontains=query)
+        )
+
+    # Pagination de 8 éléments par page
+    paginator = Paginator(retouches_list, 8)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+
+    return render(request, 'index/suivi_retouche.html', {
+        'page_obj': page_obj,
+        'query': query,
+        'total': retouches_list.count()
+    })
+
     
 
 

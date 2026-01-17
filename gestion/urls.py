@@ -51,6 +51,7 @@ urlpatterns = [
     path('modele-excel/', views.generer_modele_excel, name='generer_modele_excel'),
     
     path('suivi-atelier-tapis/', views.suivi_atelier_tapis, name='suivi_atelier_tapis'),
-
+    
+    path('suivi-retouche-clima/', views.suivi_retouche_clima, name='suivi_retouche_clima'),
 
 ]

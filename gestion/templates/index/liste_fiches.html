@@ -108,9 +108,9 @@
                     <option value="LIVRE-satisfait" {% if statut_filter == "LIVRE-satisfait" %}selected{% endif %}>Livré - client satisfait</option>
                     <option value="LIVRE-insatisfait" {% if statut_filter == "LIVRE-insatisfait" %}selected{% endif %}>Livré - client insatisfait</option>
                     <option value="ABANDON" {% if statut_filter == "ABANDON" %}selected{% endif %}>Tapis Abandonné</option>
-                    <option value="KO_RET" {% if statut_filter == "KO_RET" %}selected{% endif %}>KO - Retouche</option>
-                    <option value="OK" {% if statut_filter == "OK" %}selected{% endif %}>OK</option>
-                    <option value="KO_REFUS" {% if statut_filter == "KO_REFUS" %}selected{% endif %}>KO - Refus</option>
+                    <option value="KO_RET" {% if statut_filter == "KO_RET" %}selected{% endif %}>KO - client accepte Retouche</option>
+                    <option value="OK" {% if statut_filter == "OK" %}selected{% endif %}>OK - client satisfait</option>
+                    <option value="KO_REFUS" {% if statut_filter == "KO_REFUS" %}selected{% endif %}>KO - Refus seconde intervention</option>
                 </select>
             </div>
 

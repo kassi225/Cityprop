@@ -1,292 +1,207 @@
 {% extends "base.html" %}
-{% block title %}Dashboard | CityProp{% endblock %}
+{% block title %}Cockpit | Analyse Comparative{% endblock %}
 
 {% block content %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
+
 <style>
-    /* VARIABLES & FONTS */
     :root {
-        --primary-soft: #eef2ff;
-        --success-soft: #ecfdf5;
-        --warning-soft: #fffbeb;
-        --danger-soft: #fef2f2;
+        --city-green: #1D9A6C;
+        --last-week: #cbd5e1;
+        --ko-red: #ef4444;
+        --royal-blue: #0f172a;
     }
-
-    /* CARDS KPI */
+    body { background-color: #f8fafc; font-family: 'Inter', sans-serif; }
     .kpi-card {
-        border: none;
-        border-radius: 16px;
-        transition: all 0.3s ease;
-        background: #ffffff;
-        box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+        background: white; border: none; border-radius: 20px;
+        padding: 24px; box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+        transition: all 0.3s ease; height: 100%;
     }
-    .kpi-card:hover {
-        transform: translateY(-5px);
-        box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1);
+    .kpi-card:hover { transform: translateY(-5px); box-shadow: 0 12px 20px rgba(0,0,0,0.08); }
+    .alert-city-danger { background: #fff5f5; border: 1px solid #fee2e2; position: relative; }
+    .badge-ko-pulse {
+        background: var(--ko-red); color: white; font-size: 11px; font-weight: 800; 
+        padding: 5px 12px; border-radius: 50px; position: absolute; top: 15px; right: 15px;
+        animation: pulseCustom 2s infinite;
     }
-    .kpi-icon-wrapper {
-        width: 50px; height: 50px;
-        border-radius: 12px;
-        display: flex; align-items: center; justify-content: center;
-        font-size: 1.4rem;
-        margin-bottom: 1rem;
+    @keyframes pulseCustom {
+        0% { transform: scale(1); opacity: 1; }
+        50% { transform: scale(1.05); opacity: 0.7; }
+        100% { transform: scale(1); opacity: 1; }
     }
-    .kpi-value { font-size: 1.8rem; font-weight: 800; line-height: 1; margin-bottom: 4px; }
-    .kpi-label { font-size: 0.85rem; color: #64748b; font-weight: 600; text-transform: uppercase; }
-
-   /* Barre de filtre épurée et intelligente */
-.filter-bar-minimal {
-    position: sticky;
-    top: 60px; /* AJUSTEZ CETTE VALEUR selon la hauteur de votre navbar */
-    z-index: 1010;
-    background: rgba(255, 255, 255, 0.95);
-    border-bottom: 1px solid #e2e8f0;
-    margin: -24px -24px 24px -24px; /* Aligné sur les bords du container */
-    padding: 10px 24px;
-    backdrop-filter: blur(8px);
-}
-
-.input-flat {
-    background: #f8fafc !important;
-    border: 1px solid #cbd5e1 !important;
-    border-radius: 6px !important;
-    font-size: 0.8rem !important;
-}
-
-.btn-update {
-    background: #2563eb;
-    color: white;
-    font-size: 0.8rem;
-    padding: 5px 15px;
-    border: none;
-    border-radius: 6px;
-    font-weight: 600;
-}
-
-.btn-update:hover { background: #1d4ed8; color: white; }
-
-
+    .search-container {
+        background: white; border-radius: 50px; padding: 8px 20px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.05); border: 1px solid #e2e8f0;
+        width: 100%; max-width: 500px;
+    }
+    .chart-container { position: relative; height: 350px; width: 100%; }
 </style>
 
-<div class="container-fluid py-4" style="background-color: #f8fafc; min-height: 100vh;">
-    
-    <div class="filter-bar-minimal shadow-sm d-flex align-items-center">
-        <form method="GET" class="d-flex align-items-center gap-3 w-100">
-            <div class="small fw-bold text-secondary text-uppercase" style="letter-spacing: 0.5px;">
-                <i class="fa-solid fa-sliders me-1"></i> Période
-            </div>
-            
-            <div class="d-flex align-items-center gap-2">
-                <input type="date" name="start_date" class="form-control form-control-sm input-flat" value="{{ start_date }}">
-                <span class="text-muted small">à</span>
-                <input type="date" name="end_date" class="form-control form-control-sm input-flat" value="{{ end_date }}">
-            </div>
-
-            <button type="submit" class="btn btn-update">
-                Filtrer
-            </button>
-
-            {% if start_date %}
-            <a href="{% url 'dashboard' %}" class="text-danger small fw-bold text-decoration-none ms-2">
-                Effacer
-            </a>
-            {% endif %}
-
-            <div class="ms-auto d-none d-md-block">
-                 <span class="badge bg-light text-dark border small fw-normal">
-                    <i class="far fa-calendar-alt me-1 text-primary"></i> {% now "d F Y" %}
-                 </span>
-            </div>
-        </form>
+<div class="container-fluid py-4 px-3 px-lg-5">
+    <div class="row align-items-center mb-4 g-3">
+        <div class="col-12 col-xl-4">
+            <h1 class="fw-900 text-dark mb-0 animate__animated animate__fadeInDown">Cockpit de Pilotage</h1>
+            <p class="text-muted small">Analyse comparative des flux de commandes.</p>
+        </div>
+        <div class="col-12 col-md-6 col-xl-4">
+            <form action="{% url 'liste_fiches' %}" method="GET" class="search-container d-flex align-items-center mx-auto mx-xl-0">
+                <i class="fa-solid fa-search text-muted me-3"></i>
+                <input type="text" name="q" class="border-0 bg-transparent w-100" placeholder="Rechercher (CTRL+K)" style="outline:none;">
+            </form>
+        </div>
+        <div class="col-12 col-md-6 col-xl-4 text-md-end">
+            <form method="GET" class="d-inline-flex gap-2 align-items-center bg-white p-2 rounded-pill shadow-sm">
+                <input type="date" name="start_date" class="form-control form-control-sm border-0" value="{{ start_date }}">
+                <span class="text-muted small">au</span>
+                <input type="date" name="end_date" class="form-control form-control-sm border-0" value="{{ end_date }}">
+                <button type="submit" class="btn btn-dark btn-sm rounded-pill px-3">Filtrer</button>
+            </form>
+        </div>
     </div>
 
-    
-    <div class="d-flex justify-content-between align-items-center mb-4 px-2">
-        <div>
-           
-            <p class="text-muted mb-0 small">
-                {% if start_date %}
-                    Période du <span class="fw-bold text-primary">{{ start_date }}</span> au <span class="fw-bold text-primary">{{ end_date }}</span>
-                {% else %}
-                    Toutes les statistiques globales
+    <div class="row g-4 mb-5 animate__animated animate__fadeInUp">
+        <div class="col-12 col-sm-6 col-xl-3">
+            <div class="kpi-card {% if total_ko_ret > 0 %}alert-city-danger{% endif %}">
+                {% if total_ko_ret > 0 %}
+                <span class="badge-ko-pulse">{{ total_ko_ret }} KO RETOUR</span>
                 {% endif %}
-            </p>
+                <div class="text-muted small fw-bold mb-1">CITYPROP</div>
+                <div class="h2 fw-900 mb-0 {% if total_ko_ret > 0 %}text-danger{% endif %}">{{ total_cityprop }}</div>
+                <div class="mt-2 small text-muted">Qualité de service</div>
+            </div>
         </div>
-        
-    </div>
-           
-    <div class="d-flex justify-content-between align-items-center mb-4 px-2">
-        <div>
-            <h2 class="fw-bold text-dark mb-0">Tableau de Bord</h2>
-            <p class="text-muted mb-0 small">Analyse de l'activité CityProp</p>
+        <div class="col-12 col-sm-6 col-xl-3">
+            <div class="kpi-card">
+                <div class="text-muted small fw-bold mb-1">CLIMATISEURS</div>
+                <div class="h2 fw-900 mb-0 text-primary">{{ total_clim }}</div>
+                <div class="progress mt-3" style="height: 6px; border-radius: 10px;">
+                    <div class="progress-bar bg-primary" style="width: 70%"></div>
+                </div>
+            </div>
+        </div>
+        <div class="col-12 col-sm-6 col-xl-3">
+            <div class="kpi-card">
+                <div class="text-muted small fw-bold mb-1">TAPISPROP</div>
+                <div class="h2 fw-900 mb-0 text-warning">{{ total_tapis }}</div>
+                <div class="small text-danger mt-2 fw-bold"><i class="fa-solid fa-clock"></i> {{ alertes_tapis_7j }} Retards Atelier</div>
+            </div>
+        </div>
+        <div class="col-12 col-sm-6 col-xl-3">
+            <div class="kpi-card bg-dark text-white">
+                <div class="text-white-50 small fw-bold mb-1">VOLUME TOTAL</div>
+                <div class="h2 fw-900 mb-0">{{ total_commandes }}</div>
+                <div class="mt-2 small text-warning fw-bold">
+                    <i class="fa-solid fa-bullseye"></i> {{ total_a_fideliser }} à fidéliser
+                </div>
+            </div>
         </div>
     </div>
 
-    <div class="row g-3 mb-4">
-        <div class="col-md-3 col-6">
-            <div class="card kpi-card p-3" onclick="window.location.href='{% url 'liste_fiches' %}'" style="cursor: pointer;">
-                <div class="kpi-icon-wrapper bg-primary text-white">
-                    <i class="fa-solid fa-boxes-stacked"></i>
+    <div class="row mb-5">
+        <div class="col-12">
+            <div class="kpi-card p-4">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h5 class="fw-bold mb-0">Performance Hebdomadaire (Commandes)</h5>
+                    <div class="d-flex gap-3">
+                        <small><span class="badge me-1" style="background:var(--city-green);width:10px;height:10px;"></span> Actuelle</small>
+                        <small><span class="badge me-1" style="background:var(--last-week);width:10px;height:10px;"></span> Précédente</small>
+                    </div>
                 </div>
-                <div class="kpi-value">{{ total_commandes }}</div>
-                <div class="kpi-label">Commandes</div>
-            </div>
-        </div>
-        <div class="col-md-3 col-6">
-            <div class="card kpi-card p-3" onclick="window.location.href='{% url 'liste_fiches' %}?type_commande=CITYPROP'" style="cursor: pointer;">
-                <div class="kpi-icon-wrapper bg-success text-white">
-                    <i class="fa-solid fa-building"></i>
+                <div class="chart-container">
+                    <canvas id="doubleChart"></canvas>
                 </div>
-                <div class="kpi-value">{{ total_cityprop }}</div>
-                <div class="kpi-label">CityProp</div>
-            </div>
-        </div>
-        <div class="col-md-3 col-6">
-            <div class="card kpi-card p-3" onclick="window.location.href='{% url 'liste_fiches' %}?type_commande=CLIMATISEUR'" style="cursor: pointer;">
-                <div class="kpi-icon-wrapper bg-info text-white">
-                    <i class="fa-solid fa-snowflake"></i>
-                </div>
-                <div class="kpi-value">{{ total_clim }}</div>
-                <div class="kpi-label">Climatiseurs</div>
-            </div>
-        </div>
-        <div class="col-md-3 col-6">
-            <div class="card kpi-card p-3" onclick="window.location.href='{% url 'liste_fiches' %}?type_commande=TAPISPROP'" style="cursor: pointer;">
-                <div class="kpi-icon-wrapper bg-warning text-white">
-                    <i class="fa-solid fa-rug"></i>
-                </div>
-                <div class="kpi-value">{{ total_tapis }}</div>
-                <div class="kpi-label">TapisProp</div>
             </div>
         </div>
     </div>
 
     <div class="row g-4">
-        <div class="col-lg-8">
-            <div class="row g-3 mb-4">
-                <div class="col-md-6">
-                    <div class="card section-card p-4 h-100">
-                        <div class="section-title text-success"><i class="fa-solid fa-handshake"></i> Fidélisation</div>
-                        <div class="d-flex flex-column gap-3">
-                            <div class="d-flex justify-content-between align-items-center p-2 rounded bg-light">
-                                <span><i class="fa-solid fa-check-circle text-success me-2"></i> Clients fidélisés</span>
-                                <span class="fw-bold h5 mb-0">{{ fidelises }}</span>
-                            </div>
-                            <div class="d-flex justify-content-between align-items-center p-2 rounded bg-light">
-                                <span><i class="fa-solid fa-circle-xmark text-danger me-2"></i> À fidéliser</span>
-                                <span class="fw-bold h5 mb-0 text-danger">{{ non_fidelises }}</span>
-                            </div>
-                            <a href="{% url 'alertes_fidelisation' %}" class="btn btn-dark w-100 mt-2 rounded-pill shadow-sm">
-                                <i class="fa-solid fa-bell me-2"></i> Gérer les rappels
-                            </a>
-                        </div>
-                    </div>
-                </div>
-                
-                 
-                <div class="col-md-6">
-                    <div class="card section-card p-4 h-100 border-start border-danger border-4 shadow-sm">
-                        <div class="section-title text-danger fw-bold mb-3">
-                            <i class="fa-solid fa-triangle-exclamation me-2"></i> Alertes Fidelisation
-                        </div>
-
-                        <div class="list-group list-group-flush">
-                            <div class="list-group-item border-0 d-flex justify-content-between align-items-center px-0 py-2">
-                                <span class="text-secondary"><i class="fa-solid fa-building me-2"></i> CityProp</span>
-                                <span class="badge rounded-pill" style="background-color: #fce4e4; color: #dc3545; font-size: 0.9rem; min-width: 30px;">
-                                    {{ alertes_city|default:"0" }}
-                                </span>
-                            </div>
-
-                            <div class="list-group-item border-0 d-flex justify-content-between align-items-center px-0 py-2">
-                                <span class="text-secondary"><i class="fa-solid fa-snowflake me-2"></i> Climatiseur</span>
-                                <span class="badge rounded-pill" style="background-color: #fce4e4; color: #dc3545; font-size: 0.9rem; min-width: 30px;">
-                                    {{ alertes_clima|default:"0" }}
-                                </span>
-                            </div>
-
-                            <div class="list-group-item border-0 d-flex justify-content-between align-items-center px-0 py-2">
-                                <span class="text-secondary"><i class="fa-solid fa-rug me-2"></i> TapisProp</span>
-                                <span class="badge rounded-pill" style="background-color: #fce4e4; color: #dc3545; font-size: 0.9rem; min-width: 30px;">
-                                    {{ alertes_tapis|default:"0" }}
-                                </span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-
-
-            </div>
-
-            <div class="card section-card p-0 overflow-hidden mb-4">
-                <div class="p-4 section-title mb-0 border-0">
-                    <i class="fa-solid fa-history"></i> Dernières Commandes
+        <div class="col-12 col-lg-8">
+            <div class="kpi-card p-0 overflow-hidden">
+                <div class="p-4 border-bottom d-flex justify-content-between">
+                    <h6 class="fw-bold mb-0">Dernières Activités</h6>
+                    <a href="{% url 'liste_fiches' %}" class="btn btn-sm btn-link text-dark p-0">Voir tout</a>
                 </div>
                 <div class="table-responsive">
                     <table class="table table-hover mb-0">
-                        <thead>
+                        <thead class="table-light">
                             <tr>
                                 <th class="ps-4">Client</th>
-                                <th>Type</th>
-                                <th>Date d'entrée</th>
+                                <th>Service</th>
+                                <th>Date</th>
                                 <th class="text-end pe-4">Statut</th>
                             </tr>
                         </thead>
                         <tbody>
                             {% for c in commandes_recents %}
                             <tr>
-                                <td class="ps-4">
-                                    <div class="fw-bold text-dark">{{ c.nom_client }}</div>
-                                    <div class="small text-muted">{{ c.numero_client }}</div>
-                                </td>
-                                <td>
-                                    <span class="badge bg-light text-dark border">{{ c.type_commande }}</span>
-                                </td>
-                                <td class="text-muted">{{ c.date_creation|date:"d/m/Y H:i" }}</td>
+                                <td class="ps-4"><strong>{{ c.nom_client }}</strong></td>
+                                <td>{{ c.get_type_commande_display }}</td>
+                                <td class="text-muted small">{{ c.date_creation|date:"d M, H:i" }}</td>
                                 <td class="text-end pe-4">
-                                    <span class="badge bg-soft-success badge-soft">Enregistré</span>
+                                    <span class="badge {% if c.type_commande == 'TAPISPROP' %}bg-warning text-dark{% else %}bg-success{% endif %}">Enregistré</span>
                                 </td>
                             </tr>
-                            {% empty %}
-                            <tr><td colspan="4" class="text-center py-4">Aucune commande récente</td></tr>
                             {% endfor %}
                         </tbody>
                     </table>
                 </div>
             </div>
         </div>
-
-        <div class="col-lg-4">
-            <div class="card section-card p-4 mb-4 border-top border-warning border-4 shadow-sm">
-                <div class="section-title text-warning"><i class="fa-solid fa-clock"></i> Focus Tapis</div>
-                <div class="text-center mb-3 py-3 bg-soft-warning rounded-3">
-                    <div class="h2 fw-bold text-warning mb-0">{{ alertes_tapis_7j }}</div>
-                    <div class="small fw-bold">Tapis en retard (+11j)</div>
+        <div class="col-12 col-lg-4">
+            <div class="kpi-card">
+                <h6 class="fw-bold mb-4">Top Clients (Période)</h6>
+                {% for client in top_clients %}
+                <div class="d-flex justify-content-between mb-3 p-2 rounded bg-light">
+                    <span class="small fw-bold">{{ client.nom_client }}</span>
+                    <span class="badge bg-white text-dark border">{{ client.total }} cmd</span>
                 </div>
-                <a href="{% url 'alertes_tapis_retard' %}" class="btn btn-warning w-100 rounded-pill fw-bold">
-                    Gérer les retards
-                </a>
-            </div>
-
-            <div class="card section-card p-4 shadow-sm">
-                <div class="section-title"><i class="fa-solid fa-crown text-warning"></i> Top Clients</div>
-                <div class="list-group list-group-flush">
-                    {% for client in top_clients %}
-                    <div class="list-group-item d-flex justify-content-between align-items-center border-0 px-0 py-3" 
-                         onclick="window.location.href='{% url 'liste_fiches' %}?nom_client={{ client.nom_client }}'"
-                         style="cursor:pointer">
-                        <div class="d-flex align-items-center">
-                            <div class="rounded-circle bg-soft-success p-2 me-3 text-success fw-bold" style="width:35px;height:35px;display:flex;align-items:center;justify-content:center;">
-                                {{ forloop.counter }}
-                            </div>
-                            <span class="fw-bold">{{ client.nom_client }}</span>
-                        </div>
-                        <span class="badge bg-dark rounded-pill">{{ client.total }} fiches</span>
-                    </div>
-                    {% endfor %}
-                </div>
+                {% endfor %}
             </div>
         </div>
     </div>
 </div>
+
+<script>
+    const ctx = document.getElementById('doubleChart').getContext('2d');
+    const labels = {{ labels_jours|safe }};
+    const dataA = {{ stats_actuelle|safe }};
+    const dataP = {{ stats_precedente|safe }};
+
+    new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: [
+                {
+                    label: 'Cette semaine',
+                    data: dataA,
+                    borderColor: '#1D9A6C',
+                    backgroundColor: 'rgba(29, 154, 108, 0.1)',
+                    fill: true,
+                    tension: 0.4,
+                    pointRadius: 5
+                },
+                {
+                    label: 'Semaine dernière',
+                    data: dataP,
+                    borderColor: '#cbd5e1',
+                    borderDash: [5, 5],
+                    fill: false,
+                    tension: 0.4,
+                    pointRadius: 0
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: {
+                y: { beginAtZero: true, ticks: { stepSize: 1 } },
+                x: { grid: { display: false } }
+            }
+        }
+    });
+</script>
 {% endblock %}
