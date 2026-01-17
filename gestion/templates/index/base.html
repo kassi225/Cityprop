@@ -3,7 +3,7 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>{% block title %}CITYPROP{% endblock %}</title>
 
     <link rel="icon" type="image/x-icon" href="{% static 'images/favicons/favicon.ico' %}">
@@ -16,82 +16,123 @@
         :root {
             --primary-green: #1D9A6C;
             --dark-green: #157347;
-            --sidebar-width: 260px;
-            --topbar-height: 65px;
-            --bg-body: #F5F7FA;
+            --sidebar-width: 280px;
+            --topbar-height: 70px;
+            --bg-body: #F8FAFC;
             --transition-speed: 0.3s;
         }
 
-        body { margin: 0; font-family: "Inter", sans-serif; background: var(--bg-body); display: flex; min-height: 100vh; }
-        a { text-decoration: none; color: inherit; }
+        body { 
+            margin: 0; 
+            font-family: "Inter", sans-serif; 
+            background: var(--bg-body); 
+            display: flex; 
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
 
-        /* SIDEBAR ORIGINALE */
+        /* SIDEBAR */
         .sidebar {
-            width: var(--sidebar-width); background: #fff; height: 100vh; padding: 25px 20px;
-            box-shadow: 2px 0 12px rgba(0,0,0,0.06); position: fixed;
-            display: flex; flex-direction: column; z-index: 1050;
-            justify-content: space-between; transition: transform var(--transition-speed) ease;
+            width: var(--sidebar-width); 
+            background: #ffffff; 
+            height: 100vh; 
+            padding: 20px;
+            box-shadow: 4px 0 20px rgba(0,0,0,0.03); 
+            position: fixed;
+            left: 0; top: 0;
+            display: flex; 
+            flex-direction: column; 
+            z-index: 1100;
+            transition: all var(--transition-speed) cubic-bezier(0.4, 0, 0.2, 1);
         }
+
         .logo {
-            font-size: 20px; font-weight: 800; color: var(--primary-green);
-            margin-bottom: 30px; display: flex; align-items: center; gap: 10px;
+            font-size: 22px; font-weight: 800; color: var(--primary-green);
+            margin-bottom: 30px; display: flex; align-items: center; gap: 12px;
+            padding-left: 10px;
         }
-        .logo img { width: 36px; height: 36px; border-radius: 8px; object-fit: cover; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        .logo img { width: 40px; height: 40px; border-radius: 10px; object-fit: cover; }
         
-        .menu { list-style: none; padding: 0; margin: 0; overflow-y: auto; flex-grow: 1; }
-        .menu li { margin: 8px 0; }
+        .menu-container { 
+            flex-grow: 1; 
+            overflow-y: auto; 
+            padding-right: 5px;
+        }
+
+        .menu-container::-webkit-scrollbar { width: 4px; }
+        .menu-container::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 10px; }
+
+        .menu { list-style: none; padding: 0; margin: 0; }
+        .menu li { margin-bottom: 5px; }
         
-        /* STYLE DES LIENS (VOTRE STYLE PRECEDENT) */
         .menu a, .submenu-btn {
             padding: 12px 16px; display: flex; align-items: center; gap: 12px;
-            border-radius: 12px; font-weight: 500; color: #4b5563;
-            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1); 
-            font-size: 14.5px; position: relative; cursor: pointer; border: none; background: none; width: 100%;
+            border-radius: 12px; font-weight: 500; color: #64748b;
+            transition: all 0.2s ease; font-size: 14.5px; 
+            border: none; background: none; width: 100%; text-align: left;
+            position: relative;
         }
 
-        .menu a i, .submenu-btn i { 
-            width: 20px; font-size: 16px; color: #9ca3af; 
-            transition: transform 0.3s ease, color 0.3s ease;
+        .menu a i, .submenu-btn i:first-child { 
+            width: 20px; font-size: 18px; color: #94a3b8; 
         }
 
         .menu a:hover, .submenu-btn:hover {
-            background: #f0fdf4; color: var(--primary-green); transform: translateX(8px);
-            box-shadow: 0 4px 10px rgba(29, 154, 108, 0.08);
+            background: #f1f5f9; color: var(--primary-green);
         }
-
-        .menu a:hover i, .submenu-btn:hover i { color: var(--primary-green); transform: scale(1.2) rotate(-10deg); }
 
         .menu a.active {
             background: var(--primary-green); color: white !important;
-            font-weight: 600; box-shadow: 0 4px 15px rgba(29, 154, 108, 0.2);
+            box-shadow: 0 4px 12px rgba(29, 154, 108, 0.25);
         }
         .menu a.active i { color: white; }
 
+        /* BADGES */
+        .main-badge {
+            font-size: 10px;
+            padding: 4px 8px;
+            border-radius: 50px;
+            font-weight: 700;
+            margin-left: auto;
+            margin-right: 5px;
+        }
+
         /* SOUS-MENU */
-        .submenu { list-style: none; padding-left: 20px; margin-top: 5px; }
-        .submenu a { padding: 10px 16px; font-size: 13.5px; }
-        .chevron { margin-left: auto; font-size: 12px; transition: transform 0.3s; }
+        .submenu { list-style: none; padding-left: 28px; margin-top: 5px; border-left: 2px solid #f1f5f9; margin-left: 25px; }
+        .submenu a { padding: 8px 16px; font-size: 13.5px; margin-bottom: 2px; display: flex; justify-content: space-between; align-items: center; }
+        .chevron { font-size: 11px; transition: transform 0.3s; opacity: 0.5; }
         .submenu-btn[aria-expanded="true"] .chevron { transform: rotate(180deg); }
 
-        /* TOPBAR & AUTRES */
+        /* TOPBAR */
         .topbar {
             background: var(--dark-green); height: var(--topbar-height); position: fixed; 
             left: var(--sidebar-width); top: 0; width: calc(100% - var(--sidebar-width)); 
-            z-index: 1000; padding: 0 20px; display: flex; justify-content: space-between; align-items: center;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.15); transition: all var(--transition-speed) ease;
+            z-index: 1000; padding: 0 25px; display: flex; justify-content: space-between; align-items: center;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1); transition: all var(--transition-speed) ease;
         }
-        .menu-toggle { display: none; background: transparent; border: none; color: white; font-size: 22px; cursor: pointer; }
-        .content { margin-left: var(--sidebar-width); width: calc(100% - var(--sidebar-width)); padding: 20px; padding-top: calc(var(--topbar-height) + 20px); transition: all var(--transition-speed) ease; }
-        .sidebar-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4); z-index: 1040; backdrop-filter: blur(2px); }
+
+        .topbar-logo-mobile { display: none; align-items: center; gap: 8px; color: white; font-weight: 800; font-size: 18px; }
+        .topbar-logo-mobile img { width: 32px; height: 32px; border-radius: 6px; }
+
+        .content { 
+            margin-left: var(--sidebar-width); width: calc(100% - var(--sidebar-width)); 
+            padding: 30px; padding-top: calc(var(--topbar-height) + 30px); 
+            transition: all var(--transition-speed) ease; min-height: 100vh;
+        }
+
+        .sidebar-overlay { 
+            display: none; position: fixed; top: 0; left: 0; 
+            width: 100%; height: 100%; background: rgba(15, 23, 42, 0.6); 
+            z-index: 1050; backdrop-filter: blur(3px); 
+        }
 
         @media (max-width: 992px) {
             .sidebar { transform: translateX(-100%); }
             .sidebar.active { transform: translateX(0); }
             .sidebar-overlay.active { display: block; }
             .topbar { left: 0; width: 100%; }
-            .content { margin-left: 0; width: 100%; }
-            .menu-toggle { display: block; }
-            .logout-text { display: none; }
+            .content { margin-left: 0; width: 100%; padding: 15px; padding-top: calc(var(--topbar-height) + 20px); }
+            .topbar-logo-mobile { display: flex; }
         }
     </style>
 </head>
@@ -100,104 +141,130 @@
 <div class="sidebar-overlay" id="overlay"></div>
 
 <nav class="sidebar" id="sidebar">
-    <div>
+    <div class="sidebar-header">
         <div class="logo">
             <img src="{% static 'images/cityprop_logo.png' %}" alt="Logo">
             <span>CITYPROP</span>
         </div>
+    </div>
 
+    <div class="menu-container">
         <ul class="menu">
-            <li><a href="{% url 'dashboard' %}" class="{% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}"><i class="fa-solid fa-gauge-high"></i> Dashboard</a></li>
-
             <li>
-                <div class="submenu-btn" data-bs-toggle="collapse" data-bs-target="#subCommandes" aria-expanded="{% if 'commande' in request.path or 'fiches' in request.path or 'fidelisation' in request.path %}true{% else %}false{% endif %}">
-                    <i class="fa-solid fa-file-invoice"></i> COMMANDES
-                    <i class="fa-solid fa-chevron-down chevron"></i>
-                </div>
-                <div class="collapse {% if 'commande' in request.path or 'fiches' in request.path or 'fidelisation' in request.path %}show{% endif %}" id="subCommandes">
-                    <ul class="submenu">
-                        <li><a href="{% url 'nouvelle_commande' %}" class="{% if request.resolver_match.url_name == 'nouvelle_commande' %}active{% endif %}"><i class="fa-solid fa-plus-circle"></i> Créer commande</a></li>
-                        <li><a href="{% url 'liste_fiches' %}" class="{% if request.resolver_match.url_name == 'liste_fiches' %}active{% endif %}"><i class="fa-solid fa-list-ul"></i> Liste commandes</a></li>
-                        <li>
-                            <a href="{% url 'alertes_fidelisation' %}" class="{% if request.resolver_match.url_name == 'alertes_fidelisation' %}active{% endif %}">
-                                <i class="fa-solid fa-heart"></i> Fidélisation 
-                                {% if total_fidelisation > 0 %}
-                                    <span class="badge bg-warning text-dark ms-auto">{{ total_fidelisation }}</span>
-                                {% endif %}
-                            </a>
-                        </li>
-                    </ul>
-                </div>
+                <a href="{% url 'dashboard' %}" class="{% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">
+                    <i class="fa-solid fa-chart-pie"></i> <span>Dashboard</span>
+                </a>
             </li>
 
             <li>
-                <div class="submenu-btn" data-bs-toggle="collapse" data-bs-target="#subTapis">
-                    <i class="fa-solid fa-rug"></i> TAPIS
-                    {% if alertes_tapis_retard > 0 %}
-                        <span class="badge bg-danger ms-2" style="font-size: 10px;">{{ alertes_tapis_retard }}</span>
+                <button class="submenu-btn" data-bs-toggle="collapse" data-bs-target="#subCommandes" 
+                   aria-expanded="{% if 'commande' in request.path or 'fiches' in request.path %}true{% else %}false{% endif %}">
+                    <i class="fa-solid fa-receipt"></i> 
+                    <span>COMMANDES</span>
+                    {% if total_fidelisation > 0 %}
+                        <span class="main-badge bg-warning text-dark animate__animated animate__pulse animate__infinite">{{ total_fidelisation }}</span>
                     {% endif %}
                     <i class="fa-solid fa-chevron-down chevron"></i>
-                </div>
-                <div class="collapse {% if 'tapis' in request.path or 'atelier' in request.path %}show{% endif %}" id="subTapis">
+                </button>
+                <div class="collapse {% if 'commande' in request.path or 'fiches' in request.path %}show{% endif %}" id="subCommandes">
                     <ul class="submenu">
+                        <li><a href="{% url 'nouvelle_commande' %}" class="{% if 'nouvelle_commande' in request.resolver_match.url_name %}active{% endif %}">Créer commande</a></li>
+                        <li><a href="{% url 'liste_fiches' %}" class="{% if 'liste_fiches' in request.resolver_match.url_name %}active{% endif %}">Liste commandes</a></li>
                         <li>
-                            <a href="{% url 'alertes_tapis_retard' %}" class="{% if request.resolver_match.url_name == 'alertes_tapis_retard' %}active{% endif %}">
-                                <i class="fa-solid fa-bell"></i> Alertes tapis 
-                                {% if alertes_tapis_retard > 0 %}
-                                    <span class="badge bg-danger ms-auto">{{ alertes_tapis_retard }}</span>
+                            <a href="{% url 'alertes_fidelisation' %}" class="{% if 'alertes_fidelisation' in request.resolver_match.url_name %}active{% endif %}">
+                                Fidélisation 
+                                {% if total_fidelisation > 0 %}
+                                    <span class="badge rounded-pill bg-warning text-dark">{{ total_fidelisation }}</span>
                                 {% endif %}
                             </a>
                         </li>
-                        <li><a href="{% url 'suivi_atelier_tapis' %}" class="{% if request.resolver_match.url_name == 'suivi_atelier_tapis' %}active{% endif %}"><i class="fa-solid fa-clock-rotate-left"></i> Suivi Atelier</a></li>
-                        <li><a href="{% url 'listes_tapis_abandon' %}" class="{% if request.resolver_match.url_name == 'listes_tapis_abandon' %}active{% endif %}"><i class="fa-solid fa-box-open"></i> Tapis abandonnés</a></li>
                     </ul>
                 </div>
             </li>
 
             <li>
-                <div class="submenu-btn" data-bs-toggle="collapse" data-bs-target="#subClima">
-                    <i class="fa-solid fa-wind"></i> CITYCLIMA
+                <button class="submenu-btn" data-bs-toggle="collapse" data-bs-target="#subTapis">
+                    <i class="fa-solid fa-rug"></i> 
+                    <span>TAPISPROP</span>
+                    {% if alertes_tapis_retard > 0 %}
+                        <span class="main-badge bg-danger text-white animate__animated animate__pulse animate__infinite">{{ alertes_tapis_retard }}</span>
+                    {% endif %}
                     <i class="fa-solid fa-chevron-down chevron"></i>
-                </div>
-                <div class="collapse {% if 'clima' in request.path or 'retouche' in request.path %}show{% endif %}" id="subClima">
+                </button>
+                <div class="collapse {% if 'tapis' in request.path %}show{% endif %}" id="subTapis">
                     <ul class="submenu">
-                        <li><a href="{% url 'suivi_retouche_clima' %}" class="{% if request.resolver_match.url_name == 'suivi_retouche_clima' %}active{% endif %}"><i class="fa-solid fa-screwdriver-wrench"></i> Suivi Retouches</a></li>
+                        <li>
+                            <a href="{% url 'alertes_tapis_retard' %}">
+                                Alertes Retard
+                                {% if alertes_tapis_retard > 0 %}
+                                    <span class="badge bg-danger">{{ alertes_tapis_retard }}</span>
+                                {% endif %}
+                            </a>
+                        </li>
+                        <li><a href="{% url 'suivi_atelier_tapis' %}">Suivi Atelier</a></li>
+                        <li><a href="{% url 'listes_tapis_abandon' %}">Tapis Abandonnés</a></li>
+                    </ul>
+                </div>
+            </li>
+
+            <li>
+                <button class="submenu-btn" data-bs-toggle="collapse" data-bs-target="#subClima">
+                    <i class="fa-solid fa-wind"></i> <span>CITYCLIMA</span>
+                    <i class="fa-solid fa-chevron-down chevron"></i>
+                </button>
+                <div class="collapse {% if 'clima' in request.path %}show{% endif %}" id="subClima">
+                    <ul class="submenu">
+                        <li><a href="{% url 'suivi_retouche_clima' %}">Suivi Retouches</a></li>
                     </ul>
                 </div>
             </li>
 
             {% if request.user.is_superuser or request.user.groups.all.0.name == "ADMIN" %}
-            <hr class="my-3 mx-2 opacity-25">
-            <li><a href="{% url 'dashboard_financier' %}" class="{% if request.resolver_match.url_name == 'dashboard_financier' %}active{% endif %}" style="color: var(--dark-green);"><i class="fa-solid fa-file-invoice-dollar"></i> Suivi Financier</a></li>
-            <li><a href="{% url 'gestion_caisse' %}" class="{% if request.resolver_match.url_name == 'gestion_caisse' %}active{% endif %}" style="color: var(--primary-green); font-weight: 700;"><i class="fa-solid fa-calculator"></i> Brouillard Caisse</a></li>
-            <li><a href="/admin/" target="_blank" class="text-danger"><i class="fa-solid fa-user-shield"></i> Administration</a></li>
+            <div class="mt-4 mb-2 ps-3"><small class="text-uppercase fw-bold text-muted" style="font-size: 10px; letter-spacing: 1px;">Admin</small></div>
+            <li><a href="{% url 'dashboard_financier' %}" class="text-success fw-bold"><i class="fa-solid fa-wallet"></i> Finances</a></li>
+            <li><a href="{% url 'gestion_caisse' %}" class="text-primary fw-bold"><i class="fa-solid fa-vault"></i> Caisse</a></li>
+            <li><a href="/admin/" target="_blank" class="text-danger"><i class="fa-solid fa-shield-halved"></i> Administrateur</a></li>
             {% endif %}
         </ul>
     </div>
-    <div class="sidebar-footer" style="font-size: 10px; color: #bdc3c7; text-align: center; border-top: 1px solid #eee; padding-top: 15px; margin-top: 20px;">
-        © CITYPROP | Powered by GERARD KASSI
+
+    <div class="sidebar-footer pt-3 border-top text-center">
+        <p class="mb-0 text-muted" style="font-size: 11px;">© 2024 CITYPROP</p>
     </div>
 </nav>
 
 <nav class="topbar">
-    <button class="menu-toggle" id="menuBtn"><i class="fa-solid fa-bars"></i></button>
-    <div class="topbar-logo d-lg-none">
-        <img src="{% static 'images/cityprop_logo.png' %}" alt="Logo"><span>CITYPROP</span>
+    <button class="btn border-0 text-white d-lg-none" id="menuBtn" style="font-size: 24px; padding: 0;">
+        <i class="fa-solid fa-bars-staggered"></i>
+    </button>
+    
+    <div class="topbar-logo-mobile">
+        <img src="{% static 'images/cityprop_logo.png' %}" alt="Logo">
+        <span>CITYPROP</span>
     </div>
-    <div class="ms-auto d-flex align-items-center gap-2 gap-md-3">
-        <div class="d-none d-sm-flex flex-column text-end">
-            <span class="username" style="color: white; font-size: 13px; font-weight: 600;">{{ request.user.username }}</span>
-            <small class="text-white-50" style="font-size: 10px;">{{ request.user.groups.all.0.name }}</small>
+
+    <div class="ms-auto d-flex align-items-center gap-3">
+        <div class="user-info-text text-end">
+            <div class="text-white fw-bold" style="font-size: 13px;">{{ request.user.username }}</div>
+            <div class="text-white-50" style="font-size: 10px;">{{ request.user.groups.all.0.name|default:"Agent" }}</div>
         </div>
-        <img src="https://ui-avatars.com/api/?name={{ request.user.username }}&background=ffffff&color=157347&rounded=true" class="rounded-circle border border-2 border-white-50" width="35" height="35">
-        <a href="{% url 'logout' %}" class="btn btn-light text-danger btn-sm shadow-sm d-flex align-items-center gap-1 fw-bold">
-            <i class="fa-solid fa-power-off"></i> <span class="logout-text">Déconnexion</span>
-        </a>
+        <div class="dropdown">
+            <img src="https://ui-avatars.com/api/?name={{ request.user.username }}&background=ffffff&color=157347&bold=true" 
+                 class="rounded-circle border border-2 border-white-50 cursor-pointer" 
+                 width="38" height="38" data-bs-toggle="dropdown">
+            <ul class="dropdown-menu dropdown-menu-end shadow border-0 mt-2 animate__animated animate__fadeIn">
+                <li><a class="dropdown-item py-2" href="#"><i class="fa-solid fa-user-gear me-2"></i> Profil</a></li>
+                <li><hr class="dropdown-divider"></li>
+                <li><a class="dropdown-item py-2 text-danger fw-bold" href="{% url 'logout' %}"><i class="fa-solid fa-power-off me-2"></i> Déconnexion</a></li>
+            </ul>
+        </div>
     </div>
 </nav>
 
 <main class="content">
-    {% block content %}{% endblock %}
+    <div class="container-fluid p-0">
+        {% block content %}{% endblock %}
+    </div>
 </main>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
@@ -207,14 +274,24 @@
     const menuBtn = document.getElementById('menuBtn');
     const sidebar = document.getElementById('sidebar');
     const overlay = document.getElementById('overlay');
-    function toggleMenu() { sidebar.classList.toggle('active'); overlay.classList.toggle('active'); }
-    menuBtn.addEventListener('click', toggleMenu);
-    overlay.addEventListener('click', toggleMenu);
+
+    function toggleMenu() {
+        sidebar.classList.toggle('active');
+        overlay.classList.toggle('active');
+    }
+
+    if(menuBtn) menuBtn.addEventListener('click', toggleMenu);
+    if(overlay) overlay.addEventListener('click', toggleMenu);
 
     {% if messages %}
-    const Toast = Swal.mixin({ toast: true, position: 'top-end', showConfirmButton: false, timer: 3000, timerProgressBar: true });
+    const Toast = Swal.mixin({
+        toast: true, position: 'top-end', showConfirmButton: false, timer: 3500, timerProgressBar: true
+    });
     {% for message in messages %}
-    Toast.fire({ icon: '{% if message.tags == "error" %}error{% else %}success{% endif %}', title: '{{ message|escapejs }}' });
+    Toast.fire({
+        icon: '{% if message.tags == "error" %}error{% elif message.tags == "warning" %}warning{% else %}success{% endif %}',
+        title: '{{ message|escapejs }}'
+    });
     {% endfor %}
     {% endif %}
 </script>
