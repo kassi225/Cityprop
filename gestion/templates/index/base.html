@@ -242,7 +242,15 @@
     <div class="ms-auto d-flex align-items-center gap-3">
         <div class="user-info-text text-end">
             <div class="text-white fw-bold" style="font-size: 13px;">{{ request.user.username }}</div>
-            <div class="text-white-50" style="font-size: 10px;">{{ request.user.groups.all.0.name|default:"Agent" }}</div>
+            <div class="text-white-50 ani-2" style="font-size: 11px; font-weight: 500; letter-spacing: 0.5px; text-transform: uppercase; opacity: 0.6; margin-bottom: 5px;">
+            {% if user.is_superuser %}
+                Directeur Technique
+            {% elif user.groups.exists %}
+                {{ user.groups.all.0.name }}
+            {% else %}
+                Collaborateur CityProp
+            {% endif %}
+        </div>
         </div>
         <div class="dropdown">
             <img src="https://ui-avatars.com/api/?name={{ request.user.username }}&background=ffffff&color=157347&bold=true" 
