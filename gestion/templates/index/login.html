@@ -1,151 +1,212 @@
 {% load static %}
 
 {% block content %}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
 <style>
-    body {
-        background: linear-gradient(135deg, #4b79a1, #283e51);
+    :root {
+        --cityprop-teal: #00C9A7;
+        --dark-bg: #05111d;
+        --error-red: #ff453a;
+        --glass-bg: rgba(255, 255, 255, 0.05);
+        --glass-border: rgba(255, 255, 255, 0.1);
+    }
+
+    body, html {
+        margin: 0; padding: 0;
+        width: 100%; height: 100vh;
+        background-color: var(--dark-bg);
+        font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif;
+        color: white;
+        overflow: hidden;
+    }
+
+    .auth-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
         height: 100vh;
+        width: 100%;
+    }
+
+    /* SECTION GAUCHE */
+    .form-section {
         display: flex;
+        flex-direction: column;
         justify-content: center;
         align-items: center;
-        font-family: "Inter", sans-serif;
-    }
-
-    .login-wrapper {
-        width: 380px;
-        background: rgba(255, 255, 255, 0.12);
         padding: 40px;
-        border-radius: 20px;
-        backdrop-filter: blur(12px);
-        box-shadow: 0 15px 35px rgba(0,0,0,0.3);
-        animation: fadeIn 0.8s ease-out;
-        color: #fff;
-        text-align: center;
+        background: var(--dark-bg);
     }
 
-    @keyframes fadeIn {
+    .login-box {
+        width: 100%;
+        max-width: 360px;
+    }
+
+    /* ANIMATIONS D'ENTRÉE */
+    .ani-1 { animation: appleReveal 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) forwards; opacity: 0; }
+    .ani-2 { animation: appleReveal 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) 0.1s forwards; opacity: 0; }
+    .ani-3 { animation: appleReveal 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) 0.2s forwards; opacity: 0; }
+    .ani-4 { animation: appleReveal 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) 0.3s forwards; opacity: 0; }
+
+    @keyframes appleReveal {
         from { opacity: 0; transform: translateY(20px); }
         to { opacity: 1; transform: translateY(0); }
     }
 
-    .login-title {
-        font-size: 28px;
-        font-weight: 700;
-        margin-bottom: 10px;
+    .brand-logo {
+        width: 65px;
+        margin-bottom: 30px;
+        filter: drop-shadow(0 10px 20px rgba(0, 201, 167, 0.2));
     }
 
-    .login-company {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        font-size: 18px;
-        font-weight: 500;
-        margin-bottom: 15px;
-        opacity: 0.85;
-        color: #00C9A7;
+    .sub-heading {
+        color: rgba(255, 255, 255, 0.5);
+        font-size: 16px;
+        margin-bottom: 40px;
+        font-weight: 400;
+        letter-spacing: -0.2px;
     }
 
-    .login-company img {
-        width: 80px;
-        height: 80px;
-        margin-bottom: 8px;
-        border-radius: 10px;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.2);
-    }
-
-    .login-subtitle {
-        opacity: 0.8;
-        margin-bottom: 25px;
-    }
-
-    .form-group {
+    /* ZERO FOND BLANC - CHAMPS INCRUSTÉS */
+    .input-wrapper {
+        position: relative;
         margin-bottom: 20px;
-        text-align: left;
     }
 
-    label {
-        display: block;
-        font-size: 14px;
-        margin-bottom: 6px;
-        opacity: 0.9;
-    }
-
-    input {
+    .input-wrapper input {
         width: 100%;
-        padding: 13px;
-        border-radius: 10px;
-        border: none;
+        padding: 18px 22px;
+        background: var(--glass-bg); /* Translucide uniquement */
+        border: 1px solid var(--glass-border);
+        border-radius: 18px;
+        color: white;
+        font-size: 16px;
         outline: none;
-        background: rgba(255,255,255,0.18);
-        color: #fff;
-        font-size: 15px;
+        transition: all 0.3s ease;
+        box-sizing: border-box;
     }
 
-    input::placeholder {
-        color: rgba(255,255,255,0.55);
+    /* Suppression de l'autofill blanc de Google Chrome */
+    input:-webkit-autofill,
+    input:-webkit-autofill:hover, 
+    input:-webkit-autofill:focus {
+        -webkit-text-fill-color: white !important;
+        -webkit-box-shadow: 0 0 0px 1000px var(--dark-bg) inset !important;
+        transition: background-color 5000s ease-in-out 0s;
     }
 
-    .login-btn {
-        width: 100%;
-        padding: 12px;
-        margin-top: 10px;
-        border: none;
-        border-radius: 10px;
-        background: #00C9A7;
-        color: #fff;
-        font-size: 17px;
-        font-weight: 600;
+    .input-wrapper input:focus {
+        border-color: var(--cityprop-teal);
+        background: rgba(255, 255, 255, 0.08);
+    }
+
+    .toggle-password {
+        position: absolute;
+        right: 20px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: rgba(255, 255, 255, 0.3);
         cursor: pointer;
-        transition: 0.25s;
+        z-index: 5;
     }
 
-    .login-btn:hover {
-        background: #00B594;
-        transform: translateY(-2px);
+    .btn-submit {
+        width: 100%;
+        padding: 18px;
+        background: var(--cityprop-teal);
+        border: none;
+        border-radius: 18px;
+        color: white;
+        font-weight: 600;
+        font-size: 16px;
+        cursor: pointer;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        margin-top: 10px;
     }
 
-    .error-box {
-        background: rgba(255, 0, 0, 0.25);
-        color: #fff;
-        padding: 10px;
-        border-radius: 10px;
-        margin-bottom: 20px;
-        font-size: 14px;
+    .btn-submit:hover {
+        transform: scale(1.02);
+        filter: brightness(1.1);
+    }
+
+    /* SECTION IMAGE (DROITE) */
+    .image-section {
+        position: relative;
+        background: url("{% static 'images/bg_login.png' %}") no-repeat center center;
+        background-size: cover;
+        animation: imageFadeIn 1.5s ease;
+    }
+
+    @keyframes imageFadeIn {
+        from { opacity: 0; filter: grayscale(100%); }
+        to { opacity: 1; filter: grayscale(0%); }
+    }
+
+    .image-section::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(to right, var(--dark-bg) 0%, transparent 60%);
+    }
+
+    /* RESPONSIVE */
+    @media (max-width: 900px) {
+        .auth-grid { grid-template-columns: 1fr; }
+        .image-section { display: none; }
     }
 </style>
 
-<div class="login-wrapper">
+<div class="auth-grid">
+    <section class="form-section">
+        <div class="login-box">
+            <div class="ani-1">
+                <img src="{% static 'images/cityprop_logo.png' %}" class="brand-logo" alt="CityProp">
+            </div>
+            
+            <div class="ani-2">
+                <p class="sub-heading">Accédez à votre espace professionnel.</p>
+            </div>
 
+            {% if error %}
+            <div class="error-toast ani-2">
+                <i class="fa-solid fa-circle-exclamation"></i>
+                <span>{{ error }}</span>
+            </div>
+            {% endif %}
 
-    <!-- Logo + Nom de l'entreprise -->
-    <div class="login-company">
-        <img src="{% static 'images/cityprop_logo.png' %}" alt="Logo Cityprop">
-        CITYPROP
-    </div>
+            <form method="POST" action="{% url 'login' %}">
+                {% csrf_token %}
+                
+                <div class="input-wrapper ani-3">
+                    <input type="text" name="username" placeholder="Identifiant" required autocomplete="off">
+                </div>
 
-    <p class="login-subtitle">Connectez-vous pour accéder au tableau de bord</p>
+                <div class="input-wrapper ani-3">
+                    <input type="password" name="password" id="passwordField" placeholder="Mot de passe" required>
+                    <i class="fa-solid fa-eye toggle-password" id="eyeIcon"></i>
+                </div>
 
-    {% if error %}
-        <div class="error-box">{{ error }}</div>
-    {% endif %}
-
-    <form action="{% url 'login' %}" method="post">
-        {% csrf_token %}
-
-        <div class="form-group">
-            <label>Nom d'utilisateur</label>
-            <input type="text" name="username" placeholder="Entrez votre nom">
+                <div class="ani-4">
+                    <button type="submit" class="btn-submit">Se connecter</button>
+                </div>
+            </form>
         </div>
+    </section>
 
-        <div class="form-group">
-            <label>Mot de passe</label>
-            <input type="password" name="password" placeholder="Votre mot de passe">
-        </div>
-
-        <button type="submit" class="login-btn">Se connecter</button>
-    </form>
-
+    <section class="image-section"></section>
 </div>
+
+<script>
+    const passwordField = document.getElementById('passwordField');
+    const eyeIcon = document.getElementById('eyeIcon');
+
+    eyeIcon.addEventListener('click', () => {
+        const type = passwordField.getAttribute('type') === 'password' ? 'text' : 'password';
+        passwordField.setAttribute('type', type);
+        eyeIcon.classList.toggle('fa-eye');
+        eyeIcon.classList.toggle('fa-eye-slash');
+    });
+</script>
 
 {% endblock %}

@@ -42,7 +42,7 @@
             left: 0; top: 0;
             display: flex; 
             flex-direction: column; 
-            z-index: 1100;
+            z-index: 1040; /* MODIFIÉ : Passe sous la modale Bootstrap */
             transition: all var(--transition-speed) cubic-bezier(0.4, 0, 0.2, 1);
         }
 
@@ -87,17 +87,11 @@
         }
         .menu a.active i { color: white; }
 
-        /* BADGES */
         .main-badge {
-            font-size: 10px;
-            padding: 4px 8px;
-            border-radius: 50px;
-            font-weight: 700;
-            margin-left: auto;
-            margin-right: 5px;
+            font-size: 10px; padding: 4px 8px; border-radius: 50px; font-weight: 700;
+            margin-left: auto; margin-right: 5px;
         }
 
-        /* SOUS-MENU */
         .submenu { list-style: none; padding-left: 28px; margin-top: 5px; border-left: 2px solid #f1f5f9; margin-left: 25px; }
         .submenu a { padding: 8px 16px; font-size: 13.5px; margin-bottom: 2px; display: flex; justify-content: space-between; align-items: center; }
         .chevron { font-size: 11px; transition: transform 0.3s; opacity: 0.5; }
@@ -107,7 +101,8 @@
         .topbar {
             background: var(--dark-green); height: var(--topbar-height); position: fixed; 
             left: var(--sidebar-width); top: 0; width: calc(100% - var(--sidebar-width)); 
-            z-index: 1000; padding: 0 25px; display: flex; justify-content: space-between; align-items: center;
+            z-index: 1030; /* MODIFIÉ : Plus bas que sidebar */
+            padding: 0 25px; display: flex; justify-content: space-between; align-items: center;
             box-shadow: 0 4px 12px rgba(0,0,0,0.1); transition: all var(--transition-speed) ease;
         }
 
@@ -123,12 +118,13 @@
         .sidebar-overlay { 
             display: none; position: fixed; top: 0; left: 0; 
             width: 100%; height: 100%; background: rgba(15, 23, 42, 0.6); 
-            z-index: 1050; backdrop-filter: blur(3px); 
+            z-index: 1090; /* MODIFIÉ */
+            backdrop-filter: blur(3px); 
         }
 
         @media (max-width: 992px) {
             .sidebar { transform: translateX(-100%); }
-            .sidebar.active { transform: translateX(0); }
+            .sidebar.active { transform: translateX(0); z-index: 1100; } /* MODIFIÉ : Repasse devant sur mobile */
             .sidebar-overlay.active { display: block; }
             .topbar { left: 0; width: 100%; }
             .content { margin-left: 0; width: 100%; padding: 15px; padding-top: calc(var(--topbar-height) + 20px); }
