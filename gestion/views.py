@@ -11,7 +11,7 @@ from openpyxl.utils import get_column_letter, quote_sheetname
 from openpyxl.worksheet.datavalidation import DataValidation
 from num2words import num2words
 from xhtml2pdf import pisa
-from django.db.models import Q
+from django.db.models import Q,Max
 from datetime import date, timedelta
 
 # 3. Django Core (Raccourcis, Réponses & Auth)
@@ -269,7 +269,16 @@ def dashboard(request):
 
     # 7. LISTES
     commandes_recents = Commande.objects.filter(commande_filter).order_by('-date_creation')[:5]
-    top_clients = Commande.objects.filter(commande_filter).values("nom_client").annotate(total=Count("id")).order_by("-total")[:5]
+
+    # Correction ici : On groupe par numéro pour l'unicité du calcul
+    top_clients = Commande.objects.filter(commande_filter)\
+        .values("numero_client")\
+        .annotate(
+            total=Count("id"),
+            nom_affiche=Max("nom_client") 
+        )\
+        .order_by("-total")[:5]
+        
 
     context = {
         "total_commandes": total_commandes, "total_cityprop": total_cityprop,
@@ -281,6 +290,7 @@ def dashboard(request):
         "start_date": start_date_str, "end_date": end_date_str,
     }
     return render(request, "index/dashboard.html", context)
+
 
 @login_required
 def nouvelle_commande(request):

@@ -117,29 +117,36 @@
 
     <div class="row g-4">
         <div class="col-12 col-lg-8">
-            <div class="kpi-card p-0 overflow-hidden">
-                <div class="p-4 border-bottom d-flex justify-content-between">
-                    <h6 class="fw-bold mb-0">Dernières Activités</h6>
-                    <a href="{% url 'liste_fiches' %}" class="btn btn-sm btn-link text-dark p-0">Voir tout</a>
+            <div class="kpi-card p-0 overflow-hidden ani-3" style="background: #ffffff; border: 1px solid #e0e0e0; border-radius: 24px; box-shadow: 0 4px 12px rgba(0,0,0,0.03); height: 100%;">
+                <div class="p-4 border-bottom d-flex justify-content-between align-items-center">
+                    <div class="d-flex align-items-center">
+                        <div style="width: 4px; height: 18px; background: #00C9A7; border-radius: 10px; margin-right: 12px;"></div>
+                        <h6 class="fw-bold mb-0" style="color: #1a1a1a;">Dernières Activités</h6>
+                    </div>
+                    <a href="{% url 'liste_fiches' %}" class="btn btn-sm" style="color: #00C9A7; font-weight: 600; font-size: 13px;">Voir tout</a>
                 </div>
                 <div class="table-responsive">
                     <table class="table table-hover mb-0">
-                        <thead class="table-light">
+                        <thead style="background: #f8f9fa;">
                             <tr>
-                                <th class="ps-4">Client</th>
-                                <th>Service</th>
-                                <th>Date</th>
-                                <th class="text-end pe-4">Statut</th>
+                                <th class="ps-4" style="font-size: 12px; color: #888; text-transform: uppercase; border-bottom: none;">Client</th>
+                                <th style="font-size: 12px; color: #888; text-transform: uppercase; border-bottom: none;">Service</th>
+                                <th style="font-size: 12px; color: #888; text-transform: uppercase; border-bottom: none;">Date</th>
+                                <th class="text-end pe-4" style="font-size: 12px; color: #888; text-transform: uppercase; border-bottom: none;">Statut</th>
                             </tr>
                         </thead>
                         <tbody>
                             {% for c in commandes_recents %}
-                            <tr>
-                                <td class="ps-4"><strong>{{ c.nom_client }}</strong></td>
-                                <td>{{ c.get_type_commande_display }}</td>
-                                <td class="text-muted small">{{ c.date_creation|date:"d M, H:i" }}</td>
+                            <tr style="border-bottom: 1px solid #f2f2f2;">
+                                <td class="ps-4">
+                                    <div class="fw-bold" style="color: #2d3436; font-size: 14px;">{{ c.nom_client }}</div>
+                                </td>
+                                <td><span style="font-size: 13px; color: #636e72;">{{ c.get_type_commande_display }}</span></td>
+                                <td><span class="text-muted" style="font-size: 12px;">{{ c.date_creation|date:"d M, H:i" }}</span></td>
                                 <td class="text-end pe-4">
-                                    <span class="badge {% if c.type_commande == 'TAPISPROP' %}bg-warning text-dark{% else %}bg-success{% endif %}">Enregistré</span>
+                                    <span class="badge" style="padding: 6px 12px; border-radius: 8px; font-weight: 500; font-size: 11px; {% if c.type_commande == 'TAPISPROP' %}background: #fff4e5; color: #ff9500;{% else %}background: #e6f9f6; color: #00C9A7;{% endif %}">
+                                        Enregistré
+                                    </span>
                                 </td>
                             </tr>
                             {% endfor %}
@@ -148,13 +155,36 @@
                 </div>
             </div>
         </div>
+
         <div class="col-12 col-lg-4">
-            <div class="kpi-card">
-                <h6 class="fw-bold mb-4">Top Clients (Période)</h6>
+            <div class="kpi-card ani-3" style="background: #ffffff; border: 1px solid #e0e0e0; border-radius: 24px; padding: 25px; box-shadow: 0 4px 12px rgba(0,0,0,0.03); height: 100%;">
+                <div class="d-flex align-items-center mb-4">
+                    <div style="width: 4px; height: 18px; background: #00C9A7; border-radius: 10px; margin-right: 12px;"></div>
+                    <h6 class="fw-bold m-0" style="color: #1a1a1a;">Fidélité Clients</h6>
+                </div>
+
                 {% for client in top_clients %}
-                <div class="d-flex justify-content-between mb-3 p-2 rounded bg-light">
-                    <span class="small fw-bold">{{ client.nom_client }}</span>
-                    <span class="badge bg-white text-dark border">{{ client.total }} cmd</span>
+                <div class="d-flex justify-content-between align-items-center mb-3 p-3 rounded-4" 
+                    style="background: #f8f9fa; border: 1px solid #eeeeee; transition: 0.3s;">
+                    <div class="d-flex align-items-center">
+                        <div style="width: 32px; height: 32px; background: #e6f9f6; color: #00C9A7; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 800; margin-right: 12px; border: 1px solid rgba(0, 150, 136, 0.1);">
+                            {{ forloop.counter }}
+                        </div>
+                        <div class="d-flex flex-column">
+                            <span style="font-size: 13px; font-weight: 800; color: #111111; text-transform: uppercase; line-height: 1.2;">
+                                {{ client.nom_affiche }}
+                            </span>
+                            <span style="font-size: 11px; color: #636e72; font-family: 'SF Mono', monospace;">
+                                {{ client.numero_client }}
+                            </span>
+                        </div>
+                    </div>
+                    <div class="text-end">
+                        <div style="font-size: 18px; font-weight: 900; color: #00C9A7; line-height: 1;">
+                            {{ client.total }}
+                        </div>
+                        <div style="font-size: 9px; color: #888888; text-transform: uppercase; font-weight: 700; letter-spacing: 0.3px;">Commandes</div>
+                    </div>
                 </div>
                 {% endfor %}
             </div>
