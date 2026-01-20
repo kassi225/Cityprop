@@ -15,7 +15,6 @@
         overflow: hidden;
     }
 
-    /* 1. LE FOND : Utilisation de ton fichier bg_login.png */
     .dashboard-preview {
         position: fixed;
         top: 0; left: 0;
@@ -25,34 +24,29 @@
         z-index: -2;
     }
 
-    /* 2. L'EFFET VIGNETTAGE : Sombre sur les bords pour faire ressortir le popup */
     .vignette-overlay {
         position: fixed;
         top: 0; left: 0;
         width: 100%; height: 100%;
-        /* Dégradé radial : transparent au centre, noir transparent sur les bords */
         background: radial-gradient(circle, rgba(0,0,0,0.1) 0%, rgba(0,0,0,0.7) 100%);
-        backdrop-filter: blur(5px); /* Un petit flou pour le côté pro */
+        backdrop-filter: blur(5px);
         -webkit-backdrop-filter: blur(5px);
         z-index: -1;
     }
 
-    /* 3. CENTRAGE DU POPUP */
     .auth-container {
         height: 100vh;
         display: flex;
         justify-content: center;
         align-items: center;
-        background: rgba(0, 0, 0, 0.1); /* Voile global très léger */
     }
 
-    /* 4. LE POPUP (Style Pinterest / Apple) */
     .login-modal {
         background: #FFFFFF;
         width: 90%;
         max-width: 440px;
         padding: 50px 40px;
-        border-radius: 35px; /* Bords très arrondis */
+        border-radius: 35px;
         box-shadow: 0 25px 80px rgba(0,0,0,0.5);
         text-align: center;
         animation: slideUp 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
@@ -63,6 +57,63 @@
         to { opacity: 1; transform: translateY(0) scale(1); }
     }
 
+    /* --- STYLE DU BOUTON ET ANIMATION --- */
+    .btn-submit {
+        position: relative;
+        width: 100%;
+        padding: 18px;
+        background: var(--cityprop-teal);
+        color: white;
+        border: none;
+        border-radius: 50px;
+        font-weight: 700;
+        font-size: 17px;
+        cursor: pointer;
+        margin-top: 15px;
+        transition: all 0.3s ease;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
+
+    .btn-submit:hover:not(:disabled) {
+        filter: brightness(1.05);
+        transform: translateY(-2px);
+    }
+
+    /* État désactivé pendant le chargement */
+    .btn-submit:disabled {
+        background: #ccc;
+        cursor: not-allowed;
+        transform: none;
+    }
+
+    /* Le petit cercle qui tourne */
+    .spinner {
+        display: none; /* Caché par défaut */
+        width: 20px;
+        height: 20px;
+        border: 3px solid rgba(255,255,255,0.3);
+        border-radius: 50%;
+        border-top-color: #fff;
+        animation: spin 1s ease-in-out infinite;
+        margin-left: 10px;
+    }
+
+    @keyframes spin {
+        to { transform: rotate(360deg); }
+    }
+
+    /* Quand on ajoute la classe 'loading' via JS */
+    .btn-submit.loading .btn-text {
+        opacity: 0.7;
+    }
+    .btn-submit.loading .spinner {
+        display: inline-block;
+    }
+
+    /* --- FIN STYLE ANIMATION --- */
+
     .logo-wrapper {
         width: 75px; height: 75px;
         margin: 0 auto 20px;
@@ -72,26 +123,7 @@
         box-shadow: 0 5px 15px rgba(0,0,0,0.08);
     }
 
-    .login-modal h2 {
-        color: #1a1a1a;
-        font-size: 26px;
-        font-weight: 800;
-        margin-bottom: 8px;
-        letter-spacing: -0.5px;
-    }
-
-    .login-modal p {
-        color: #777;
-        font-size: 15px;
-        margin-bottom: 35px;
-    }
-
-    /* 5. FORMULAIRE ET INPUTS */
-    .form-group {
-        position: relative;
-        margin-bottom: 18px;
-    }
-
+    .form-group { position: relative; margin-bottom: 18px; }
     .form-group input {
         width: 100%;
         padding: 18px 22px;
@@ -99,43 +131,19 @@
         border: 2px solid transparent;
         border-radius: 18px;
         font-size: 16px;
-        color: #333;
         outline: none;
         box-sizing: border-box;
-        transition: all 0.3s ease;
+        transition: 0.3s;
     }
 
     .form-group input:focus {
         border-color: var(--cityprop-teal);
         background: #fff;
-        box-shadow: 0 0 0 5px rgba(0, 201, 167, 0.1);
-    }
-
-    /* 6. BOUTON SE CONNECTER */
-    .btn-submit {
-        width: 100%;
-        padding: 18px;
-        background: var(--cityprop-teal);
-        color: white;
-        border: none;
-        border-radius: 50px; /* Style Pilule */
-        font-weight: 700;
-        font-size: 17px;
-        cursor: pointer;
-        margin-top: 15px;
-        transition: all 0.3s ease;
-    }
-
-    .btn-submit:hover {
-        filter: brightness(1.05);
-        transform: translateY(-2px);
-        box-shadow: 0 10px 20px rgba(0, 201, 167, 0.3);
     }
 
     .toggle-password {
         position: absolute;
-        right: 22px;
-        top: 50%;
+        right: 22px; top: 50%;
         transform: translateY(-50%);
         color: #999;
         cursor: pointer;
@@ -143,7 +151,6 @@
 </style>
 
 <div class="dashboard-preview"></div>
-
 <div class="vignette-overlay"></div>
 
 <div class="auth-container">
@@ -152,10 +159,10 @@
             <img src="{% static 'images/cityprop_logo.png' %}" width="60" alt="Logo">
         </div>
         
-        <h2>CityProp</h2>
-        <p>Veuillez vous authentifier pour continuer</p>
+        <h2 style="font-weight: 800;">CityProp</h2>
+        <p style="color: #777; margin-bottom: 35px;">Veuillez vous authentifier</p>
 
-        <form method="POST">
+        <form method="POST" id="loginForm">
             {% csrf_token %}
             
             {% if error %}
@@ -173,11 +180,14 @@
                 <i class="fa-solid fa-eye toggle-password" id="eyeBtn"></i>
             </div>
 
-            <button type="submit" class="btn-submit">Se connecter</button>
+            <button type="submit" class="btn-submit" id="submitBtn">
+                <span class="btn-text">Se connecter</span>
+                <div class="spinner"></div>
+            </button>
         </form>
 
         <div style="margin-top: 30px;">
-            <a href="#" style="color: #bbb; text-decoration: none; font-size: 13px; font-weight: 500;">
+            <a href="#" style="color: #bbb; text-decoration: none; font-size: 13px;">
                 <i class="fa-solid fa-headset"></i> CityProp|2025
             </a>
         </div>
@@ -185,10 +195,22 @@
 </div>
 
 <script>
-    // Gestion de l'affichage du mot de passe
+    const loginForm = document.getElementById('loginForm');
+    const submitBtn = document.getElementById('submitBtn');
     const passwordInput = document.getElementById('passwordInput');
     const eyeBtn = document.getElementById('eyeBtn');
 
+    // 1. Animation au clic
+    loginForm.addEventListener('submit', function() {
+        // Ajouter la classe de chargement pour afficher le spinner
+        submitBtn.classList.add('loading');
+        // Désactiver le bouton pour éviter le double clic
+        submitBtn.disabled = true;
+        // Optionnel : Changer le texte
+        submitBtn.querySelector('.btn-text').innerText = "Connexion...";
+    });
+
+    // 2. Gestion de l'œil (Mot de passe)
     eyeBtn.addEventListener('click', () => {
         const type = passwordInput.type === 'password' ? 'text' : 'password';
         passwordInput.type = type;
