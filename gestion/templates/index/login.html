@@ -1,211 +1,199 @@
 {% load static %}
-
 {% block content %}
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
 <style>
     :root {
         --cityprop-teal: #00C9A7;
-        --dark-bg: #05111d;
-        --error-red: #ff453a;
-        --glass-bg: rgba(255, 255, 255, 0.05);
-        --glass-border: rgba(255, 255, 255, 0.1);
+        --input-bg: #EBF1FF;
     }
 
     body, html {
         margin: 0; padding: 0;
         width: 100%; height: 100vh;
-        background-color: var(--dark-bg);
-        font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif;
-        color: white;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
         overflow: hidden;
     }
 
-    .auth-grid {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        height: 100vh;
-        width: 100%;
+    /* 1. LE FOND : Utilisation de ton fichier bg_login.png */
+    .dashboard-preview {
+        position: fixed;
+        top: 0; left: 0;
+        width: 100%; height: 100%;
+        background: url("{% static 'images/bg_login1.png' %}") no-repeat center center;
+        background-size: cover;
+        z-index: -2;
     }
 
-    /* SECTION GAUCHE */
-    .form-section {
+    /* 2. L'EFFET VIGNETTAGE : Sombre sur les bords pour faire ressortir le popup */
+    .vignette-overlay {
+        position: fixed;
+        top: 0; left: 0;
+        width: 100%; height: 100%;
+        /* Dégradé radial : transparent au centre, noir transparent sur les bords */
+        background: radial-gradient(circle, rgba(0,0,0,0.1) 0%, rgba(0,0,0,0.7) 100%);
+        backdrop-filter: blur(5px); /* Un petit flou pour le côté pro */
+        -webkit-backdrop-filter: blur(5px);
+        z-index: -1;
+    }
+
+    /* 3. CENTRAGE DU POPUP */
+    .auth-container {
+        height: 100vh;
         display: flex;
-        flex-direction: column;
         justify-content: center;
         align-items: center;
-        padding: 40px;
-        background: var(--dark-bg);
+        background: rgba(0, 0, 0, 0.1); /* Voile global très léger */
     }
 
-    .login-box {
-        width: 100%;
-        max-width: 360px;
+    /* 4. LE POPUP (Style Pinterest / Apple) */
+    .login-modal {
+        background: #FFFFFF;
+        width: 90%;
+        max-width: 440px;
+        padding: 50px 40px;
+        border-radius: 35px; /* Bords très arrondis */
+        box-shadow: 0 25px 80px rgba(0,0,0,0.5);
+        text-align: center;
+        animation: slideUp 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
     }
 
-    /* ANIMATIONS D'ENTRÉE */
-    .ani-1 { animation: appleReveal 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) forwards; opacity: 0; }
-    .ani-2 { animation: appleReveal 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) 0.1s forwards; opacity: 0; }
-    .ani-3 { animation: appleReveal 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) 0.2s forwards; opacity: 0; }
-    .ani-4 { animation: appleReveal 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) 0.3s forwards; opacity: 0; }
-
-    @keyframes appleReveal {
-        from { opacity: 0; transform: translateY(20px); }
-        to { opacity: 1; transform: translateY(0); }
+    @keyframes slideUp {
+        from { opacity: 0; transform: translateY(40px) scale(0.9); }
+        to { opacity: 1; transform: translateY(0) scale(1); }
     }
 
-    .brand-logo {
-        width: 65px;
-        margin-bottom: 30px;
-        filter: drop-shadow(0 10px 20px rgba(0, 201, 167, 0.2));
+    .logo-wrapper {
+        width: 75px; height: 75px;
+        margin: 0 auto 20px;
+        background: white;
+        border-radius: 18px;
+        display: flex; align-items: center; justify-content: center;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.08);
     }
 
-    .sub-heading {
-        color: rgba(255, 255, 255, 0.5);
-        font-size: 16px;
-        margin-bottom: 40px;
-        font-weight: 400;
-        letter-spacing: -0.2px;
+    .login-modal h2 {
+        color: #1a1a1a;
+        font-size: 26px;
+        font-weight: 800;
+        margin-bottom: 8px;
+        letter-spacing: -0.5px;
     }
 
-    /* ZERO FOND BLANC - CHAMPS INCRUSTÉS */
-    .input-wrapper {
+    .login-modal p {
+        color: #777;
+        font-size: 15px;
+        margin-bottom: 35px;
+    }
+
+    /* 5. FORMULAIRE ET INPUTS */
+    .form-group {
         position: relative;
-        margin-bottom: 20px;
+        margin-bottom: 18px;
     }
 
-    .input-wrapper input {
+    .form-group input {
         width: 100%;
         padding: 18px 22px;
-        background: var(--glass-bg); /* Translucide uniquement */
-        border: 1px solid var(--glass-border);
+        background: var(--input-bg);
+        border: 2px solid transparent;
         border-radius: 18px;
-        color: white;
         font-size: 16px;
+        color: #333;
         outline: none;
-        transition: all 0.3s ease;
         box-sizing: border-box;
+        transition: all 0.3s ease;
     }
 
-    /* Suppression de l'autofill blanc de Google Chrome */
-    input:-webkit-autofill,
-    input:-webkit-autofill:hover, 
-    input:-webkit-autofill:focus {
-        -webkit-text-fill-color: white !important;
-        -webkit-box-shadow: 0 0 0px 1000px var(--dark-bg) inset !important;
-        transition: background-color 5000s ease-in-out 0s;
-    }
-
-    .input-wrapper input:focus {
+    .form-group input:focus {
         border-color: var(--cityprop-teal);
-        background: rgba(255, 255, 255, 0.08);
+        background: #fff;
+        box-shadow: 0 0 0 5px rgba(0, 201, 167, 0.1);
     }
 
-    .toggle-password {
-        position: absolute;
-        right: 20px;
-        top: 50%;
-        transform: translateY(-50%);
-        color: rgba(255, 255, 255, 0.3);
-        cursor: pointer;
-        z-index: 5;
-    }
-
+    /* 6. BOUTON SE CONNECTER */
     .btn-submit {
         width: 100%;
         padding: 18px;
         background: var(--cityprop-teal);
-        border: none;
-        border-radius: 18px;
         color: white;
-        font-weight: 600;
-        font-size: 16px;
+        border: none;
+        border-radius: 50px; /* Style Pilule */
+        font-weight: 700;
+        font-size: 17px;
         cursor: pointer;
-        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        margin-top: 10px;
+        margin-top: 15px;
+        transition: all 0.3s ease;
     }
 
     .btn-submit:hover {
-        transform: scale(1.02);
-        filter: brightness(1.1);
+        filter: brightness(1.05);
+        transform: translateY(-2px);
+        box-shadow: 0 10px 20px rgba(0, 201, 167, 0.3);
     }
 
-    /* SECTION IMAGE (DROITE) */
-    .image-section {
-        position: relative;
-        background: url("{% static 'images/bg_login.png' %}") no-repeat center center;
-        background-size: cover;
-        animation: imageFadeIn 1.5s ease;
-    }
-
-    @keyframes imageFadeIn {
-        from { opacity: 0; filter: grayscale(100%); }
-        to { opacity: 1; filter: grayscale(0%); }
-    }
-
-    .image-section::after {
-        content: "";
+    .toggle-password {
         position: absolute;
-        inset: 0;
-        background: linear-gradient(to right, var(--dark-bg) 0%, transparent 60%);
-    }
-
-    /* RESPONSIVE */
-    @media (max-width: 900px) {
-        .auth-grid { grid-template-columns: 1fr; }
-        .image-section { display: none; }
+        right: 22px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #999;
+        cursor: pointer;
     }
 </style>
 
-<div class="auth-grid">
-    <section class="form-section">
-        <div class="login-box">
-            <div class="ani-1">
-                <img src="{% static 'images/cityprop_logo.png' %}" class="brand-logo" alt="CityProp">
-            </div>
-            
-            <div class="ani-2">
-                <p class="sub-heading">Accédez à votre espace professionnel.</p>
-            </div>
+<div class="dashboard-preview"></div>
 
+<div class="vignette-overlay"></div>
+
+<div class="auth-container">
+    <div class="login-modal">
+        <div class="logo-wrapper">
+            <img src="{% static 'images/cityprop_logo.png' %}" width="60" alt="Logo">
+        </div>
+        
+        <h2>CityProp</h2>
+        <p>Veuillez vous authentifier pour continuer</p>
+
+        <form method="POST">
+            {% csrf_token %}
+            
             {% if error %}
-            <div class="error-toast ani-2">
-                <i class="fa-solid fa-circle-exclamation"></i>
-                <span>{{ error }}</span>
+            <div style="color: #ff453a; background: rgba(255,69,58,0.1); padding: 10px; border-radius: 12px; margin-bottom: 20px; font-size: 14px;">
+                <i class="fa-solid fa-circle-exclamation"></i> {{ error }}
             </div>
             {% endif %}
 
-            <form method="POST" action="{% url 'login' %}">
-                {% csrf_token %}
-                
-                <div class="input-wrapper ani-3">
-                    <input type="text" name="username" placeholder="Identifiant" required autocomplete="off">
-                </div>
+            <div class="form-group">
+                <input type="text" name="username" placeholder="Identifiant" required autofocus>
+            </div>
 
-                <div class="input-wrapper ani-3">
-                    <input type="password" name="password" id="passwordField" placeholder="Mot de passe" required>
-                    <i class="fa-solid fa-eye toggle-password" id="eyeIcon"></i>
-                </div>
+            <div class="form-group">
+                <input type="password" name="password" id="passwordInput" placeholder="Mot de passe" required>
+                <i class="fa-solid fa-eye toggle-password" id="eyeBtn"></i>
+            </div>
 
-                <div class="ani-4">
-                    <button type="submit" class="btn-submit">Se connecter</button>
-                </div>
-            </form>
+            <button type="submit" class="btn-submit">Se connecter</button>
+        </form>
+
+        <div style="margin-top: 30px;">
+            <a href="#" style="color: #bbb; text-decoration: none; font-size: 13px; font-weight: 500;">
+                <i class="fa-solid fa-headset"></i> CityProp|2025
+            </a>
         </div>
-    </section>
-
-    <section class="image-section"></section>
+    </div>
 </div>
 
 <script>
-    const passwordField = document.getElementById('passwordField');
-    const eyeIcon = document.getElementById('eyeIcon');
+    // Gestion de l'affichage du mot de passe
+    const passwordInput = document.getElementById('passwordInput');
+    const eyeBtn = document.getElementById('eyeBtn');
 
-    eyeIcon.addEventListener('click', () => {
-        const type = passwordField.getAttribute('type') === 'password' ? 'text' : 'password';
-        passwordField.setAttribute('type', type);
-        eyeIcon.classList.toggle('fa-eye');
-        eyeIcon.classList.toggle('fa-eye-slash');
+    eyeBtn.addEventListener('click', () => {
+        const type = passwordInput.type === 'password' ? 'text' : 'password';
+        passwordInput.type = type;
+        eyeBtn.classList.toggle('fa-eye');
+        eyeBtn.classList.toggle('fa-eye-slash');
     });
 </script>
 

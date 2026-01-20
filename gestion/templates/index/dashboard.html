@@ -60,43 +60,56 @@
         </div>
     </div>
 
-    <div class="row g-4 mb-5 animate__animated animate__fadeInUp">
-        <div class="col-12 col-sm-6 col-xl-3">
-            <div class="kpi-card {% if total_ko_ret > 0 %}alert-city-danger{% endif %}">
-                {% if total_ko_ret > 0 %}
-                <span class="badge-ko-pulse">{{ total_ko_ret }} KO RETOUR</span>
-                {% endif %}
-                <div class="text-muted small fw-bold mb-1">CITYPROP</div>
-                <div class="h2 fw-900 mb-0 {% if total_ko_ret > 0 %}text-danger{% endif %}">{{ total_cityprop }}</div>
-                <div class="mt-2 small text-muted">Qualité de service</div>
+        <div class="row g-4 mb-5 animate__animated animate__fadeInUp">
+            
+            <div class="col-12 col-sm-6 col-xl-3">
+                <a href="{% url 'liste_fiches' %}?type_commande=CITYPROP" class="text-decoration-none">
+                    <div class="kpi-card {% if total_ko_ret > 0 %}alert-city-danger{% endif %}">
+                        {% if total_ko_ret > 0 %}
+                        <span class="badge-ko-pulse">{{ total_ko_ret }} KO RETOUR</span>
+                        {% endif %}
+                        <div class="text-muted small fw-bold mb-1">CITYPROP</div>
+                        <div class="h2 fw-900 mb-0 {% if total_ko_ret > 0 %}text-danger{% endif %}">{{ total_cityprop }}</div>
+                        <div class="mt-2 small text-muted">Qualité de service</div>
+                    </div>
+                </a>
             </div>
-        </div>
-        <div class="col-12 col-sm-6 col-xl-3">
-            <div class="kpi-card">
-                <div class="text-muted small fw-bold mb-1">CLIMATISEURS</div>
-                <div class="h2 fw-900 mb-0 text-primary">{{ total_clim }}</div>
-                <div class="progress mt-3" style="height: 6px; border-radius: 10px;">
-                    <div class="progress-bar bg-primary" style="width: 70%"></div>
-                </div>
+
+            <div class="col-12 col-sm-6 col-xl-3">
+                <a href="{% url 'liste_fiches' %}?type_commande=CLIMATISEUR" class="text-decoration-none">
+                    <div class="kpi-card">
+                        <div class="text-muted small fw-bold mb-1">CLIMATISEURS</div>
+                        <div class="h2 fw-900 mb-0 text-primary">{{ total_clim }}</div>
+                        <div class="progress mt-3" style="height: 6px; border-radius: 10px;">
+                            <div class="progress-bar bg-primary" style="width: 70%"></div>
+                        </div>
+                    </div>
+                </a>
             </div>
-        </div>
-        <div class="col-12 col-sm-6 col-xl-3">
-            <div class="kpi-card">
-                <div class="text-muted small fw-bold mb-1">TAPISPROP</div>
-                <div class="h2 fw-900 mb-0 text-warning">{{ total_tapis }}</div>
-                <div class="small text-danger mt-2 fw-bold"><i class="fa-solid fa-clock"></i> {{ alertes_tapis_7j }} Retards Atelier</div>
+
+            <div class="col-12 col-sm-6 col-xl-3">
+                <a href="{% url 'liste_fiches' %}?type_commande=TAPISPROP" class="text-decoration-none">
+                    <div class="kpi-card">
+                        <div class="text-muted small fw-bold mb-1">TAPISPROP</div>
+                        <div class="h2 fw-900 mb-0 text-warning">{{ total_tapis }}</div>
+                        <div class="small text-danger mt-2 fw-bold"><i class="fa-solid fa-clock"></i> {{ alertes_tapis_7j }} Retards Atelier</div>
+                    </div>
+                </a>
             </div>
-        </div>
-        <div class="col-12 col-sm-6 col-xl-3">
-            <div class="kpi-card bg-dark text-white">
-                <div class="text-white-50 small fw-bold mb-1">VOLUME TOTAL</div>
-                <div class="h2 fw-900 mb-0">{{ total_commandes }}</div>
-                <div class="mt-2 small text-warning fw-bold">
-                    <i class="fa-solid fa-bullseye"></i> {{ total_a_fideliser }} à fidéliser
-                </div>
+
+            <div class="col-12 col-sm-6 col-xl-3">
+                <a href="{% url 'liste_fiches' %}" class="text-decoration-none">
+                    <div class="kpi-card bg-dark text-white">
+                        <div class="text-white-50 small fw-bold mb-1">VOLUME TOTAL</div>
+                        <div class="h2 fw-900 mb-0">{{ total_commandes }}</div>
+                        <div class="mt-2 small text-warning fw-bold">
+                            <i class="fa-solid fa-bullseye"></i> {{ total_a_fideliser }} à fidéliser
+                        </div>
+                    </div>
+                </a>
             </div>
+
         </div>
-    </div>
 
     <div class="row mb-5">
         <div class="col-12">
