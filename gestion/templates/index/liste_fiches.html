@@ -5,78 +5,91 @@
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
 <style>
+    :root { 
+        --small-font: 12px; 
+        --primary-blue: #0d6efd;
+        --dark-bg: #2d3436;
+    }
 
-.date-range-group .form-control {
-    padding: 2px 5px;
-    height: 28px;
-    border-color: #ced4da;
-    background-color: #fff;
-}
+    body { font-size: var(--small-font); background-color: #f4f7f6; overflow-x: hidden; }
 
-/* Effet de focus sur la ligne de tableau */
-.compact-table tbody tr:hover {
-    background-color: rgba(13, 110, 253, 0.05) !important;
-}
+    /* --- OPTIMISATION DES ESPACES --- */
+    .container-fluid { padding-top: 5px !important; } /* Réduit l'espace tout en haut */
+    .header-section { margin-bottom: 8px !important; }
+    .filter-bar { background: #fff; border-radius: 6px; border: 1px solid #dfe6e9; padding: 8px !important; margin-bottom: 8px !important; }
 
-    :root { --small-font: 12.5px; }
-    body { font-size: var(--small-font); background-color: #f4f7f6; }
-    
-    /* Table Styles */
-    .compact-table th { background-color: #2d3436 !important; color: white; text-transform: uppercase; font-size: 9px; letter-spacing: 0.5px; }
-    .compact-table td { padding: 4px 8px !important; vertical-align: middle; }
-    
-    /* UI Components */
-    .filter-bar { background: #fff; border-radius: 8px; border: 1px solid #dfe6e9; }
-    .form-control-sm, .form-select-sm { font-size: 10px; border-radius: 4px; }
-    .badge-status { font-size: 10px; padding: 3px 7px; border-radius: 12px; font-weight: 600; }
-    
-    .btn-icon { width: 30px; height: 30px; padding: 0; display: inline-flex; align-items: center; justify-content: center; border-radius: 4px; transition: all 0.2s; }
-    .btn-edit { border: 1px solid #0d6efd; color: #0d6efd; background: white; }
-    .btn-edit:hover { background: #0d6efd; color: white; }
+    /* --- STRUCTURE SCROLLABLE DYNAMIQUE --- */
+    .table-container {
+        max-height: 58vh; /* Ajusté pour laisser de la place à la pagination en bas */
+        overflow-y: auto;
+        border-radius: 6px;
+        background: white;
+        border: 1px solid #dfe6e9;
+        scrollbar-width: thin;
+    }
+
+    /* Style du scroll */
+    .table-container::-webkit-scrollbar { width: 5px; }
+    .table-container::-webkit-scrollbar-thumb { background: #ccc; border-radius: 10px; }
+
+    /* --- EN-TÊTE FIXE --- */
+    .compact-table { border-collapse: separate; border-spacing: 0; width: 100%; }
+    .compact-table thead th { 
+        position: sticky; 
+        top: 0; 
+        z-index: 10;
+        background-color: var(--dark-bg) !important; 
+        color: white; 
+        font-size: 9px; 
+        padding: 8px 5px !important;
+    }
+
+    /* --- COMPOSANTS --- */
+    .form-control-sm, .form-select-sm { font-size: 10px; height: 28px; border-radius: 4px; }
+    .badge-status { font-size: 9px; padding: 2px 6px; border-radius: 10px; font-weight: 600; }
+    .btn-icon { width: 28px; height: 28px; display: inline-flex; align-items: center; justify-content: center; border-radius: 4px; }
+    .label-filter { display: block; margin-bottom: 2px; color: #6c757d; font-size: 9px; text-transform: uppercase; font-weight: 700; }
     
     .search-container { position: relative; }
     .search-container i { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: #b2bec3; }
-    .search-container input { padding-left: 30px; }
+    .search-container input { padding-left: 30px; border: 1px solid #dee2e6 !important; }
 
-    .date-range-group { display: flex; gap: 4px; }
-    .date-range-group input { flex: 1; min-width: 90px; }
+    .date-range-group { display: flex; gap: 3px; }
+    .date-range-group input { flex: 1; min-width: 80px; }
 
-    /* Progress Bar */
-    .prog-container { width: 100%; background: #eee; border-radius: 10px; height: 12px; margin: 10px 0; overflow: hidden; display: none; }
-    .prog-bar { width: 0%; height: 100%; background: #0d6efd; transition: width 0.2s; }
-    
-    /* State Styles */
-    .text-late { color: #d63031; font-weight: bold; } 
-    .label-filter { display: block; mb: 1px; text-muted; font-size: 9px; text-transform: uppercase; font-weight: 600; }
+    .text-late { color: #d63031; font-weight: bold; }
+    .pagination { margin-top: 10px !important; margin-bottom: 10px !important; }
 </style>
 
-<div class="container-fluid mt-2 px-3">
-    <div class="d-flex justify-content-between align-items-center mb-2">
-        <h6 class="fw-bold mb-0 text-dark"><i class="fa-solid fa-list-check me-2 text-primary"></i>LISTE DES COMMANDES</h6>
+<div class="container-fluid px-3">
+    <div class="d-flex justify-content-between align-items-center header-section">
+        <h6 class="fw-bold mb-0 text-dark" style="font-size: 14px;">
+            <i class="fa-solid fa-list-check me-2 text-primary"></i>LISTE DES COMMANDES
+        </h6>
         <div class="d-flex gap-2">
             <form method="GET" action="{% url 'liste_fiches' %}" id="searchForm">
                 <div class="search-container">
                     <i class="fa-solid fa-magnifying-glass"></i>
-                    <input type="text" name="q" id="quickSearch" value="{{ search_query }}" class="form-control form-control-sm border-0 shadow-sm" style="width: 200px;" placeholder="Client, numéro, lieu...">
+                    <input type="text" name="q" id="quickSearch" value="{{ search_query }}" class="form-control form-control-sm shadow-sm" style="width: 180px;" placeholder="Recherche rapide...">
                 </div>
             </form>
-            <button type="button" onclick="showImportModal()" class="btn btn-primary btn-sm shadow-sm px-3 d-flex align-items-center gap-2">
+            <button type="button" onclick="showImportModal()" class="btn btn-primary btn-sm shadow-sm px-2 d-flex align-items-center gap-1">
                 <i class="fa-solid fa-file-import"></i> <span>Importer</span>
             </button>
-            <a href="{% url 'export_commandes_excel' %}?{{ request.GET.urlencode }}" class="btn btn-success btn-sm shadow-sm px-3 d-flex align-items-center gap-2">
+            <a href="{% url 'export_commandes_excel' %}?{{ request.GET.urlencode }}" class="btn btn-success btn-sm shadow-sm px-2 d-flex align-items-center gap-1">
                 <i class="fa-solid fa-file-excel"></i> <span>Exporter</span>
             </a>
         </div>
     </div>
 
-    <form method="GET" class="filter-bar p-2 mb-2 shadow-sm border-0">
+    <form method="GET" class="filter-bar shadow-sm">
         <div class="row g-2 align-items-end">
             <div class="col-md-2">
-                <label class="label-filter text-muted">Client / Nom</label>
-                <input type="text" name="nom_client" value="{{ nom_filter }}" class="form-control form-control-sm" placeholder="Rechercher...">
+                <label class="label-filter">Client / Nom</label>
+                <input type="text" name="nom_client" value="{{ nom_filter }}" class="form-control form-control-sm" placeholder="Nom...">
             </div>
             <div class="col-md-1">
-                <label class="label-filter text-muted">Type</label>
+                <label class="label-filter">Type</label>
                 <select name="type_commande" class="form-select form-select-sm">
                     <option value="">Tous</option>
                     <option value="CITYPROP" {% if type_filter == "CITYPROP" %}selected{% endif %}>Cityprop</option>
@@ -84,63 +97,57 @@
                     <option value="TAPISPROP" {% if type_filter == "TAPISPROP" %}selected{% endif %}>Tapis</option>
                 </select>
             </div>
-            
             <div class="col-md-1">
-                <label class="label-filter text-primary">Date Saisie</label>
+                <label class="label-filter text-primary">Saisie</label>
                 <input type="date" name="date_crea" value="{{ date_crea }}" class="form-control form-control-sm border-primary">
             </div>
-
             <div class="col-md-3">
-                <label class="label-filter text-muted">Plage d'Opération (Ramassage / Interv.)</label>
+                <label class="label-filter">Plage d'Opération</label>
                 <div class="date-range-group">
-                    <input type="date" name="date_debut" value="{{ date_debut }}" class="form-control form-control-sm" title="Début">
-                    <input type="date" name="date_fin" value="{{ date_fin }}" class="form-control form-control-sm" title="Fin">
+                    <input type="date" name="date_debut" value="{{ date_debut }}" class="form-control form-control-sm">
+                    <input type="date" name="date_fin" value="{{ date_fin }}" class="form-control form-control-sm">
                 </div>
             </div>
-
             <div class="col-md-2">
-                <label class="label-filter text-muted">Statut / Satisfaction</label>
-                <select name="statut" class="form-select form-select-sm">
-                    <option value="">Statut (Tous)</option>
-                    <option value="NON_RESPECTE" {% if statut_filter == "NON_RESPECTE" %}selected{% endif %}>En cours(en Atelier)</option>
-                    <option value="PRET" {% if statut_filter == "PRET" %}selected{% endif %}>En attente(sortie d'Atelier)</option>
-                    <option value="CLIENT_INDISPO" {% if statut_filter == "CLIENT_INDISPO" %}selected{% endif %}>Tapis Prêt client indisponible</option>
-                    <option value="LIVRE-satisfait" {% if statut_filter == "LIVRE-satisfait" %}selected{% endif %}>Livré - client satisfait</option>
-                    <option value="LIVRE-insatisfait" {% if statut_filter == "LIVRE-insatisfait" %}selected{% endif %}>Livré - client insatisfait</option>
-                    <option value="ABANDON" {% if statut_filter == "ABANDON" %}selected{% endif %}>Tapis Abandonné</option>
-                    <option value="KO_RET" {% if statut_filter == "KO_RET" %}selected{% endif %}>KO - client accepte Retouche</option>
-                    <option value="OK" {% if statut_filter == "OK" %}selected{% endif %}>OK - client satisfait</option>
-                    <option value="KO_REFUS" {% if statut_filter == "KO_REFUS" %}selected{% endif %}>KO - Refus seconde intervention</option>
-                </select>
+                <label class="label-filter">Statut</label>
+                    <select name="statut" class="form-select form-select-sm">
+                        <option value="">Statut (Tous)</option>
+                        <option value="NON_RESPECTE" {% if statut_filter == "NON_RESPECTE" %}selected{% endif %}>En cours(en Atelier)</option>
+                        <option value="PRET" {% if statut_filter == "PRET" %}selected{% endif %}>En attente(sortie d'Atelier)</option>
+                        <option value="CLIENT_INDISPO" {% if statut_filter == "CLIENT_INDISPO" %}selected{% endif %}>Tapis Prêt client indisponible</option>
+                        <option value="LIVRE-satisfait" {% if statut_filter == "LIVRE-satisfait" %}selected{% endif %}>Livré - client satisfait</option>
+                        <option value="LIVRE-insatisfait" {% if statut_filter == "LIVRE-insatisfait" %}selected{% endif %}>Livré - client insatisfait</option>
+                        <option value="ABANDON" {% if statut_filter == "ABANDON" %}selected{% endif %}>Tapis Abandonné</option>
+                        <option value="KO_RET" {% if statut_filter == "KO_RET" %}selected{% endif %}>KO - client accepte Retouche</option>
+                        <option value="OK" {% if statut_filter == "OK" %}selected{% endif %}>OK - client satisfait</option>
+                        <option value="KO_REFUS" {% if statut_filter == "KO_REFUS" %}selected{% endif %}>KO - Refus seconde intervention</option>
+                    </select>
             </div>
-
             <div class="col-md-1">
-                <label class="label-filter text-muted">Fidélisé</label>
+                <label class="label-filter">Fid.</label>
                 <select name="fidelise" class="form-select form-select-sm">
                     <option value="">-</option>
                     <option value="oui" {% if fidelise_filter == "oui" %}selected{% endif %}>Oui</option>
                     <option value="non" {% if fidelise_filter == "non" %}selected{% endif %}>Non</option>
                 </select>
             </div>
-
             <div class="col-md-2 d-flex gap-1">
                 <button type="submit" class="btn btn-primary btn-sm flex-grow-1 fw-bold">Filtrer</button>
-                <a href="{% url 'liste_fiches' %}" class="btn btn-outline-secondary btn-sm" title="Réinitialiser"><i class="fa-solid fa-rotate-left"></i></a>
+                <a href="{% url 'liste_fiches' %}" class="btn btn-outline-secondary btn-sm"><i class="fa-solid fa-rotate-left"></i></a>
             </div>
         </div>
     </form>
 
-    <div class="table-responsive bg-white rounded shadow-sm border">
+    <div class="table-container shadow-sm">
         <table class="table table-hover compact-table mb-0">
             <thead>
                 <tr class="text-center">
-                    <th class="text-start ps-3">Information Client</th>
+                    <th class="text-start ps-3">Client</th>
                     <th>Type</th>
-                    <th>Date D'intervention / Ramassage 
-                    </th>
-                    <th>Localisation / Suivi Détail</th>
+                    <th>Date Intervention</th>
+                    <th>Localisation / Détail</th>
                     <th>Fidélité</th>
-                    <th style="width: 90px;">Actions</th>
+                    <th style="width: 80px;">Actions</th>
                 </tr>
             </thead>
             <tbody class="text-center">
@@ -148,9 +155,8 @@
                 <tr>
                     <td class="text-start ps-3">
                         <div class="fw-bold text-dark">{{ c.nom_client }}</div>
-                        <div class="text-muted" style="font-size: 10px;">
+                        <div class="text-muted" style="font-size: 9px;">
                             <i class="fa-solid fa-phone me-1"></i>{{ c.numero_client }} 
-                            <span class="ms-1 text-light-emphasis">| Créé le {{ c.date_creation|date:"d/m/y" }}</span>
                         </div>
                     </td>
                     <td>
@@ -164,41 +170,28 @@
                     </td>
                     <td>
                         {% if c.type_commande == 'TAPISPROP' %}
-                            {% if c.tapisdetails %}
-                                <span class="{% if c.tapisdetails.date_ramassage < today %}text-late{% endif %}">
-                                    {{ c.tapisdetails.date_ramassage|date:"d/m/y"|default:"-" }}
-                                </span>
-                            {% else %}-{% endif %}
+                            <span class="{% if c.tapisdetails.date_ramassage < today %}text-late{% endif %}">
+                                {{ c.tapisdetails.date_ramassage|date:"d/m/y"|default:"-" }}
+                            </span>
                         {% else %}
-                            {% if c.cityclimadetails %}
-                                <span class="{% if c.cityclimadetails.date_intervention < today %}text-late{% endif %}">
-                                    {{ c.cityclimadetails.date_intervention|date:"d/m/y"|default:"-" }}
-                                </span>
-                            {% else %}-{% endif %}
+                            <span class="{% if c.cityclimadetails.date_intervention < today %}text-late{% endif %}">
+                                {{ c.cityclimadetails.date_intervention|date:"d/m/y"|default:"-" }}
+                            </span>
                         {% endif %}
                     </td>
-                    <td class="text-start" style="max-width:280px;">
-                        <div class="text-truncate" style="font-size: 11px;"><i class="fa-solid fa-location-dot me-1 text-muted"></i>{{ c.localisation_client }}</div>
-                        <div class="mt-1" style="font-size: 10px; color: #636e72;">
-                            {% if c.type_commande == 'TAPISPROP' and c.tapisdetails %}
-                                <b>Statut:</b> {{ c.tapisdetails.get_statut_display }}
-                            {% elif c.cityclimadetails %}
-                                <b>Satisfaction:</b> {{ c.cityclimadetails.satisfaction|default:"-" }}
-                            {% endif %}
-                        </div>
+                    <td class="text-start" style="max-width:250px;">
+                        <div class="text-truncate" style="font-size: 10px;"><i class="fa-solid fa-location-dot me-1 text-muted"></i>{{ c.localisation_client }}</div>
                     </td>
                     <td>
-                        {% if c.type_commande == 'TAPISPROP' and c.tapisdetails.fidelise %}
-                            <a href="{% url 'detail_fidelisation' c.tapisdetails.id %}" class="text-decoration-none"><span class="badge bg-soft-success text-success border border-success px-2" style="font-size: 9px;">OUI</span></a>
-                        {% elif c.cityclimadetails.fidelise %}
-                            <a href="{% url 'detail_fidelisation' c.cityclimadetails.id %}" class="text-decoration-none"><span class="badge bg-soft-success text-success border border-success px-2" style="font-size: 9px;">OUI</span></a>
+                        {% if c.type_commande == 'TAPISPROP' and c.tapisdetails.fidelise or c.cityclimadetails.fidelise %}
+                            <span class="badge bg-soft-success text-success border border-success px-2" style="font-size: 8px;">OUI</span>
                         {% else %}
-                            <span class="text-muted opacity-50" style="font-size: 9px;">NON</span>
+                            <span class="text-muted opacity-50" style="font-size: 8px;">NON</span>
                         {% endif %}
                     </td>
                     <td>
-                        <div class="d-flex gap-2 justify-content-center">
-                            <a href="{% url 'detail_fiche' c.id %}" class="btn-icon btn-edit" title="Modifier"><i class="fa-solid fa-pen-to-square"></i></a>
+                        <div class="d-flex gap-1 justify-content-center">
+                            <a href="{% url 'detail_fiche' c.id %}" class="btn-icon border border-primary text-primary"><i class="fa-solid fa-pen-to-square"></i></a>
                             <form action="{% url 'supprimer_commande' c.id %}" method="POST" class="delete-form" data-client="{{ c.nom_client|escapejs }}">
                                 {% csrf_token %}
                                 <button type="button" class="btn-icon btn-outline-danger btn-delete-trigger"><i class="fa-solid fa-trash-can"></i></button>
@@ -207,16 +200,16 @@
                     </td>
                 </tr>
                 {% empty %}
-                <tr><td colspan="6" class="py-5 text-muted fst-italic text-center">Aucune commande ne correspond à vos critères.</td></tr>
+                <tr><td colspan="6" class="py-4 text-muted fst-italic text-center">Aucune donnée.</td></tr>
                 {% endfor %}
             </tbody>
         </table>
     </div>
 
     {% if commandes.has_other_pages %}
-    <div class="d-flex justify-content-center mt-3">
+    <div class="d-flex justify-content-center">
         <nav>
-            <ul class="pagination pagination-sm shadow-sm border-0">
+            <ul class="pagination pagination-sm shadow-sm">
                 {% if commandes.has_previous %}
                     <li class="page-item"><a class="page-link border-0 text-dark" href="?page={{ commandes.previous_page_number }}{% if request.GET.urlencode %}&{{ request.GET.urlencode|cut:'page=' }}{% endif %}"><i class="fa-solid fa-chevron-left"></i></a></li>
                 {% endif %}
@@ -241,33 +234,27 @@
     // 2. MODAL D'IMPORTATION
     function showImportModal() {
         Swal.fire({
-            title: 'Importer un fichier Excel',
+            title: 'Import Excel',
             html: `
                 <div class="text-start" style="font-size:12px;">
-                    <div class="alert alert-info p-2 mb-3">
-                        <i class="fa-solid fa-download me-1"></i> <a href="{% url 'generer_modele_excel' %}" class="fw-bold">Télécharger le modèle (.xlsx)</a>
+                    <div class="alert alert-info p-2 mb-2">
+                        <i class="fa-solid fa-download me-1"></i> <a href="{% url 'generer_modele_excel' %}" class="fw-bold">Modèle .xlsx</a>
                     </div>
-                    <label class="mb-1 fw-bold">Sélectionner le fichier :</label>
-                    <input type="file" id="fileInput" accept=".xlsx, .xls" class="form-control form-control-sm mb-3">
-                    <div id="progCont" class="prog-container"><div id="progB" class="prog-bar"></div></div>
-                    <small id="statusMsg" class="text-primary fw-bold" style="display:none;">Traitement en cours...</small>
+                    <input type="file" id="fileInput" accept=".xlsx, .xls" class="form-control form-control-sm mb-2">
+                    <div id="progCont" class="prog-container" style="display:none; height:10px; background:#eee;"><div id="progB" style="width:0; height:100%; background:blue;"></div></div>
                 </div>
             `,
             showCancelButton: true,
-            confirmButtonText: 'Lancer l\'importation',
+            confirmButtonText: 'Importer',
             preConfirm: () => {
                 const file = document.getElementById('fileInput').files[0];
-                if (!file) { Swal.showValidationMessage('Veuillez sélectionner un fichier'); return false; }
-                document.getElementById('progCont').style.display = 'block';
-                document.getElementById('statusMsg').style.display = 'block';
-                
+                if (!file) { Swal.showValidationMessage('Sélectionnez un fichier'); return false; }
                 let formData = new FormData();
                 formData.append('file', file);
                 formData.append('csrfmiddlewaretoken', '{{ csrf_token }}');
-                
                 return fetch("{% url 'import_commandes_ajax' %}", { method: 'POST', body: formData })
                 .then(response => {
-                    if (!response.ok) throw new Error('Erreur lors de l\'importation');
+                    if (!response.ok) throw new Error('Erreur');
                     return response.json();
                 }).catch(error => { Swal.showValidationMessage(`Erreur: ${error}`); });
             }
@@ -284,14 +271,13 @@
             const form = this.closest('.delete-form');
             const client = form.getAttribute('data-client');
             Swal.fire({
-                title: 'Suppression définitive',
-                text: `Voulez-vous vraiment supprimer la fiche de ${client} ?`,
+                title: 'Supprimer ?',
+                text: `${client}`,
                 icon: 'warning',
                 showCancelButton: true,
                 confirmButtonColor: '#d33',
-                cancelButtonColor: '#3085d6',
-                confirmButtonText: 'Oui, supprimer',
-                cancelButtonText: 'Annuler'
+                confirmButtonText: 'Oui',
+                cancelButtonText: 'Non'
             }).then((result) => { if (result.isConfirmed) form.submit(); });
         });
     });
